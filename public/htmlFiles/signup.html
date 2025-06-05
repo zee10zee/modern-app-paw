@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/style.css">
+
+    <title>sign up page</title>
+</head>
+<body>
+    <div class="container">
+        <h2 id="validateAlert" style="color: red;"></h2>
+        <h1>SIGN UP</h1>
+        <form id = "signUpForm" action="/api/signup" method="post" enctype="multipart/form-data">
+            <input type="text" id="fname" name="fname" placeholder="type your first name">
+            <input type="email" id="email" name="email" placeholder="type your email">
+            <input type="password" name="password" id="password">
+            <input type="file" id="profilePicture" name="profilePicture">
+             <div class="profileImageAdder" style="display: none;">
+                <img src="/images/profilePicLogo" alt="userProfile logo">
+             </div>
+             <button>Sign up</button>
+        </form>
+          <div class="passForget-login" style="display: flex;">
+            <a href="/api/login">already registered ?</a>
+            <a href="/api/passwordForgot">password forgotten ?</a>
+        </div>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script defer src="/js/components/signup.js"></script>
+</body>
+</html>

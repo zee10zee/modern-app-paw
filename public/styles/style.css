@@ -1,0 +1,29 @@
+*{
+    font-size: 20px;
+}
+
+a{
+    text-decoration: none;
+}
+
+li{
+    list-style: none;
+}
+
+.container{
+    max-width: 1000px;
+    width: auto;
+    margin: 0 auto;
+}
+
+.nav{
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    color: #555;
+}
+.nav ul{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
