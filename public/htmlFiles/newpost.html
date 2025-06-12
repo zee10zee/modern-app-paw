@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/style.css">
+    <title>New POST</title>
+</head>
+<body>
+    <div class="container">
+       
+        <h1>Add New Memory</h1>
+        <form id="postForm" action="/api/newPost" method="POST" enctype="multipart/form-data">
+            <input type="text" name="ptitle" id="ptitle" placeholder="enter the memory title">
+            <textarea name="pdesc" id="pdesc"></textarea>
+            <input type="file" name="mediaFile" id="mediaFile" accept="video/*, image/*">
+            <button>Save</button>
+        </form>
+    </div>
+   <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+   <script defer src="/js/components/addPost.js"></script>
+</body>
+</html>

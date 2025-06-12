@@ -1,13 +1,5 @@
 const signupForm = document.getElementById('signUpForm')
-const alertTag = document.getElementById('validateAlert')
-const signupAlert = sessionStorage.getItem('signUpMsg')
-if(signupAlert && alertTag){
-     alertTag.textContent =signupAlert
-      sessionStorage.removeItem('signUpMsg');
-    setTimeout(() => {
-     alertTag.style.display = "none"
-    }, 3000);
-}
+
 
 signupForm.addEventListener('submit', async(e)=>{
     e.preventDefault()

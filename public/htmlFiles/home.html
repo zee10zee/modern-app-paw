@@ -8,6 +8,7 @@
 </head>
 <body>
     <div class="nav container">
+         <h2 id="newPostAlert"></h2>
         <div class="left">
             <a href="/">MemoryDom</a> </div>
         <div class="right">
@@ -20,12 +21,25 @@
             </ul>
         </div>
     </div>
-   <div class="container">
-     Home !
-   </div>
+    <div class="container addNewPost">
+        <a href="/api/newPost">Add Memory</a>
+    </div>
+   <div class="container " id="postsContainer">
+        <h2>Posts</h2>
+    </div>
+    <div class="container" id="updateFormContainer" class="EditFormContainer">
+      
+    </div>
     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
    <script defer src="/js/components/checkLoginStatus.js"></script>
    <script defer src="/js/components/logout.js"></script>
+   <script defer src="/js/components/addPost.js"></script>
+   <script defer src="/js/components/displayPosts.js"></script>
+   <script defer src="/js/components/like.js"></script>
+   <!-- <script defer src="/js/components/updatePost.js"></script> -->
+
+   
+
 
 </body>
 </html>
