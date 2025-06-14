@@ -329,8 +329,77 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 
 // posts
 
+// // suggested approach by deepseek
+// app.get('/api/posts', async (req, res) => {
+//   try {
+//     // 1. Fetch all posts (with like counts)
+//     const postsQuery = `
+//       SELECT 
+//         posts.id,
+//         posts.title,
+//         posts.description,
+//         posts.mediafile,
+//         posts.created_at,
+//         users.id AS author_id,
+//         users.firstname AS author_firstname,
+//         users.profilepicture AS author_profilepicture,
+//         COUNT(likes.id) AS like_counts
+//       FROM posts
+//       LEFT JOIN users ON users.id = posts.user_id
+//       LEFT JOIN likes ON likes.postid = posts.id
+//       GROUP BY posts.id, users.id
+//       ORDER BY posts.created_at DESC
+//       LIMIT 20
+//     `;
+//     const postsResult = await pool.query(postsQuery);
+
+//     if (postsResult.rows.length === 0) {
+//       return res.json({ posts: [] });
+//     }
+
+//     // 2. Fetch all comments for these posts (pre-nested via PostgreSQL)
+//     const postIds = postsResult.rows.map(post => post.id);
+//     const commentsQuery = `
+//       SELECT 
+//         comments.post_id,
+//         JSON_AGG(
+//           JSON_BUILD_OBJECT(
+//             'id', comments.id,
+//             'text', comments.comment,
+//             'created_at', comments.created_at,
+//             'author', JSON_BUILD_OBJECT(
+//               'firstname', users.firstname,
+//               'profilepicture', users.profilepicture
+//             )
+//           )
+//         ) AS comments
+//       FROM comments
+//       JOIN users ON users.id = comments.user_id
+//       WHERE comments.post_id = ANY($1)
+//       GROUP BY comments.post_id
+//     `;
+//     const commentsResult = await pool.query(commentsQuery, [postIds]);
+
+//     // 3. Merge results (no manual grouping needed!)
+//     const posts = postsResult.rows.map(post => ({
+//       ...post,
+//       comments: commentsResult.rows
+//         .find(row => row.post_id === post.id)?.comments || []
+//     }));
+
+//     res.json({ posts });
+    
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
 app.get('/api/posts', async(req,res)=>{
-    const allPosts = await pool.query(`SELECT users.firstname, users.profilepicture, posts.id as post_id,
+    const allPosts = await pool.query(`SELECT 
+        users.firstname AS author_firstname, 
+        users.profilepicture AS author_profilepicture, 
+        posts.id as post_id,
         posts.title,
         posts.description,
         posts.mediafile,
@@ -352,12 +421,65 @@ app.get('/api/posts', async(req,res)=>{
 
     if(allPosts.rows.length === 0 ){
         console.log('no posts found')
-        return res.send('no posts found')
+        return res.json({posts : []})
     }
 
+    // getting all the comments of the posts
+    const postsIds = allPosts.rows.map(post => post.id)
+    console.log(postsIds)
+
+    const showCommentsQuery = `
+    SELECT comments.post_id,
+    JSON_AGG(
+    JSON_BUILD_OBJECT(
+     'id', comments.id,
+     'text', comments.comment,
+     'created_at', comments.created_at,
+     'author', JSON_BUILD_OBJECT(
+       'firstname', users.firstname,
+       'profile_picture', users.profilepicture
+        )
+      )
+    ) AS comments 
+     FROM comments JOIN users ON users.id = comments.user_id
+     WHERE comments.post_id = ANY($1)
+     GROUP BY comments.post_id;
+    `
+    const allComments = await pool.query(showCommentsQuery, [postsIds])
+
+    // merge the comments to their posts
+
+    const posts = allPosts.rows.map(post => ({
+        ...post,
+        comments : allComments.rows.find(comment => comment.post_id === post.id)
+    }))
+
     res.json({
-        posts : allPosts.rows
+        posts : posts
     })
+
+    // const postsMap = new Map()
+    // allPosts.rows.forEach(row =>{
+    //     if(!postsMap.has(row.post_id)){
+    //         postsMap.set(row.post_id,
+    //         {...row,
+    //          comments :[],
+    //          likeCounts : row.like_counts
+    //         })
+    //     }
+
+    //     // to get the comments
+    //     if(row.comment_id){
+    //         postsMap.get(row.post_id).comments.push({
+    //             id : row.comment_id,
+    //             comment : row.comment,
+    //             created_at : row.comment_created_at
+    //         })
+    //     }
+    // });
+
+    // const posts = Array.from(postsMap.values())
+    // console.log(posts)
     
 })
 
@@ -497,6 +619,8 @@ app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
 
 app.post('/api/post/:id/like', validateLogin, async(req,res)=>{
     const id = parseInt(req.params.id)
+    const loggedInUserId = req.session.userId;
+
     console.log('the params postiD', id)
     const postExists = await pool.query('SELECT * FROM posts WHERE id = $1', [id])
     if(postExists.rowCount === 0){
@@ -507,10 +631,20 @@ app.post('/api/post/:id/like', validateLogin, async(req,res)=>{
     const existedLike = await pool.query('SELECT * FROM likes WHERE postid = $1 AND userid = $2', [id, req.session.userId])
     if(existedLike.rowCount > 0){
         console.log('you have already liked this post')
-        return res.json({message : 'post has already been liked'})
-    }
+        const deletedLike = await pool.query('DELETE FROM likes WHERE userid = $1 AND postid = $2 RETURNING *', [req.session.userId,id]);
+         let postLikes = null;
+        if(deletedLike.rowCount > 0){
+        
+        const postLikes = await pool.query('SELECT COUNT(*) AS like_counts FROM likes WHERE postid = $1', [id])
 
-    const loggedInUserId = req.session.userId;
+        if(postLikes.rowCount > 0){
+           return res.json(
+            {error : 'you have already liked this post',
+             postLikes : postLikes.rows[0].like_counts 
+            })
+        }
+      }    
+    }
 
     const newLike = await pool.query(`INSERT INTO likes (userid,postid)
         VALUES($1,$2) RETURNING * `,[loggedInUserId, id])
@@ -526,12 +660,49 @@ app.post('/api/post/:id/like', validateLogin, async(req,res)=>{
         return console.log('failure getting the likes count of the post')
       }
 
-       console.log(countPostLikes.rows[0].like_counts)
       console.log('post has successfully been liked')
       res.json({
         message : 'you have liked the post',
         postLikes : countPostLikes.rows[0].like_counts
       })
+})
+
+
+
+
+// comments
+
+app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
+    const {comment} = req.body
+   const postId = parseInt(req.params.id)
+   const commentQuery =(`INSERT INTO comments (comment, post_id, user_id)
+    VALUES($1,$2,$3) RETURNING *`)
+   const newComment = await pool.query(commentQuery, [comment, postId, req.session.userId])
+   if(newComment.rowCount === 0){
+    console.log('failure saving comments on db')
+    return res.send('failure saving comment on db')
+   }
+
+//    after posting new comment we gotta get ALL COMMENTS of that exact post
+   const allComments = await pool.query(`SELECT 
+    users.firstname AS author_name,
+    users.profilepicture AS user_profile_picture,
+    comments.* FROM comments 
+    JOIN users ON comments.user_id = users.id
+    WHERE comments.post_id = $1
+    ORDER BY comments.created_at`, [postId])
+
+    if(allComments.rowCount === 0){
+        return console.log('no COMMENTS found !')
+    }
+
+    console.log(allComments.rows)
+
+   console.log('successfully commented')
+   res.json({
+    message : 'comment successfully made !',
+    postComments : allComments.rows
+   });
 })
 
 
@@ -593,6 +764,15 @@ function validateLogin(req,res,next){
 //     console.log(err)
 // })
 
+//   const comments = pool.query(`CREATE TABLE IF NOT EXISTS comments 
+//     (id SERIAL PRIMARY KEY, 
+//     comment TEXT NOT NULL ,
+//      post_id INTEGER REFERENCES posts (id),
+//      user_id INTEGER REFERENCES users (id),
+//      created_at TIMESTAMP DEFAULT NOW())`);
+//      comments.then(()=> console.log('comments created ')).catch((err)=>{
+//         console.log(err)
+//      })
 // thing we will need for production 
 // 1: loading functionality till the data loads
 

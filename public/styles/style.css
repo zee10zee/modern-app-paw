@@ -68,6 +68,12 @@ img {
     cursor: pointer;
 }
 
+#commentForm input{
+    width: 100%;
+    height: 50px;
+    border: none;
+}
+
 
 #updateFormContainer{
     width: 100%;

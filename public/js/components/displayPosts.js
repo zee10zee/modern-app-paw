@@ -2,18 +2,36 @@
 const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
     let Allposts = []
-
+// to get the posts.comments array we need to transform the join table to map like objects 
 
   function isVideo(filename){
       return /\.(mp4|webm|ogg)$/i.test(filename);
   }
 
 const renderPosts = (posts)=>{
-  
+       
         posts.forEach((post)=>{
+          console.log(Array.isArray(post.comments))
+          let commentBox = null;
+            //  if(post.comments.length === 0){
+            //   commentBox = 'no comments yet !'
+              
+            //  }else{
+                commentBox = `
+               <div class="comment">
+                   <strong><p>${post.firstname}</p></strong>
+                  <div class="text-date" style="display: flex; justify-content : space-between; align-items : center">
+                    <p>${post.comment_text}</p>
+                    <strong>${new Date(post.comment_created_at).toLocaleDateString('en-US',{weekday : 'short', month : 'short', year : 'numeric'})}</strong>
+                  </div>
+                </div>    
+              `
+               
+            //  }
              const postDIV = document.createElement('div')
              postDIV.classList.add('posts')
              postDIV.dataset.postId = post.post_id
+            
            
              const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
              const mediaTag = document.createElement(mediaFile)
@@ -43,9 +61,7 @@ const renderPosts = (posts)=>{
                       <p id="likesCount">${post.likecounts}</p>
                   </div>
                   <div class="comment">
-                    <form action="/api/comment/id">
-                      <button class="commentBtn">💬</button>
-                    </form>
+                    <button id="commentButton" class="commentBtn">💬</button>
                     <p>12 comments</p>
                   </div>
 
@@ -55,7 +71,14 @@ const renderPosts = (posts)=>{
                   </form>
                     <p>12 shares</p>
                   </div>
+                 
                 </div>
+                 <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
+                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                 </form>
+                 <div class="commentsContainer">
+                 ${commentBox}
+                 </div>
 
                 <div class="edit-delete">
                   <form id="editForm" data-post-id="${post.id}">
@@ -84,6 +107,7 @@ const setupEventListener = ()=>{
      console.log(postId);
    if(editBtn){
       e.preventDefault()
+      editPostContainer.innerHTML = ''
       await loadEditForm(postId)
     }else if(deleteBtn){
         await deletePost(postId)
@@ -117,6 +141,7 @@ const loadEditForm = async(postId)=>{
             const mediaFile = isVideo(post.mediafile)?'video' : 'img'
             const mediaTag = document.createElement(mediaFile)
             mediaTag.src = post.mediafile
+            mediaTag.setAttribute('name', 'previewFile')
             mediaTag.classList.add('previewFile')
             // return console.log(mediaTag.src)
             
@@ -165,7 +190,7 @@ editPostContainer.addEventListener('click', (e)=>{
        }else if(cancelUpdateButton){
         e.preventDefault()
         console.log('clsoe button')
-          editPostContainer.style.display= "none"
+        editPostContainer.style.display= "none"
 
        }
     })
@@ -211,7 +236,11 @@ editPostContainer.addEventListener('click', (e)=>{
 
     const handleUpdatePost = async(postId, updateform)=>{
         const formData = new FormData(updateform)
-        console.log(formData)
+        const newTitle = formData.get('newTitle')
+        const newDesc = formData.get('newDesc')
+        const postFile = formData.get('newFile')
+        console.log("newTitle",newTitle, postFile)
+
         try{
           const response = await axios.put(`/api/post/update/${postId}`, formData, {})
          console.log(response.data)
@@ -220,70 +249,10 @@ editPostContainer.addEventListener('click', (e)=>{
         const updatedPost = response.data.updatedPost
         const postIndex = Allposts.findIndex(post => post.post_id === parseInt(postId))
 
-        Allposts.forEach(post => {
-           updatedPost = post[postIndex]
-        })
-        
+         const allUpdatedPosts = Allposts.map((post, index)=> index === postIndex? {...updatedPost}: post)
 
-          console.log(editPostContainer.firstElementChild)
- //  get the post by id and then put in dom to change the ui
-            // disappearing the edit form
-            editPostContainer.style.display = "none"
-             const postsDiv = postContainer.firstElementChild;
-             console.log(postsDiv)
-
-            const mediaFile = isVideo(updatedPost.mediafile)?'video' : 'img'
-            const mediaTag = document.createElement(mediaFile)
-            mediaTag.src = updatedPost.mediafile
-            mediaTag.classList.add('previewFile')
-            
-            postsDiv.innerHTML = `
-               <div class="title-date-burger">
-                 <h2 class="title">${updatedPost.title}
-                   <span id="date" class="date">${new Date(updatedPost.created_at).toLocaleDateString()}</span>
-                 </h2>
-                 <div id="gear" class="gear">⚙️</div>
-                 
-               </div>
-               <p class="description">${updatedPost.description.substring(0,100)} 
-                  <a class="showMoreLink" href="/api/showPost/${updatedPost.post_id}">Read more...</a>
-               </p>
-                ${mediaTag.outerHTML}
-               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
-                  <div class="like">
-                     <form class="likeForm" action="/api/post/${updatedPost.id}/like" method="post">
-                      <button class="likeBtn">❤️</button>
-                      </form>
-                      <p id="likesCount">${updatedPost.likecounts}</p>
-                  </div>
-                  <div class="comment">
-                    <form action="/api/comment/id">
-                      <button class="commentBtn">💬</button>
-                    </form>
-                    <p>12 comments</p>
-                  </div>
-
-                  <div class="share">
-                    <form action="/api/share/id">
-                      <button class="shareBtn">↗️</button>
-                  </form>
-                    <p>12 shares</p>
-                  </div>
-                </div>
-
-                <div class="edit-delete">
-                  <form id="editForm" data-post-id="${updatedPost.id}">
-                    <button class="postEditBtn">Edit</button>
-                  </form>
-                  <form id="deleteForm" data-post-id="${updatedPost.id}">
-                    <button class="postDeleteBtn">Delete</button>
-                 </form>
-                
-                </div>
-             `
-             postContainer.prepend(postsDiv)
+             await getUpdatedUi(allUpdatedPosts);
          }
-       
 
         }catch(err){
           console.log(err)
@@ -303,6 +272,69 @@ const deletePost = async(postId)=>{
   }catch(err){
     console.log(err)
   }
+}
+
+
+   const getUpdatedUi = (posts)=>{
+  
+        posts.forEach((post)=>{
+             const postDIV = postsContainer.querySelector('.posts')
+             const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
+             const mediaTag = document.createElement(mediaFile)
+             mediaTag.src = '/' + post.mediafile
+             console.log(post.mediafile)
+             if(mediaFile === 'video'){
+                mediaTag.controls = true
+             }
+             
+             postDIV.innerHTML = `
+               <div class="title-date-burger">
+                 <h2 class="title">${post.title}
+                   <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
+                 </h2>
+                 <div id="gear" class="gear">⚙️</div>
+                 
+               </div>
+               <p class="description">${post.description.substring(0,100)} 
+                  <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
+               </p>
+                ${mediaTag.outerHTML}
+               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
+                  <div class="like">
+                     <form class="likeForm" action="/api/post/${post.id}/like" method="post">
+                      <button class="likeBtn">❤️</button>
+                      </form>
+                      <p id="likesCount">${post.likecounts}</p>
+                  </div>
+                  <div class="comment">
+                    <form action="/api/comment/id">
+                      <button class="commentBtn">💬</button>
+                    </form>
+                    <p>12 comments</p>
+                  </div>
+
+                  <div class="share">
+                    <form action="/api/share/id">
+                      <button class="shareBtn">↗️</button>
+                  </form>
+                    <p>12 shares</p>
+                  </div>
+                </div>
+
+                <div class="edit-delete">
+                  <form id="editForm" data-post-id="${post.id}">
+                    <button class="postEditBtn">Edit</button>
+                  </form>
+                  <form id="deleteForm" data-post-id="${post.id}">
+                    <button class="postDeleteBtn">Delete</button>
+                 </form>
+                
+                </div>
+             `
+            postsContainer.appendChild(postDIV)
+        })
+
+      editPostContainer.style.display = "none"
 }
 
 
@@ -341,7 +373,7 @@ const deletePost = async(postId)=>{
 
   document.addEventListener('DOMContentLoaded', async(e)=>{
   const res = await axios.get('/api/posts')
-
+  console.log(res)
     if(res.status === 200){
         Allposts = res.data.posts
         // return console.log(posts)
