@@ -424,9 +424,10 @@ app.get('/api/posts', async(req,res)=>{
         return res.json({posts : []})
     }
 
+
     // getting all the comments of the posts
-    const postsIds = allPosts.rows.map(post => post.id)
-    console.log(postsIds)
+    const postsIds = allPosts.rows.map(post => post.post_id)
+    console.log("post ids ",postsIds)
 
     const showCommentsQuery = `
     SELECT comments.post_id,
@@ -449,37 +450,19 @@ app.get('/api/posts', async(req,res)=>{
 
     // merge the comments to their posts
 
-    const posts = allPosts.rows.map(post => ({
-        ...post,
-        comments : allComments.rows.find(comment => comment.post_id === post.id)
-    }))
+    const posts = allPosts.rows.map(post =>{
+        const postComments = allComments.rows.filter(comment => comment.post_id === post.post_id)
+        console.log(postComments, ' posts comments')
+        return {
+            ...post,
+            comments : postComments
+        }
+    })
+    
 
     res.json({
         posts : posts
     })
-
-    // const postsMap = new Map()
-    // allPosts.rows.forEach(row =>{
-    //     if(!postsMap.has(row.post_id)){
-    //         postsMap.set(row.post_id,
-    //         {...row,
-    //          comments :[],
-    //          likeCounts : row.like_counts
-    //         })
-    //     }
-
-    //     // to get the comments
-    //     if(row.comment_id){
-    //         postsMap.get(row.post_id).comments.push({
-    //             id : row.comment_id,
-    //             comment : row.comment,
-    //             created_at : row.comment_created_at
-    //         })
-    //     }
-    // });
-
-    // const posts = Array.from(postsMap.values())
-    // console.log(posts)
     
 })
 

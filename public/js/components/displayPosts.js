@@ -9,25 +9,32 @@ const editPostContainer = document.getElementById('updateFormContainer')
   }
 
 const renderPosts = (posts)=>{
-       
+    
         posts.forEach((post)=>{
-          console.log(Array.isArray(post.comments))
-          let commentBox = null;
-            //  if(post.comments.length === 0){
-            //   commentBox = 'no comments yet !'
-              
-            //  }else{
-                commentBox = `
-               <div class="comment">
-                   <strong><p>${post.firstname}</p></strong>
-                  <div class="text-date" style="display: flex; justify-content : space-between; align-items : center">
-                    <p>${post.comment_text}</p>
-                    <strong>${new Date(post.comment_created_at).toLocaleDateString('en-US',{weekday : 'short', month : 'short', year : 'numeric'})}</strong>
-                  </div>
-                </div>    
-              `
-               
-            //  }
+           let commentsHTML = ''
+          if(Array.isArray(post.comments)){
+           const comments = post.comments.flatMap(comment => comment.comments || [])
+           comments.forEach(comment =>{
+          
+             const commentAuthor = comment.author.firstname
+             const text = comment.text
+             const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
+                weekday : 'short', 
+                month : 'short',
+                year : 'numeric'
+             });
+             commentsHTML+= 
+             `
+             <div class="comment" data-comment-id="${comment.id}">
+            <strong id="author">${commentAuthor}</strong>
+                <div class="text-date" style="display: flex; justify-content: space-between; align-items : center">
+                  <p id="text">${text}</p>
+                  <small id="date">${commentDate}</small>
+                </div>
+             </div>
+             `
+           })             
+          }
              const postDIV = document.createElement('div')
              postDIV.classList.add('posts')
              postDIV.dataset.postId = post.post_id
@@ -74,17 +81,17 @@ const renderPosts = (posts)=>{
                  
                 </div>
                  <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
+                      <input type="hidden" name="post_id" value="${post.post_id}"> 
                       <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
                  </form>
                  <div class="commentsContainer">
-                 ${commentBox}
+                    ${commentsHTML}
                  </div>
-
                 <div class="edit-delete">
-                  <form id="editForm" data-post-id="${post.id}">
+                  <form id="editForm" data-post-id="${post.post_id}">
                     <button class="postEditBtn">Edit</button>
                   </form>
-                  <form id="deleteForm" data-post-id="${post.id}">
+                  <form id="deleteForm" data-post-id="${post.post_id}">
                     <button class="postDeleteBtn">Delete</button>
                  </form>
                 
@@ -336,38 +343,6 @@ const deletePost = async(postId)=>{
 
       editPostContainer.style.display = "none"
 }
-
-
-    // update only posts locally with no refresh just from db
-    // const updatePostOnDom =(post)=>{
-    //   // return console.log(posts)
-    //    const postDiv = document.querySelector('.posts')
-    //    if(!postDiv) return;
-
-    //   //  postDiv.dataset.postId;
-    //   const titleEl = postDiv.querySelector('.title')
-    //   titleEl.textContent = post.title
-    //   const dateEl = postDiv.querySelector('.date')///poroblem seems to be here !
-    //   dateEl.innerHTML = `<span class="date">${new Date(post.created_at).toLocaleDateString()}</span>`
-
-    //   const desc = postDiv.querySelector('.desc')
-    //   desc.innerHTML = `${post.descriptoin.substring(0,100)}....
-    //     <a href="/">Read more</a>
-    //   `
-
-    //   const mediaContainer = postDiv.querySelector('video,img')?.parentElement;
-    //   console.log(mediaContainer)
-    //   if(mediaContainer && post.mediafile){
-    //     mediaContainer.innerHTML = ''
-    //      const mediaFile = isVideo(post.mediafile)? 'video' : 'img'
-    //      const mediaEl = document.createElement(mediaFile)
-    //      mediaFile.classList.add('mediaFile')
-    //      mediaEl.src = post.mediafile
-    //      if(mediaEl.tagName === 'VIDEO') mediaEl.controls = true;
-    //      mediaContainer.append(mediaEl)
-    //   }
-    // }
-
 
     // const deleteForm = postsContainer.deleteForm
 
