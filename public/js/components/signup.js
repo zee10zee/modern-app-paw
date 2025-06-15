@@ -12,6 +12,7 @@ signupForm.addEventListener('submit', async(e)=>{
     });
     console.log(response.data)
     if(response.data.isLoggedIn){
+        sessionStorage.setItem('loggedIn_profile', response.data.newUser.profilepicture)
         window.location.href="/"
     }
 

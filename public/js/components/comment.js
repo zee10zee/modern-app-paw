@@ -1,29 +1,72 @@
 
 window.addEventListener('DOMContentLoaded', (e)=>{
     const postsContainer = document.getElementById('postsContainer')
-    console.log(postsContainer.querySelector('.posts'))
+
+    // on submitting the comment
     postsContainer.addEventListener('keypress', async(e)=>{
-          const postId = e.target.closest('.posts')?.dataset.postId;
-          console.log(postId)
+          const postDiv = e.target.closest('.posts')
+          
 
         if(e.target.classList.contains('commentInput') && e.key === 'Enter'){
-            await handleComment(e)
+           
+            await handleComment(e, true, 3)
+            await handleComment(e);
         }
     });
 
+    // trigger edit comment button
+    postsContainer.addEventListener('click', (e)=>{
+        e.preventDefault()
+      
+        if(e.target.classList.contains('edit-comment-button')){ 
+            const postDIV = e.target.closest('.comment')
+             const postFormInput =postDIV.querySelector('[name="comment"]');
+             const commentDiv = e.target.closest('.comment')
+             const commentDataId = commentDiv.dataset.commentId;
+             const commentInput = commentDiv.closest('.posts').querySelector('.commentInput')
 
-    async function handleComment(event){
+
+            //  adding a data comment to the comment input
+             commentInput.dataset.edittingId = commentDataId              
+             
+             const targetedComment = commentDiv.querySelector('p').textContent
+             postFormInput.value = targetedComment
+             postFormInput.focus()
+             postFormInput.select()
+
+             commentInput.classList.add('editing-mode')
+
+        }
+    })
+
+
+
+    // pop up edit modal
+
+
+    async function handleComment(event, isEdit = false, commentId = null){
         event.preventDefault()
         const form = event.target.parentElement
         const postId = form.querySelector('[name="post_id"]').value
-        const commentText = form.querySelector('[name="comment"]').value
+        const commentText = form.querySelector('.commentInput').value
+
+        let method = isEdit? 'put' : 'post';
+        let url = isEdit ? `/api/comment/${commentId}/edit` : 
+        `/api/post/${postId}/comment`
+
         // sending comment to the server
-        const res = await axios.post(`/api/post/${postId}/comment`, {comment : commentText})
+        const res = await axios[method](url,{comment : commentText})
+    
         if(res.status === 200){
-            const newComments = res.data.postComments
-             const lastComment = newComments[newComments.length - 1]
-             updateCommentUI(postId,lastComment)
-             form.reset()
+            if(isEdit){
+                isEdit = true;
+             console.log('room for editing ', commentId)
+            }else{
+                const newComments = res.data.postComments
+                const lastComment = newComments[newComments.length - 1]
+                updateCommentUI(postId,lastComment)
+                form.reset()
+            }
         }
     }
 })
@@ -47,11 +90,24 @@ const updateCommentUI = (postId,newComment)=>{
             `
                 <div class="comment" data-comment-id="${newComment.id}">
                 <strong id="author">${newComment.author_name}</strong>
-                    <div class="text-date" style="display: flex; justify-content: space-between; align-items : center">
-                    <p id="text">${newComment.comment}</p>
-                    <small id="date">${newCommentDate}</small>
+                    <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
+                  <p id="text">${newComment.comment}</p>
+                     <div id="comment-gear" class="comment-gear">⋯</div>
                     </div>
-                </div>
+                    <div class="comment-delete-edit" style="">
+                        <form id="edit-comment-form">
+                            <button class="edit-comment-button">Edit</button>
+                        </form>
+                        <form id="delete-comment-button">
+                            <button>Delete</button>
+                        </form>
+                    </div>
+                    <small id="date" class="date">${newCommentDate}</small>
+                        </div>
+                    </div>
             `
             commentsContainer.insertAdjacentHTML('afterbegin', commentHTML)
-}
+
+        }
+
+        // editing comment using modal SPA

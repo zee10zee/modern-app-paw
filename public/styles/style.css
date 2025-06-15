@@ -13,11 +13,22 @@ a{
 li{
     list-style: none;
 }
+button{
+    cursor: pointer;
+    border-bottom: 1px solid #555;
+}
 
 video{
     width: 100%;
     max-width: 600px;
     aspect-ratio: 16 / 9;
+}
+
+.ownerPhoto, .profilePic{
+    width: 30px;
+    height: 30px;
+    border-radius: 50px;
+    outline: 2px solid #555;
 }
 
 .mediaFile:hover{
@@ -39,6 +50,16 @@ img {
   object-fit: cover;  
   border-radius: 5px;
 }
+
+.posts button{
+    background: none;
+    border: none;
+}
+
+#commentForm .commentInput{
+    border-bottom: 1px solid #a39a9a;
+}
+
 .posts, #showPostContainer{
     position: relative;
 }
@@ -54,7 +75,15 @@ img {
     gap: 5px;
     flex-direction: column;
     display: none;
+}
 
+.edit-delete button, .comment-delete-edit button{
+    font-size: 13px ;
+    margin: 2px auto ;
+    font-weight: bold;
+    border: 1px solid rgb(70, 107, 70);
+    border-radius: 5px;
+    padding: 2px 5px;
 }
 
 .likeBtn, .commentBtn, .shareBtn{
@@ -86,6 +115,42 @@ img {
     background-color: rgb(228, 230, 231);
     display: none;
     padding: 5px 10px;
+}
+
+.comment{
+    line-height: 1.5px;
+    margin: 10px auto;
+    position: relative;
+}
+
+.comment-delete-edit{
+    position: absolute;
+    right: 100px;
+    top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: bisque;
+    padding: 5px;
+    width: 100px;
+    align-items: center;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow effect */
+    z-index: 100;
+    /* display: none; */
+}
+.comment-gear:hover{
+    cursor: pointer;
+}
+.comment-gear, .gear{
+    background: #efefef;
+    padding: 2px 5px;
+    border-radius: 5px;
+}
+
+.date{
+    margin-left: auto;
+    width: 60px;
 }
 .flex-class{
     display: flex;

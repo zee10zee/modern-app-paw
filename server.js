@@ -73,7 +73,7 @@ const upload = multer({
 
 
 app.use(express.static(path.join(__dirname,'public')))
-app.use('/uploads', express.static('uploads')); 
+app.use('/uploads', express.static(path.join(__dirname,'uploads'))) 
 // home route
 app.use(express.json())
 app.use(express.urlencoded({extended : true}))
@@ -97,7 +97,7 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
         password : req.body.password.trim(),
     }
 
-    const profile = req.file? path.join(__dirname,'public/uploads',req.file.filename) : null
+    const profile = req.file? path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : null
 
     const checkduplicate = await pool.query('SELECT * FROM users WHERE  email = $1', [credentials.email])
 
@@ -120,6 +120,7 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
     console.log('welcome to memorydom ', newUser.rows[0].firstname)
     req.session.userId = newUser.rows[0].id
     res.json({
+        newUser : newUser.rows[0],
         isLoggedIn : true,
         userId : req.session.userId
     })
@@ -162,6 +163,7 @@ app.post('/api/login', async(req,res)=>{
             console.log('welcome back ', ExistingUser.rows[0].firstname)
             req.session.userId = ExistingUser.rows[0].id
         res.json({
+            loggedInUser : ExistingUser.rows[0],
             isLoggedIn : true,
             message : 'welcome back user ' + ExistingUser.rows[0].firstname
   })
@@ -329,72 +331,6 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 
 // posts
 
-// // suggested approach by deepseek
-// app.get('/api/posts', async (req, res) => {
-//   try {
-//     // 1. Fetch all posts (with like counts)
-//     const postsQuery = `
-//       SELECT 
-//         posts.id,
-//         posts.title,
-//         posts.description,
-//         posts.mediafile,
-//         posts.created_at,
-//         users.id AS author_id,
-//         users.firstname AS author_firstname,
-//         users.profilepicture AS author_profilepicture,
-//         COUNT(likes.id) AS like_counts
-//       FROM posts
-//       LEFT JOIN users ON users.id = posts.user_id
-//       LEFT JOIN likes ON likes.postid = posts.id
-//       GROUP BY posts.id, users.id
-//       ORDER BY posts.created_at DESC
-//       LIMIT 20
-//     `;
-//     const postsResult = await pool.query(postsQuery);
-
-//     if (postsResult.rows.length === 0) {
-//       return res.json({ posts: [] });
-//     }
-
-//     // 2. Fetch all comments for these posts (pre-nested via PostgreSQL)
-//     const postIds = postsResult.rows.map(post => post.id);
-//     const commentsQuery = `
-//       SELECT 
-//         comments.post_id,
-//         JSON_AGG(
-//           JSON_BUILD_OBJECT(
-//             'id', comments.id,
-//             'text', comments.comment,
-//             'created_at', comments.created_at,
-//             'author', JSON_BUILD_OBJECT(
-//               'firstname', users.firstname,
-//               'profilepicture', users.profilepicture
-//             )
-//           )
-//         ) AS comments
-//       FROM comments
-//       JOIN users ON users.id = comments.user_id
-//       WHERE comments.post_id = ANY($1)
-//       GROUP BY comments.post_id
-//     `;
-//     const commentsResult = await pool.query(commentsQuery, [postIds]);
-
-//     // 3. Merge results (no manual grouping needed!)
-//     const posts = postsResult.rows.map(post => ({
-//       ...post,
-//       comments: commentsResult.rows
-//         .find(row => row.post_id === post.id)?.comments || []
-//     }));
-
-//     res.json({ posts });
-    
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Server error' });
-//   }
-// });
-
 app.get('/api/posts', async(req,res)=>{
     const allPosts = await pool.query(`SELECT 
         users.firstname AS author_firstname, 
@@ -410,8 +346,6 @@ app.get('/api/posts', async(req,res)=>{
         LEFT JOIN likes ON likes.postid = posts.id 
         GROUP BY 
         users.id,                   
-        users.firstname, 
-        users.profilepicture,
         posts.id,
         posts.title,
         posts.description,
@@ -686,6 +620,21 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
     message : 'comment successfully made !',
     postComments : allComments.rows
    });
+})
+
+app.get('/api/comment/:id/edit', validateLogin, async(req,res)=>{
+    const commentId = parseInt(req.params.id)
+    const comment = await pool.query(`
+    SELECT * FROM comments WHERE id = $1`, [commentId])
+    
+    if(comment.rowCount === 0){
+        console.log('comment not found')
+        return res.send('no comment found')
+    }
+
+    res.json({
+        comment : comment.rows[0]
+    })
 })
 
 

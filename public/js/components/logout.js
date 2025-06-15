@@ -9,7 +9,8 @@ async function getUsername(){
 
    if(result.data.isLoggedIn){
         const username = result.data.username
-       sessionStorage.setItem('username', username)
+        sessionStorage.setItem('username', username)
+        window.location.href="/api/login"
    }
   } catch(err){
     console.log(err)

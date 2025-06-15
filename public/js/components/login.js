@@ -26,8 +26,9 @@ loginForm.addEventListener('submit', async(e)=>{
         password : password.value
     });
 
-     console.log(response.data)
     if(response.data.isLoggedIn){
+       
+        sessionStorage.setItem('loggedIn_profile', response.data.loggedInUser.profilepicture)
         window.location.href="/"
     }else{
         console.log('please sign up first')

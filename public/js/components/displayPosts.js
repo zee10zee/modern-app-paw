@@ -1,6 +1,13 @@
 
 const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
+const photo = sessionStorage.getItem('loggedIn_profile')
+     
+ const loggedInUser = document.querySelector('.loggedInUser')
+        const profile = document.createElement('img')
+        profile.classList.add('profilePic')
+        profile.src = photo
+        loggedInUser.appendChild(profile)
     let Allposts = []
 // to get the posts.comments array we need to transform the join table to map like objects 
 
@@ -26,11 +33,20 @@ const renderPosts = (posts)=>{
              commentsHTML+= 
              `
              <div class="comment" data-comment-id="${comment.id}">
-            <strong id="author">${commentAuthor}</strong>
-                <div class="text-date" style="display: flex; justify-content: space-between; align-items : center">
+            <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
+                <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                   <p id="text">${text}</p>
-                  <small id="date">${commentDate}</small>
+                     <div id="comment-gear" class="comment-gear">⋯</div>
                 </div>
+                <div class="comment-delete-edit" style="">
+                      <form id="edit-comment-form">
+                        <button class="edit-comment-button">Edit</button>
+                      </form>
+                      <form id="delete-comment-button">
+                        <button>Delete</button>
+                      </form>
+                   </div>
+                <small id="date" class="date">${commentDate}</small>
              </div>
              `
            })             
@@ -43,17 +59,17 @@ const renderPosts = (posts)=>{
              const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
              const mediaTag = document.createElement(mediaFile)
              mediaTag.src = '/' + post.mediafile
-             console.log(post.mediafile)
              if(mediaFile === 'video'){
                 mediaTag.controls = true
              }
              const ui = document.createElement('div')
              ui.innerHTML = `
-               <div class="title-date-burger">
-                 <h2 class="title">${post.title}
+             <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
+               <div class="title-date-burger"> 
+                 <h2 class="title"> ${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
                  </h2>
-                 <div id="gear" class="gear">⚙️</div>
+                 <div id="gear" class="gear">⋮</div>
                  
                </div>
                <p class="description">${post.description.substring(0,100)} 
@@ -67,7 +83,7 @@ const renderPosts = (posts)=>{
                       </form>
                       <p id="likesCount">${post.likecounts}</p>
                   </div>
-                  <div class="comment">
+                  <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
                     <p>12 comments</p>
                   </div>
@@ -348,7 +364,6 @@ const deletePost = async(postId)=>{
 
   document.addEventListener('DOMContentLoaded', async(e)=>{
   const res = await axios.get('/api/posts')
-  console.log(res)
     if(res.status === 200){
         Allposts = res.data.posts
         // return console.log(posts)
