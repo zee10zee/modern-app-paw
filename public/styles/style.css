@@ -150,7 +150,8 @@ img {
 
 .date{
     margin-left: auto;
-    width: 60px;
+    width: 100px;
+    text-align: end;
 }
 .flex-class{
     display: flex;
@@ -194,3 +195,17 @@ img {
     align-items: center;
     gap: 10px;
 }
+
+.commentsContainer{
+    position: relative;
+}
+
+
+/* #commentEditContainer{
+    padding: 5px 10px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: #efefef;
+    outline: 2px solid #a39a9a;
+} */

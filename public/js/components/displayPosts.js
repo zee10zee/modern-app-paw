@@ -6,8 +6,12 @@ const photo = sessionStorage.getItem('loggedIn_profile')
  const loggedInUser = document.querySelector('.loggedInUser')
         const profile = document.createElement('img')
         profile.classList.add('profilePic')
+        const profileLink = document.createElement('a')
+        profileLink.href = '/api/currentUser/${user_id}/profile'
+        profileLink.append(profile)
         profile.src = photo
         loggedInUser.appendChild(profile)
+        
     let Allposts = []
 // to get the posts.comments array we need to transform the join table to map like objects 
 
@@ -40,10 +44,10 @@ const renderPosts = (posts)=>{
                 </div>
                 <div class="comment-delete-edit" style="">
                       <form id="edit-comment-form">
-                        <button class="edit-comment-button">Edit</button>
+                        <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
                       </form>
                       <form id="delete-comment-button">
-                        <button>Delete</button>
+                        <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
                    </div>
                 <small id="date" class="date">${commentDate}</small>
@@ -102,6 +106,7 @@ const renderPosts = (posts)=>{
                  </form>
                  <div class="commentsContainer">
                     ${commentsHTML}
+                    <div class="container commentEditContainer" id="commentEditContainer"></div>
                  </div>
                 <div class="edit-delete">
                   <form id="editForm" data-post-id="${post.post_id}">
@@ -112,6 +117,9 @@ const renderPosts = (posts)=>{
                  </form>
                 
                 </div>
+
+               
+
              `
              postDIV.append(ui)
             postsContainer.appendChild(postDIV)

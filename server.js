@@ -13,6 +13,7 @@ import dotenv from "dotenv"
 import crypto from "crypto"
 import bcrypt from "bcrypt"
 import connectPgSimple from "connect-pg-simple"
+import { json } from "stream/consumers"
 
 dotenv.config()
 const __filename = fileURLToPath(import.meta.url)
@@ -622,21 +623,81 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
    });
 })
 
-app.get('/api/comment/:id/edit', validateLogin, async(req,res)=>{
+app.patch('/api/comment/:id/update', validateLogin, async(req,res)=>{
     const commentId = parseInt(req.params.id)
-    const comment = await pool.query(`
-    SELECT * FROM comments WHERE id = $1`, [commentId])
-    
-    if(comment.rowCount === 0){
-        console.log('comment not found')
-        return res.send('no comment found')
+    const {comment} = req.body
+    if(!comment || !comment.trim()){
+        return res.status(400).json({messag: 'comment content is required'})
     }
 
+     const commentCheck = await pool.query(`SELECT * FROM comments WHERE id = $1`, [commentId])
+
+     if(commentCheck.rowCount === 0){
+        return res.status(404).json({message : 'comment not found'})
+     }
+
+     if(commentCheck.rows[0].user_id !== req.session.userId){
+      return res.status(403).json({message : "you are not authorized to edit this"});
+     }
+
+    const updateCommentQuery = `UPDATE comments SET comment  = $1 WHERE id = $2 RETURNING *`
+    const UpdatedComment = await pool.query(updateCommentQuery,[comment, commentId])
+
+    if(UpdatedComment.rowCount === 0){
+        console.log('failure updating comment in db')
+        return res.json({message : 'no comment updated'})
+    }
+
+    console.log('comment updated successfully !')
+    console.log(UpdatedComment.rows[0])
+
+    const updatedCommentUser = await pool.query(`
+          SELECT users.firstname AS author_name, 
+          users.profilepicture AS user_profile_picture,
+          comments.* 
+          FROM comments 
+          JOIN users ON comments.user_id = users.id
+          WHERE comments.id = $1
+        `, [commentId]);
+
+        if(updatedCommentUser.rowCount === 0){
+            console.log('join failure')
+            return res.status(404).json({message : 'getting updated comments with users failed'})
+        }
+
+        
     res.json({
-        comment : comment.rows[0]
+        updatedComment : updatedCommentUser.rows[0]
+    })
+
+});
+
+
+app.delete('/api/comment/:id/delete', validateLogin, async(req,res)=>{
+    const commentId = parseInt(req.params.id)
+
+    const deletingComment = await pool.query(`SELECT 
+        users.firstname, 
+        users.profilepicture, comments.*
+        FROM comments JOIN users ON comments.user_id = users.id 
+        WHERE comments.id = $1`, [commentId])
+
+    if(deletingComment.rowCount === 0){
+        return res.status(404).json({message : 'comment not found!'})
+    }
+
+    const deletedComment = await pool.query(`DELETE FROM comments WHERE id = $1`, [commentId])
+
+    if(deletedComment.rowCount === 0){
+        return res.status(404).json({message : 'comment not delete'})
+    }
+
+    console.log('comment deleted !')
+     res.json({
+       deletedComment : deletingComment.rows[0],
+       message : 'comment sucessfully deleted !'
     })
 })
-
 
 function validateLogin(req,res,next){
     if(req.session.userId){
