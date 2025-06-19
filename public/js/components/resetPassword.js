@@ -5,6 +5,10 @@ const confirm = document.getElementById('confirmPassword')
 // give me the last part of the url after /
 const token = window.location.pathname.split('/').pop()
 
+const resetContainer = document.querySelector('.resetContainer')
+const expiredMessage = sessionStorage.getItem('email-sent')
+
+
 resetPasswordForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
    try{
@@ -17,6 +21,11 @@ resetPasswordForm.addEventListener('submit', async(e)=>{
         console.log('password updated successfully !')
         sessionStorage.setItem('passwordReset', 'password updated successfully !')
           window.location.href= "/api/login"
+       }else{
+         sessionStorage.setItem('expire-invalidToken', response.data.message)
+
+         const message = sessionStorage.getItem('expired-invalidToken')
+         resetContainer.innerHTML = `<h1>${message}</h1>`
        }
    }catch(err){
     console.log(err)

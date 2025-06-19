@@ -66,15 +66,21 @@ img {
 .edit-delete{
     position: absolute;
     top: 50px;
-    right: 0px;
-    background: lightblue;
+    right: 15px;
     padding: 5px 10px;
-    width: fit-content;
+    width: 150px;
     border-radius: 5px;
     display: flex;
     gap: 5px;
     flex-direction: column;
     display: none;
+    background: lightgoldenrodyellow;
+    height: 100px;
+    text-align: center;
+    line-height: 20px;
+}
+.edit-delete form{
+    width: 100%;
 }
 
 .edit-delete button, .comment-delete-edit button{
@@ -83,7 +89,8 @@ img {
     font-weight: bold;
     border: 1px solid rgb(70, 107, 70);
     border-radius: 5px;
-    padding: 2px 5px;
+    padding: 8px;
+    width: 80px;
 }
 
 .likeBtn, .commentBtn, .shareBtn{
@@ -125,19 +132,32 @@ img {
 
 .comment-delete-edit{
     position: absolute;
-    right: 100px;
+    right: 15px;
     top: 10px;
     display: flex;
     flex-direction: column;
     gap: 5px;
     background: bisque;
     padding: 5px;
-    width: 100px;
-    align-items: center;
-    border-radius: 4px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow effect */
     z-index: 100;
-    /* display: none; */
+    width: 150px;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    justify-content: center;
+    height: 90px;
+    display: none;
+
+}
+comment-delete-edit form:first-child{
+    margin-top: 20px;
+}
+.comment-delete-edit form{
+    width: 80%;
+}
+.comment-delete-edit button{
+    width: 80%;
+    padding: 8px;
 }
 .comment-gear:hover{
     cursor: pointer;
@@ -147,7 +167,37 @@ img {
     padding: 2px 5px;
     border-radius: 5px;
 }
+.text-commentGear{
+    display: flex;
+    justify-content: space-between;
+    align-items : center;
+    line-height: normal;
+}
 
+.close{
+    position: absolute;
+    padding: 10px 4px;
+    top: 5px;
+    right: 5px;
+    background: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    border-radius: 30px;
+}
+
+.closep{
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    width: 20px;
+    margin-left: auto;
+    cursor: pointer;
+    background: #555;
+    border-radius: 30px;
+    padding: 1px;
+    font-size: 10px;
+}
+  
 .date{
     margin-left: auto;
     width: 100px;

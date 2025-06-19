@@ -23,6 +23,8 @@ const handlePostLike=  async(id)=>{
    sessionStorage.setItem('like-success', res.data.message)
    console.log(res.data)
    let likes = res.data.postLikes
-   const likeCount = postContainer.querySelector('#likesCount')
-   likeCount.textContent = likes
+   const postDiv = postContainer.querySelector(`.posts[data-post-id="${id}"]`)
+   let postLikeBtn = postDiv.querySelector('#likesCount')
+   
+   postLikeBtn.textContent = likes
 }

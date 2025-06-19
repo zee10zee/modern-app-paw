@@ -137,6 +137,8 @@ app.get('/checklogin',(req,res)=>{
     })
 })
 
+
+
 // login route
     // pool.query('delete from users').then(()=>console.log('users deleted'))
 
@@ -241,7 +243,7 @@ try{
 
     if(existingEmail.rows.length === 0){
         console.log('email not found')
-        return res.json({message : 'EMAIL IS NOT REGISTERED '})
+        return res.status(203).json({message : 'EMAIL IS NOT REGISTERED '})
     }
     console.log(existingEmail.rows[0].email)
 
@@ -306,7 +308,8 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 // console.log(new Date() > tokenRow.expires_at)
    if( !tokenRow || new Date() > tokenRow.expires_at){
        console.log('token is invalid or expired')
-       return res.send('token is invalid or expired')
+    //    return res.status(401).json({message : 'token is invalid or expired please insert your password again'})
+       return res.sendFile(basedir + 'expiredToken.html')
    }
    if(confirmPassword !== newPassword){
       console.log('confirm password does not match the new passweord')
@@ -332,7 +335,8 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 
 // posts
 
-app.get('/api/posts', async(req,res)=>{
+app.get('/api/posts',validateLogin, async(req,res)=>{
+
     const allPosts = await pool.query(`SELECT 
         users.firstname AS author_firstname, 
         users.profilepicture AS author_profilepicture, 
@@ -341,6 +345,7 @@ app.get('/api/posts', async(req,res)=>{
         posts.description,
         posts.mediafile,
         posts.created_at,
+        posts.user_id = $1 AS postOwner,
         COUNT(likes.id) AS likeCounts
         FROM posts
         LEFT JOIN users ON users.id = posts.user_id 
@@ -352,7 +357,7 @@ app.get('/api/posts', async(req,res)=>{
         posts.description,
         posts.mediafile,
         posts.created_at
-        ORDER BY posts.created_at DESC`);
+        ORDER BY posts.created_at DESC`, [req.session.userId]);
 
     if(allPosts.rows.length === 0 ){
         console.log('no posts found')
@@ -371,6 +376,7 @@ app.get('/api/posts', async(req,res)=>{
      'id', comments.id,
      'text', comments.comment,
      'created_at', comments.created_at,
+     'is_owner', (comments.user_id = $1),
      'author', JSON_BUILD_OBJECT(
        'firstname', users.firstname,
        'profile_picture', users.profilepicture
@@ -378,10 +384,10 @@ app.get('/api/posts', async(req,res)=>{
       )
     ) AS comments 
      FROM comments JOIN users ON users.id = comments.user_id
-     WHERE comments.post_id = ANY($1)
+     WHERE comments.post_id = ANY($2)
      GROUP BY comments.post_id;
     `
-    const allComments = await pool.query(showCommentsQuery, [postsIds])
+    const allComments = await pool.query(showCommentsQuery, [req.session.userId,postsIds])
 
     // merge the comments to their posts
 
@@ -697,7 +703,9 @@ app.delete('/api/comment/:id/delete', validateLogin, async(req,res)=>{
        deletedComment : deletingComment.rows[0],
        message : 'comment sucessfully deleted !'
     })
-})
+});
+
+
 
 function validateLogin(req,res,next){
     if(req.session.userId){

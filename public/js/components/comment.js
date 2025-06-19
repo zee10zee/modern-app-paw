@@ -2,7 +2,6 @@
 
 
 window.addEventListener('DOMContentLoaded', (e)=>{
-    // let allNewComments = []
     const postsContainer = document.getElementById('postsContainer')
     
     // on submitting the comment
@@ -13,8 +12,6 @@ window.addEventListener('DOMContentLoaded', (e)=>{
 
         if(e.target.classList.contains('commentInput') && e.key === 'Enter'){
             e.preventDefault()
-            // commentInput.classList.contains('editingMode')? commentInput.classList.remove('editingMode') : null
-            //  return console.log(commentInput)
             if(!commentInput.classList.contains('editingMode')){
                 if(!commentInput.dataset.commentId){
                     await handleComment(e)
@@ -67,9 +64,10 @@ const updateCommentUI = (postId,newComment)=>{
                      <strong id="author"><a href="/authorProfile/${newComment.id}">${newComment.author_name}</a></strong>
                      <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${newComment.comment}</p>
-                        <div id="comment-gear" class="comment-gear">⋯</div>
+                        <div id="comment-gear" class="comment-gear" data-comment-id ="${newComment.id}">⋮</div>
                      </div>
-                     <div class="comment-delete-edit" style="">
+                     <div class="comment-delete-edit" >
+                        <span class="closep">❌</span>
                         <form id="edit-comment-form">
                             <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
                         </form>

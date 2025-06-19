@@ -1,28 +1,37 @@
 window.addEventListener('DOMContentLoaded', ()=>{
    postsContainer.addEventListener('click', (e)=>{
     const editBtn = e.target.classList.contains('edit-comment-button')
-    if(!editBtn) return console.log('no edit btn found'); 
-    handleEditButton(e)
+    const commentGear = e.target.classList.contains('comment-gear')
+    const commId = e.target.dataset.commentId
+    // const comment = e.target.closest(`.comment[data-comment-id = "${commId}"]`);
+    const comment = e.target.closest(`.comment`);
+         const closeCommentModal = e.target.classList.contains('close')
+
+    if(commentGear || closeCommentModal){
+        // one container should be opened at a time
+         const commentEditDeleteContainer = comment.querySelector('.comment-delete-edit')
+         openActiveContainer(commentEditDeleteContainer)
+    }else if(editBtn){
+        const commentId = e.target.dataset.commentId
+       const postDiv = e.target.closest('.posts')
+       const commentDiv = e.target.closest(`.comment[data-comment-id = "${commentId}"]`);
+       console.log('comment edit button ', commentDiv)
+       handleEditButton(postDiv, commentDiv, commentId)
+    }
+    
 })
 })
 
 postsContainer.addEventListener('keypress', async(e)=>{
-  
     if(e.target.classList.contains('commentInput') && e.key === 'Enter'){
-        await handleUpdateComment(e,e.target)
-    //     console.log('key press pressed after enter update')
-    //     const postDiv = e.target.closest('.posts');
-    //    console.log('enter key pressed', postDiv)
-    //    const commentInput = postDiv.querySelector('.commentInput')
-    // //    console.log(commentInput, postDiv)
-    //     // return console.log('i am comment input',commentInput)
-    //         await handleUpdateComment(e, commentInput)
+        const postDiv = e.target.closest('.posts');
+       const commentInput = postDiv.querySelector('.commentInput')
+            await handleUpdateComment(e, commentInput)
     }
 })
 
 async function handleUpdateComment(e, inputComment){
     e.preventDefault()
-    // return console.log('i am the one',inputComment)
     const commentId = inputComment.dataset.editingCommentId
      if(!commentId) return console.log('no comment id found in editing mode')
     const commentContent = inputComment.value
@@ -46,9 +55,10 @@ const postDiv = inputComment.closest('.posts')
              <strong id="author"><a href="/authorProfile/${updatedComment.id}">${updatedComment.author_name}</a></strong>
                     <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${updatedComment.comment}</p>
-                         <div id="comment-gear" class="comment-gear">⋯</div>
+                         <div id="comment-gear" class="comment-gear" data-comment-id = "${updatedComment.id}">⋮</div>
                     </div>
-                    <div class="comment-delete-edit" style="">
+                    <div class="comment-delete-edit">
+                        <span class="closep">❌</span>
                         <form id="edit-comment-form">
                             <button class="edit-comment-button" data-comment-id = "${updatedComment.id}">Edit</button>
                         </form>
@@ -62,15 +72,11 @@ const postDiv = inputComment.closest('.posts')
            inputComment.classList.remove('editingMode');
             inputComment.removeAttribute('data-editing-comment-id');
             inputComment.value = '';
-          
+            // as the new edit buttons lose their orgianal effect we need to re handle the clicking of edit button 
     }
 }
 
-function handleEditButton(e){
-    const commentId = e.target.dataset.commentId
-       const postDiv = e.target.closest('.posts')
-       const commentDiv = e.target.closest(`.comment[data-comment-id = "${commentId}"]`);
-       console.log('comment edit button ', commentDiv)
+function handleEditButton(postDiv, commentDiv, commentId){
        const commentInput = postDiv.querySelector('.commentInput')
 
     //    adding an editing mode so we can differentiate after clicking enter between adding comment and editing
@@ -84,3 +90,14 @@ function handleEditButton(e){
         commentInput.select()
 
 }
+
+
+function openActiveContainer(container){
+    if(container.style.display === "block") {
+          container.style.display = "none"
+          currentOpenModal = null
+    } else {
+         container.style.display = "block"
+         currentOpenModal = container
+    }  
+   }

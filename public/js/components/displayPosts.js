@@ -38,21 +38,24 @@ const renderPosts = (posts)=>{
              `
              <div class="comment" data-comment-id="${comment.id}">
             <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
-                <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
-                  <p id="text">${text}</p>
-                     <div id="comment-gear" class="comment-gear">⋯</div>
+                <div class="text-commentGear">
+                     <p id="text">${text}</p>
+                     ${comment.is_owner?`
+                     <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
+                     `:''}
                 </div>
-                <div class="comment-delete-edit" style="">
+                <div class="comment-delete-edit">
+                    <span class="close">❌</span>
                       <form id="edit-comment-form">
                         <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
                       </form>
                       <form id="delete-comment-button">
                         <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
-                   </div>
-                <small id="date" class="date">${commentDate}</small>
-             </div>
+                    <small id="date" class="date">${commentDate}</small>
+                </div>
              `
+
            })             
           }
              const postDIV = document.createElement('div')
@@ -73,7 +76,9 @@ const renderPosts = (posts)=>{
                  <h2 class="title"> ${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
                  </h2>
+                 ${post.postowner?`
                  <div id="gear" class="gear">⋮</div>
+                  `:''}
                  
                </div>
                <p class="description">${post.description.substring(0,100)} 
@@ -85,7 +90,7 @@ const renderPosts = (posts)=>{
                      <form class="likeForm" action="/api/post/${post.id}/like" method="post">
                       <button class="likeBtn">❤️</button>
                       </form>
-                      <p id="likesCount">${post.likecounts}</p>
+                      <p id="likesCount" class="likesCount">${post.likecounts}</p>
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
@@ -100,6 +105,7 @@ const renderPosts = (posts)=>{
                   </div>
                  
                 </div>
+                
                  <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
                       <input type="hidden" name="post_id" value="${post.post_id}"> 
                       <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
@@ -108,15 +114,19 @@ const renderPosts = (posts)=>{
                     ${commentsHTML}
                     <div class="container commentEditContainer" id="commentEditContainer"></div>
                  </div>
+                 
                 <div class="edit-delete">
+                
+                   <span class="closep">❌</span>
                   <form id="editForm" data-post-id="${post.post_id}">
                     <button class="postEditBtn">Edit</button>
                   </form>
                   <form id="deleteForm" data-post-id="${post.post_id}">
                     <button class="postDeleteBtn">Delete</button>
                  </form>
-                
+                  
                 </div>
+               
 
                
 
@@ -133,6 +143,7 @@ const setupEventListener = ()=>{
      const deleteBtn = e.target.classList.contains('postDeleteBtn')
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
+     const postEditDeleteModal = e.target.classList.contains('closep')
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
      const postId = postDiv.dataset.postId;
      console.log(postId);
@@ -143,7 +154,8 @@ const setupEventListener = ()=>{
     }else if(deleteBtn){
         await deletePost(postId)
         e.preventDefault()
-    }else if(gear){
+        
+    }else if(gear || postEditDeleteModal){
        const editDeleteContainer = postDiv.querySelector('.edit-delete')
        if(editDeleteContainer.style.display === "block") {
         editDeleteContainer.style.display = "none";
@@ -282,7 +294,7 @@ editPostContainer.addEventListener('click', (e)=>{
 
          const allUpdatedPosts = Allposts.map((post, index)=> index === postIndex? {...updatedPost}: post)
 
-             await getUpdatedUi(allUpdatedPosts);
+             getUpdatedUi(allUpdatedPosts);
          }
 
         }catch(err){
@@ -317,6 +329,41 @@ const deletePost = async(postId)=>{
              if(mediaFile === 'video'){
                 mediaTag.controls = true
              }
+
+                let commentsHTML = ''
+          if(Array.isArray(post.comments)){
+           const comments = post.comments.flatMap(comment => comment.comments || [])
+           comments.forEach(comment =>{
+          
+             const commentAuthor = comment.author.firstname
+             const text = comment.text
+             const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
+                weekday : 'short', 
+                month : 'short',
+                year : 'numeric'
+             });
+             commentsHTML+= 
+             `
+             <div class="comment" data-comment-id="${comment.id}">
+            <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
+                <div class="text-commentGear">
+                     <p id="text">${text}</p>
+                     <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
+                </div>
+                <div class="comment-delete-edit">
+                    <span class="close">❌</span>
+                      <form id="edit-comment-form">
+                        <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
+                      </form>
+                      <form id="delete-comment-button">
+                        <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
+                      </form>
+                   </div>
+                <small id="date" class="date">${commentDate}</small>
+             </div>
+             `
+           })
+          }
              
              postDIV.innerHTML = `
                <div class="title-date-burger">
@@ -335,7 +382,7 @@ const deletePost = async(postId)=>{
                      <form class="likeForm" action="/api/post/${post.id}/like" method="post">
                       <button class="likeBtn">❤️</button>
                       </form>
-                      <p id="likesCount">${post.likecounts}</p>
+                      <p id="likesCount">${post.like_counts}</p>
                   </div>
                   <div class="comment">
                     <form action="/api/comment/id">
@@ -351,6 +398,16 @@ const deletePost = async(postId)=>{
                     <p>12 shares</p>
                   </div>
                 </div>
+
+                <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
+                      <input type="hidden" name="post_id" value="${post.post_id}"> 
+                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                 </form>
+
+                <div class="commentsContainer">
+                    ${commentsHTML}
+                    <div class="container commentEditContainer" id="commentEditContainer"></div>
+                 </div>
 
                 <div class="edit-delete">
                   <form id="editForm" data-post-id="${post.id}">
