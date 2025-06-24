@@ -14,6 +14,8 @@ import crypto from "crypto"
 import bcrypt from "bcrypt"
 import connectPgSimple from "connect-pg-simple"
 import { json } from "stream/consumers"
+import sharedsession from "express-socket.io-session"
+
 
 dotenv.config()
 const __filename = fileURLToPath(import.meta.url)
@@ -23,6 +25,7 @@ const app = express()
 
 const server = http.createServer(app)
 const io = new Server(server)
+
 const {Pool} = pkg;
 // since in  thes string case pool needs an object we should do like : 
 
@@ -34,7 +37,7 @@ const pool = new Pool({
     }
 })
 const store = connectPgSimple(session)
-app.use(session({
+const sessionMiddleware = session({
     store : new store({
         pool : pool,
        tableName : 'session',
@@ -47,7 +50,43 @@ app.use(session({
     cookie : {
         secure : false
     }
+});
+
+app.use(sessionMiddleware)
+// share the session with the socket to access the login users
+io.use(sharedsession(sessionMiddleware, {
+    autoSave : true
 }))
+let activeUsers = new Map()
+io.on('connection', async(socket)=>{
+  const session = socket.handshake.session
+  if(!session) {
+    console.log('unauthorized connection')
+    return socket.disconnect()
+  }
+
+  const user = await pool.query(`select * from users where id = $1`, [session.userId])
+  if(user.rowCount === 0){
+     return console.log('user not found')
+  }
+  const loggedInUser = user.rows[0]
+  activeUsers.set(loggedInUser.id, socket.id)
+  console.log(activeUsers)
+
+
+  socket.emit('user-joined', `${loggedInUser.firstname} joined!`);
+
+
+    // received message listener
+    socket.on('newMessage-send', (data)=>{
+        const receiver = activeUsers.get(data.userId)
+     socket.to(receiver).emit('received-message', data)
+    })
+
+    socket.on('disconnect', ()=>{
+        console.log(socket.id, ' disconnected')
+    })
+})
 
 // multer setup
 const storage = diskStorage({
@@ -337,7 +376,8 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 
 app.get('/api/posts',validateLogin, async(req,res)=>{
 
-    const allPosts = await pool.query(`SELECT 
+    const allPosts = await pool.query(`SELECT
+        users.id as user_id, 
         users.firstname AS author_firstname, 
         users.profilepicture AS author_profilepicture, 
         posts.id as post_id,
@@ -381,11 +421,12 @@ app.get('/api/posts',validateLogin, async(req,res)=>{
        'firstname', users.firstname,
        'profile_picture', users.profilepicture
         )
-      )
+      ) ORDER BY comments.created_at
     ) AS comments 
      FROM comments JOIN users ON users.id = comments.user_id
      WHERE comments.post_id = ANY($2)
-     GROUP BY comments.post_id;
+     GROUP BY comments.post_id
+    
     `
     const allComments = await pool.query(showCommentsQuery, [req.session.userId,postsIds])
 
@@ -393,23 +434,23 @@ app.get('/api/posts',validateLogin, async(req,res)=>{
 
     const posts = allPosts.rows.map(post =>{
         const postComments = allComments.rows.filter(comment => comment.post_id === post.post_id)
-        console.log(postComments, ' posts comments')
+        console.log(postComments, 'posts comments')
         return {
             ...post,
             comments : postComments
         }
     })
-    
 
     res.json({
         posts : posts
     })
     
-})
+});
+
 
 app.get('/api/newPost', validateLogin, (req,res)=>{
     res.sendFile(basedir + 'newpost.html')
-})
+});
 
 app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,res)=>{
     const {ptitle,pdesc} = req.body;
@@ -483,7 +524,19 @@ app.get('/api/edit/:id', validateLogin, async(req,res)=>{
 app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(req,res)=>{
     const postId = parseInt(req.params.id)
     const {newTitle,newDesc} = req.body;
-    
+    const loggedInUser = req.session.userId;
+    // check if the its post owner 
+
+    const postOwner = await pool.query(`SELECT user_id from posts WHERE id = $1`, [postId])
+
+    if(postOwner.rowCount === 0){
+        return res.status(404).json({message : 'post not found'})
+    }
+
+    if(postOwner.rows[0].user_id !== loggedInUser){
+        return res.status(403).json({message : 'you are not authorized to update this post !'})
+    }
+
       let mediaFile = null;
       if(req.file){
          if(req.file.mimetype.startsWith('video/')){
@@ -496,27 +549,66 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
       }else{
         console.log('no file!')
       }
-     
 
-
-    let updatedFile;
+    //   media file updation
+    let updatedPost;
     if(req.file){
-        updatedFile = await pool.query(`UPDATE posts SET title = $1, description = $2, mediafile = $3 WHERE id = $4 RETURNING *,
-        (SELECT COUNT(*) FROM likes WHERE "postid" = posts.id) AS likeCounts`, [newTitle,newDesc,mediaFile,postId])
+        updatedPost = await pool.query(`
+            UPDATE posts 
+            SET title = $1, 
+            description = $2, 
+            mediafile = $3 
+            WHERE id = $4 RETURNING *`, [newTitle,newDesc,mediaFile,postId])
         
     }else{
-       updatedFile = await pool.query('UPDATE posts SET title = $1, description = $2 WHERE id = $3 RETURNING *', [newTitle,newDesc,postId])
+       updatedPost = await pool.query(`
+        UPDATE posts 
+        SET title = $1, 
+        description = $2 
+        WHERE id = $3 
+        RETURNING *
+        `,[newTitle,newDesc,postId])
     }
 
-    if(updatedFile.rowCount === 0){
+    if(updatedPost.rowCount === 0){
         console.log('failure updating the post')
         return res.json({message : 'failure updating the post'})
     }
 
-    console.log('memory updated successfully !', updatedFile.rows[0])
+    
+    const updatedPostWithDataQuery = `
+    SELECT posts.*,
+    (SELECT COUNT(*) FROM likes WHERE "postid" = $1) AS likecounts,
+     (
+      SELECT json_agg(
+        json_build_object(
+        'id',comments.id,
+        'text',comments.comment,
+        'created_at',comments.created_at,
+        'is_owner',comments.user_id = $2,
+        'author', json_build_object(
+        'firstname', users.firstname,
+        'profile_picture',users.profilepicture
+        )
+        )ORDER BY comments.created_at
+        ) FROM comments 
+        JOIN users ON users.id = comments.user_id
+        WHERE comments.post_id = $1
+        
+      )AS comments
+
+        FROM posts WHERE posts.id = $1
+    `
+    const updatedPostWithData = await pool.query(updatedPostWithDataQuery, [postId, loggedInUser]);
+   
+    if(updatedPostWithData.rowCount === 0){
+        return res.json({message : 'failed to updated the post'})
+    }
+       console.log(updatedPostWithData.rows)
+
     res.json({
         message : 'memory updated successfully !',
-        updatedPost : updatedFile.rows[0]
+        updatedPost : updatedPostWithData.rows[0]
     })
 })
 
@@ -683,7 +775,7 @@ app.delete('/api/comment/:id/delete', validateLogin, async(req,res)=>{
     const commentId = parseInt(req.params.id)
 
     const deletingComment = await pool.query(`SELECT 
-        users.firstname, 
+        users.firstname,
         users.profilepicture, comments.*
         FROM comments JOIN users ON comments.user_id = users.id 
         WHERE comments.id = $1`, [commentId])
@@ -692,18 +784,45 @@ app.delete('/api/comment/:id/delete', validateLogin, async(req,res)=>{
         return res.status(404).json({message : 'comment not found!'})
     }
 
-    const deletedComment = await pool.query(`DELETE FROM comments WHERE id = $1`, [commentId])
+    const deletedComment = await pool.query(`DELETE FROM comments WHERE id = $1 AND user_id = $2`, [commentId, req.session.userId])
 
     if(deletedComment.rowCount === 0){
-        return res.status(404).json({message : 'comment not delete'})
+        return res.status(404).json({success : false,message : 'You aint authorized to delete this !'})
+
     }
 
     console.log('comment deleted !')
      res.json({
-       deletedComment : deletingComment.rows[0],
-       message : 'comment sucessfully deleted !'
+       deletedComment : deletedComment.rows[0],
+       message : 'comment sucessfully deleted !',
+       success : true
     })
 });
+
+// chat 
+
+app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
+    const receiverId = parseInt(req.params.id)
+
+    res.sendFile(basedir + 'chatpage.html')
+})
+
+app.get('/api/chat/:id/receiver', async(req,res)=>{
+    const receiverId = parseInt(req.params.id)
+    
+    const checkReceiver = await pool.query(`SELECT * FROM users WHERE id = $1`, [receiverId])
+    if(checkReceiver.rowCount === 0){
+        return res.status(404).json({message : 'no user found'})
+    }
+
+    res.json({
+        receiver : checkReceiver.rows[0]
+    })
+})
+
+// CHATS 
+
+app.get('/')
 
 
 
@@ -720,6 +839,22 @@ function validateLogin(req,res,next){
 //     console.log(err)
 // })
 // all tables
+
+// chats
+
+// const chats = pool.query(`CREATE TABLE IF NOT EXISTS chats
+//     (id SERIAL PRIMARY KEY, 
+//      sender_id  INTEGER REFERENCES users(id),
+//      receiver_id INTEGER REFERENCES users(id),
+//      message TEXT NOT NULL,
+//      is_read BOOLEAN DEFAULT FALSE,
+//      token TEXT ,
+//      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//      is_groupchat BOOLEAN DEFAULT FALSE
+//      )`);
+
+//      chats.then(data =>console.log(data.rows, 'created table ')).then(err => console.log(err));
 
 // users
 // const newuser = pool.query(`CREATE TABLE IF NOT EXISTS users 

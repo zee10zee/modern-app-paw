@@ -185,7 +185,26 @@ comment-delete-edit form:first-child{
     border-radius: 30px;
 }
 
-.closep{
+#userProfile-chat-modal{
+    background: lightblue;
+    padding: 5px;
+    border-radius: 3px;
+    color: #fff;
+    text-decoration: none;
+    margin: 10px 0 auto;
+    width: fit-content;
+}
+#userProfile-chat-modal li a{
+    text-decoration: none;
+    color: rgb(11, 97, 226)
+}
+#userProfile-chat-modal li{
+    margin: 5px auto;
+    border-bottom: 1px solid blue;
+    width: fit-content;
+}
+
+ .closep{
     position: absolute;
     right: 5px;
     top: 5px;
@@ -198,11 +217,7 @@ comment-delete-edit form:first-child{
     font-size: 10px;
 }
   
-.date{
-    margin-left: auto;
-    width: 100px;
-    text-align: end;
-}
+
 .flex-class{
     display: flex;
     align-items: center;
@@ -217,12 +232,19 @@ comment-delete-edit form:first-child{
     display: block;
     font-size: 10px;
     font-weight: bold;
+  
 }
 
 .description{
     display: block;
 }
 
+.user-profile{
+    width: 30px;
+    height: 30px;
+    border-radius: 30px;
+    outline: 2px solid #efefef;
+}
 
 #gear:hover{
    cursor: pointer;
@@ -248,6 +270,71 @@ comment-delete-edit form:first-child{
 
 .commentsContainer{
     position: relative;
+}
+
+
+
+.chat-container{
+    width: 100%;
+    height: 80vh;
+    margin: 50px auto;
+    background: azure;
+    margin: 0;
+}
+.chat-container p{
+    display: flex;
+    padding: 10px;
+    margin-bottom: 0;
+    padding-bottom: 0;
+
+}
+.message{
+     width: 70%;
+    border-radius: 4px;
+    color: #fff;
+    padding: 0;
+    margin: 0;
+}
+.chat-container .sendingMessage{
+    margin-right: auto;
+    background: lightblue;
+}
+
+.chat-container .receivingMessage{
+    margin-left: auto;
+    background: rgb(90, 55, 97);
+}
+.chat-container p.date{
+    width: fit-content;
+    padding: 0;
+    font-size: 12px;
+      margin: 0;
+    text-align: right;
+    margin-left: auto;
+    padding-right: 5px;
+}
+.chatInput{
+    width: 100%;
+    padding: 5px 5px;
+    border: none;
+    outline: 2px solid #efefef;
+}
+.inputAndSentBtn{
+    display: flex;
+    
+}
+.messageGear{
+    margin-left: auto;
+    font-weight: bold;
+}
+
+.chatSubmitBtn{
+    cursor: pointer;
+    border-bottom: 1px solid #555;
+    border: none;
+    border: 2px solid #efefef;
+    padding: 5px;
+    outline: 2px solid #efefef;
 }
 
 

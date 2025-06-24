@@ -52,6 +52,7 @@ const postDiv = inputComment.closest('.posts')
                 year : 'numeric'
              });
        commentDiv.innerHTML = `
+             <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">   
              <strong id="author"><a href="/authorProfile/${updatedComment.id}">${updatedComment.author_name}</a></strong>
                     <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${updatedComment.comment}</p>

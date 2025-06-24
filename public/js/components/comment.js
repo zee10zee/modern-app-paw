@@ -61,6 +61,7 @@ const updateCommentUI = (postId,newComment)=>{
             const commentHTML = 
             `
                 <div class="comment" data-comment-id="${newComment.id}">
+                    <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">   
                      <strong id="author"><a href="/authorProfile/${newComment.id}">${newComment.author_name}</a></strong>
                      <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${newComment.comment}</p>
@@ -69,10 +70,10 @@ const updateCommentUI = (postId,newComment)=>{
                      <div class="comment-delete-edit" >
                         <span class="closep">❌</span>
                         <form id="edit-comment-form">
-                            <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
+                            <button class="edit-comment-button" data-comment-id = "${newComment.id}">Edit</button>
                         </form>
                         <form id="delete-comment-button">
-                            <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
+                            <button class="commentDeleteBtn" data-comment-id = "${newComment.id}">Delete</button>
                         </form>
                     </div>
                     <small id="date" class="date">${newCommentDate}</small>

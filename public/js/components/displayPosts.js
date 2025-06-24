@@ -7,7 +7,7 @@ const photo = sessionStorage.getItem('loggedIn_profile')
         const profile = document.createElement('img')
         profile.classList.add('profilePic')
         const profileLink = document.createElement('a')
-        profileLink.href = '/api/currentUser/${user_id}/profile'
+        profileLink.href = '/api/currentUser/${postOwner}/profile'
         profileLink.append(profile)
         profile.src = photo
         loggedInUser.appendChild(profile)
@@ -37,6 +37,7 @@ const renderPosts = (posts)=>{
              commentsHTML+= 
              `
              <div class="comment" data-comment-id="${comment.id}">
+             <img class="user-profile" src="${comment.author.profile_picture}" alt="user-profile">
             <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
@@ -53,6 +54,7 @@ const renderPosts = (posts)=>{
                         <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
                     <small id="date" class="date">${commentDate}</small>
+                </div>
                 </div>
              `
 
@@ -72,6 +74,14 @@ const renderPosts = (posts)=>{
              const ui = document.createElement('div')
              ui.innerHTML = `
              <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
+              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+                    <li>
+                        <a class="ownerProfile" href="/authorProfile/${post.postOwner}">${post.author_firstname}'s Profile</a>
+                    </li>
+                    <li class="userProfile" data-user-id="${post.user_id}">
+                        <a  class="userChatLink" href="/api/chatpage/${post.postOwner}">Chat with user</a>
+                    </li>
+              </ul>
                <div class="title-date-burger"> 
                  <h2 class="title"> ${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
@@ -84,7 +94,10 @@ const renderPosts = (posts)=>{
                <p class="description">${post.description.substring(0,100)} 
                   <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
                </p>
-                ${mediaTag.outerHTML}
+                  <div class="mediaContainer">
+                    ${mediaTag.outerHTML}
+                  </div>
+                  
                <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
                   <div class="like">
                      <form class="likeForm" action="/api/post/${post.id}/like" method="post">
@@ -143,10 +156,15 @@ const setupEventListener = ()=>{
      const deleteBtn = e.target.classList.contains('postDeleteBtn')
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
+     const userProfile_userChatModal = e.target.classList.contains('userProfile-chat-modal')
+     const postOwnerProfileLink = e.target.classList.contains('ownerProfile')
+     const userChatLink = e.target.classList.contains('userChatLink')
+     const userProfileUserData = e.target.closest('.userProfile')
      const postEditDeleteModal = e.target.classList.contains('closep')
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
      const postId = postDiv.dataset.postId;
-     console.log(postId);
+
+     const userid = userProfileUserData.dataset.userId;
    if(editBtn){
       e.preventDefault()
       editPostContainer.innerHTML = ''
@@ -156,15 +174,17 @@ const setupEventListener = ()=>{
         e.preventDefault()
         
     }else if(gear || postEditDeleteModal){
-       const editDeleteContainer = postDiv.querySelector('.edit-delete')
+      const editDeleteContainer = postDiv.querySelector('.edit-delete')
        if(editDeleteContainer.style.display === "block") {
         editDeleteContainer.style.display = "none";
-    } else {
+     }else {
         editDeleteContainer.style.display = "block";
-    }
+     }
 
     }else if(showMoreLink){
         window.location.href=`/api/showPost/${postId}`
+    }else if(userChatLink){
+        window.location.href=`/api/chatpage/${userid}`
     }
 })
 }
@@ -288,14 +308,13 @@ editPostContainer.addEventListener('click', (e)=>{
           const response = await axios.put(`/api/post/update/${postId}`, formData, {})
          console.log(response.data)
          if(response.status === 200){
-          console.log(Allposts.length)
-        const updatedPost = response.data.updatedPost
+        const updatedPostResult = response.data.updatedPost
+        // return console.log(updatedPost[0].comments)
         const postIndex = Allposts.findIndex(post => post.post_id === parseInt(postId))
-
-         const allUpdatedPosts = Allposts.map((post, index)=> index === postIndex? {...updatedPost}: post)
-
-             getUpdatedUi(allUpdatedPosts);
+      
+             getUpdatedUi(updatedPostResult, postId);
          }
+
 
         }catch(err){
           console.log(err)
@@ -318,23 +337,45 @@ const deletePost = async(postId)=>{
 }
 
 
-   const getUpdatedUi = (posts)=>{
-  
-        posts.forEach((post)=>{
-             const postDIV = postsContainer.querySelector('.posts')
+   const getUpdatedUi = (post, postId)=>{
+    const targetPost = postsContainer.querySelector(`.posts[data-post-id = "${postId}"]`)
+     if(!targetPost) return console.log('target post not found')
+      console.log(post.mediafile)
+             const postTitle = targetPost.querySelector('.title')
+             if(!postTitle) return console.log('title tag not found')
+              postTitle.textContent = post.title
+             const postDesc = targetPost.querySelector('.description')
+             if(!postDesc) return console.log('description tag not found')
+              postDesc.textContent = post.description
+             const createdAt = targetPost.querySelector('.date')
+             if(!createdAt) return console.log('date tag not found')
+              createdAt.textContent = post.created_at
+
+             const mediaContainer = targetPost.querySelector('.mediaContainer')
+             console.log(mediaContainer, 'media container')
+             if(!mediaContainer) return console.log('media container not found!')
+              // return console.log(post)
              const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
+             if(!mediaFile) return console.log('no media image')
+
              const mediaTag = document.createElement(mediaFile)
              mediaTag.src = '/' + post.mediafile
-             console.log(post.mediafile)
              if(mediaFile === 'video'){
                 mediaTag.controls = true
              }
 
-                let commentsHTML = ''
+             mediaContainer.innerHTML = ''
+             mediaContainer.appendChild(mediaTag)
+
+             const commentContainer = targetPost.querySelector('.commentsContainer')
+             if(!commentContainer) return console.log('comments container not found')
+
           if(Array.isArray(post.comments)){
-           const comments = post.comments.flatMap(comment => comment.comments || [])
-           comments.forEach(comment =>{
-          
+             let commentsHTML;
+
+          //  const comments = post.comments.flatMap(comment => comment.comments || [])
+           post.comments.forEach(comment =>{
+            //  return console.log(JSON.stringify(comment, null ,2))
              const commentAuthor = comment.author.firstname
              const text = comment.text
              const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
@@ -342,10 +383,20 @@ const deletePost = async(postId)=>{
                 month : 'short',
                 year : 'numeric'
              });
-             commentsHTML+= 
+            commentsHTML= 
              `
              <div class="comment" data-comment-id="${comment.id}">
+            <strong id="author">${commentAuthor}</strong>
+              <ul id="userProfile-chat-modal">
+                    <li>
+                        <a href="/authorProfile/${comment.id}">${commentAuthor}</a>
+                    </li>
+                    <li>
+                        <a href="/api/chatpage">Chat with user</a>
+                    </li>
+              </ul>
             <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
+
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
                      <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
@@ -362,67 +413,12 @@ const deletePost = async(postId)=>{
                 <small id="date" class="date">${commentDate}</small>
              </div>
              `
-           })
+            })
+
+            commentContainer.innerHTML = commentsHTML
           }
-             
-             postDIV.innerHTML = `
-               <div class="title-date-burger">
-                 <h2 class="title">${post.title}
-                   <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
-                 </h2>
-                 <div id="gear" class="gear">⚙️</div>
-                 
-               </div>
-               <p class="description">${post.description.substring(0,100)} 
-                  <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
-               </p>
-                ${mediaTag.outerHTML}
-               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
-                  <div class="like">
-                     <form class="likeForm" action="/api/post/${post.id}/like" method="post">
-                      <button class="likeBtn">❤️</button>
-                      </form>
-                      <p id="likesCount">${post.like_counts}</p>
-                  </div>
-                  <div class="comment">
-                    <form action="/api/comment/id">
-                      <button class="commentBtn">💬</button>
-                    </form>
-                    <p>12 comments</p>
-                  </div>
 
-                  <div class="share">
-                    <form action="/api/share/id">
-                      <button class="shareBtn">↗️</button>
-                  </form>
-                    <p>12 shares</p>
-                  </div>
-                </div>
-
-                <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
-                      <input type="hidden" name="post_id" value="${post.post_id}"> 
-                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
-                 </form>
-
-                <div class="commentsContainer">
-                    ${commentsHTML}
-                    <div class="container commentEditContainer" id="commentEditContainer"></div>
-                 </div>
-
-                <div class="edit-delete">
-                  <form id="editForm" data-post-id="${post.id}">
-                    <button class="postEditBtn">Edit</button>
-                  </form>
-                  <form id="deleteForm" data-post-id="${post.id}">
-                    <button class="postDeleteBtn">Delete</button>
-                 </form>
-                
-                </div>
-             `
-            postsContainer.appendChild(postDIV)
-        })
-
-      editPostContainer.style.display = "none"
+        editPostContainer.style.display = "none"
 }
 
     // const deleteForm = postsContainer.deleteForm

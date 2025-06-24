@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <link rel="stylesheet" href="/styles/style.css">
+    <title>chat page</title>
+</head>
+<body>
+   <div class="container">
+     <h1>chat with <span id="receiver" class="receiver"></span></h1>
+    <div class="chat-container"></div>
+    <div class="inputAndSentBtn">
+    <input type="text" name="chatInput" id="chatInput" class="chatInput" placeholder="text message ...">
+    <button class="chatSubmitBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2">
+            <path d="M22 2L11 13"/>
+            <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+    </button>
+    </div>
+   </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+   <script src="/socket.io/socket.io.js"></script>
+   <script src="/js/components/displayChatPage.js"></script>
+   <script src="/js/chats/chat.js"></script>
+</body>
+</html>
