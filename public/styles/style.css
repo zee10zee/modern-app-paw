@@ -1,5 +1,7 @@
 *{
     font-size: 20px;
+    padding: 0;
+    margin: 0;
 }
 
 .hidden{
@@ -335,6 +337,80 @@ comment-delete-edit form:first-child{
     border: 2px solid #efefef;
     padding: 5px;
     outline: 2px solid #efefef;
+}
+
+.typing-event{
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: fangso
+}
+ .middle-container{
+    width: 50%;
+    background-color: #efefef;
+    padding: 5px;
+    border-radius: 5px;
+    min-width: 0;
+}
+.media-list{
+    width: 100%;
+    margin: 30px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(200px ,1fr));
+    /* flex-wrap: wrap; */
+    gap: 10px;
+}
+
+.media-list img{
+    display: inline;
+    cursor: pointer;
+}
+
+.photosWithVideos{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+}
+
+.photosWithVideos li{
+    background: #fff;
+    padding: 3px 6px;
+    color: #555;
+    cursor: pointer;
+    border-radius: 30px;
+    padding: 3px 10px;
+}
+.photosWithVideos li:hover{
+    background-color: #555;
+    color: #fff;
+}
+
+main{
+    display: flex;
+    max-width: 1600px;
+    width: 100%;
+    margin: 30px auto;
+    gap: 20px;
+}
+
+.gear-menu{
+    width: fit-content;
+    margin-left: auto;
+    background: #555;
+    padding: 2px 5px;
+    color: #fff;
+    border-radius: 5px;
+    line-height: 1.2;
+    height: 1.2em;
+}
+
+.burger-area, .groups{
+    width: 25%;
+      background-color: #efefef;
+    padding: 5px;
+    border-radius: 5px;
 }
 
 

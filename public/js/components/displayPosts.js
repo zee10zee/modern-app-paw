@@ -75,11 +75,11 @@ const renderPosts = (posts)=>{
              ui.innerHTML = `
              <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li>
-                        <a class="ownerProfile" href="/authorProfile/${post.postOwner}">${post.author_firstname}'s Profile</a>
+                    <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
+                        <a  href="/api/authorProfile/${post.usertoken}">${post.author_firstname}'s Profile</a>
                     </li>
                     <li class="userProfile" data-user-id="${post.user_id}">
-                        <a  class="userChatLink" href="/api/chatpage/${post.postOwner}">Chat with user</a>
+                        <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
                     </li>
               </ul>
                <div class="title-date-burger"> 
@@ -157,14 +157,14 @@ const setupEventListener = ()=>{
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
      const userProfile_userChatModal = e.target.classList.contains('userProfile-chat-modal')
-     const postOwnerProfileLink = e.target.classList.contains('ownerProfile')
+     const postOwnerProfileLink = e.target.closest('.ownerProfile')
      const userChatLink = e.target.classList.contains('userChatLink')
      const userProfileUserData = e.target.closest('.userProfile')
      const postEditDeleteModal = e.target.classList.contains('closep')
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
      const postId = postDiv.dataset.postId;
 
-     const userid = userProfileUserData.dataset.userId;
+      
    if(editBtn){
       e.preventDefault()
       editPostContainer.innerHTML = ''
@@ -184,7 +184,12 @@ const setupEventListener = ()=>{
     }else if(showMoreLink){
         window.location.href=`/api/showPost/${postId}`
     }else if(userChatLink){
+     const userid = userProfileUserData.dataset.userId
         window.location.href=`/api/chatpage/${userid}`
+    }else if(postOwnerProfileLink){
+     const userToken = postOwnerProfileLink.dataset.tokenId
+     const userId = postOwnerProfileLink.dataset.userId
+        window.location.href=`/userProfile/${userToken}/${userId}`
     }
 })
 }
@@ -252,7 +257,6 @@ editPostContainer.addEventListener('click', (e)=>{
          })
        }else if(cancelUpdateButton){
         e.preventDefault()
-        console.log('clsoe button')
         editPostContainer.style.display= "none"
 
        }

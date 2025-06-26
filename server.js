@@ -76,6 +76,11 @@ io.on('connection', async(socket)=>{
 
   socket.emit('user-joined', `${loggedInUser.firstname} joined!`);
 
+//   typing event
+    socket.on('user-typing', (uId)=>{
+        const receiver = activeUsers.get(uId)
+        socket.to(receiver).emit('user-typing', loggedInUser.firstname)
+    })
 
     // received message listener
     socket.on('newMessage-send', (data)=>{
@@ -137,6 +142,11 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
         password : req.body.password.trim(),
     }
 
+    // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
+    const userToken = crypto.randomBytes(32).toString('hex')
+    console.log(userToken, 'token')
+
+
     const profile = req.file? path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : null
 
     const checkduplicate = await pool.query('SELECT * FROM users WHERE  email = $1', [credentials.email])
@@ -146,11 +156,15 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
         return res.send('this credential already registered , please log in')
     }
 
+     const tokenExists = await pool.query(`SELECT * FROM users WHERE userToken = $1`, [userToken])
+
+    if(tokenExists.rowCount > 0) return console.log('token is invalid')
+
     const hashedPassword = await bcrypt.hash(credentials.password,10)
 
-    const newUserQuery = `INSERT INTO users (firstname, email, password, profilepicture) VALUES
-    ($1,$2,$3,$4) RETURNING *`
-    const newUser = await pool.query(newUserQuery, [credentials.fname, credentials.email,hashedPassword,profile])
+    const newUserQuery = `INSERT INTO users(firstname, email, password, profilepicture, usertoken) VALUES
+    ($1,$2,$3,$4, $5) RETURNING *`
+    const newUser = await pool.query(newUserQuery, [credentials.fname, credentials.email,hashedPassword,profile, userToken])
 
     if(newUser.rows.length === 0){
         console.log('user did not save !')
@@ -165,8 +179,6 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
         userId : req.session.userId
     })
 })
-
-// pool.query('delete from users').then(()=> console.log('user deleted'))
 
 // check login route
 app.get('/checklogin',(req,res)=>{
@@ -371,13 +383,67 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
    })
 })
 
+// user profile
+app.get('/userProfile/:token/:id', validateLogin, async(req,res)=>{
+    const token = req.params.token;
+    const userId = parseInt(req.params.id)
+    res.sendFile(basedir + 'userProfile.html')
+})
+
+app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
+    const userToken = req.params.token
+    const userid = parseInt(req.params.id)
+
+    const userExist = await pool.query(`SELECT * FROM users WHERE usertoken = $1`, [userToken])
+    if(userExist.rowCount === 0){
+        return res.status(404).json({msg : 'token not found'})
+    }
+
+    console.log(userExist)
+    const userPosts = await pool.query(`SELECT
+        users.id as user_id,
+        users.usertoken, 
+        users.firstname AS author_firstname, 
+        users.profilepicture AS author_profilepicture, 
+        posts.id as post_id,
+        posts.title,
+        posts.description,
+        posts.mediafile,
+        posts.created_at,
+        COUNT(likes.id) AS likeCounts
+        FROM posts
+        LEFT JOIN users ON users.id = posts.user_id 
+        LEFT JOIN likes ON likes.postid = posts.id 
+         WHERE posts.user_id = $1
+        GROUP BY 
+        users.id,                   
+        posts.id,
+        posts.title,
+        posts.description,
+        posts.mediafile,
+        posts.created_at
+        ORDER BY posts.created_at DESC`, [userid]);
+
+
+        if(userPosts.rowCount === 0){
+            return res.json({message : 'posts not found'})
+        }
+
+
+    res.json({
+        user : userExist.rows[0],
+        post : userPosts.rows
+    })
+})
+
 
 // posts
 
 app.get('/api/posts',validateLogin, async(req,res)=>{
 
     const allPosts = await pool.query(`SELECT
-        users.id as user_id, 
+        users.id as user_id,
+        users.usertoken, 
         users.firstname AS author_firstname, 
         users.profilepicture AS author_profilepicture, 
         posts.id as post_id,
@@ -807,7 +873,7 @@ app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
     res.sendFile(basedir + 'chatpage.html')
 })
 
-app.get('/api/chat/:id/receiver', async(req,res)=>{
+app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
     const receiverId = parseInt(req.params.id)
     
     const checkReceiver = await pool.query(`SELECT * FROM users WHERE id = $1`, [receiverId])
@@ -816,13 +882,14 @@ app.get('/api/chat/:id/receiver', async(req,res)=>{
     }
 
     res.json({
-        receiver : checkReceiver.rows[0]
+        receiver : checkReceiver.rows[0],
+        senderId : req.session.userId
     })
 })
 
 // CHATS 
 
-app.get('/')
+// app.get('/')
 
 
 
@@ -882,13 +949,15 @@ function validateLogin(req,res,next){
 //     title VARCHAR(30),
 //     description TEXT,
 //     mediaFile TEXT,
-//     user_id INTEGER REFERENCES users(id),
+//     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 //     created_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`).then(()=> console.log('posts created')).catch((err)=> console.log(err))
 
-// pool.query('alter TABLE users alter column password type TEXT').then(()=>{
-//     console.log('COLUMN TYPE UPDATED')
+// pool.query(`ALTER TABLE posts
+//     ADD CONSTRAINT post_id_foreignkey 
+//     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`).then(()=>{
+//     console.log('COLUMN ALTERED SUCCESS !')
 
-// }).catch((err)=> console.log(err, ' while altering'))
+// }).catch((err)=> console.log(err, ' occrued'))
 
 // const likes = pool.query(`CREATE TABLE IF NOT EXISTS likes(id SERIAL PRIMARY KEY,
 //                           created_at TIMESTAMP DEFAULT NOW(), 
