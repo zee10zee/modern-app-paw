@@ -102,6 +102,11 @@ img {
     border-radius: 5px;
 }
 
+
+.likes-comments-share p{
+    text-align: center;
+}
+
 .likeBtn, .commentBtn, .shareBtn:hover{
     cursor: pointer;
 }

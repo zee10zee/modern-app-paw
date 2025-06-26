@@ -1,7 +1,9 @@
 
 const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
+const userNameHTML = document.querySelector('.activeUser')
 const photo = sessionStorage.getItem('loggedIn_profile')
+const username = sessionStorage.getItem('loggedIn_name')
      
  const loggedInUser = document.querySelector('.loggedInUser')
         const profile = document.createElement('img')
@@ -10,6 +12,7 @@ const photo = sessionStorage.getItem('loggedIn_profile')
         profileLink.href = '/api/currentUser/${postOwner}/profile'
         profileLink.append(profile)
         profile.src = photo
+        userNameHTML.textContent = username
         loggedInUser.appendChild(profile)
         
     let Allposts = []
@@ -23,10 +26,14 @@ const renderPosts = (posts)=>{
     
         posts.forEach((post)=>{
            let commentsHTML = ''
+           let commentCounts;
           if(Array.isArray(post.comments)){
+          post.comments.forEach(comment =>{
+            commentCounts = comment.commentcounts
+          })
            const comments = post.comments.flatMap(comment => comment.comments || [])
            comments.forEach(comment =>{
-          
+
              const commentAuthor = comment.author.firstname
              const text = comment.text
              const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
@@ -34,6 +41,7 @@ const renderPosts = (posts)=>{
                 month : 'short',
                 year : 'numeric'
              });
+
              commentsHTML+= 
              `
              <div class="comment" data-comment-id="${comment.id}">
@@ -74,6 +82,7 @@ const renderPosts = (posts)=>{
              const ui = document.createElement('div')
              ui.innerHTML = `
              <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
+             ${!post.postowner?`
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
                     <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
                         <a  href="/api/authorProfile/${post.usertoken}">${post.author_firstname}'s Profile</a>
@@ -82,6 +91,7 @@ const renderPosts = (posts)=>{
                         <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
                     </li>
               </ul>
+              ` : ''}
                <div class="title-date-burger"> 
                  <h2 class="title"> ${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
@@ -107,7 +117,7 @@ const renderPosts = (posts)=>{
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
-                    <p>12 comments</p>
+                    <p>${commentCounts}</p>
                   </div>
 
                   <div class="share">
