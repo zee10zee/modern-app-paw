@@ -24,9 +24,10 @@ window.addEventListener('DOMContentLoaded', (e)=>{
     async function handleComment(event){
         event.preventDefault()
         const form = event.target.parentElement
-        const postId = form.querySelector('[name="post_id"]').value
+        const postId = parseInt(form.querySelector(`[name="post_id"]`).value)
+        console.log(form)
         const commentText = form.querySelector('.commentInput').value
-        console.log(commentText)
+        console.log(postId)
 
         let method = 'post';
         let url = `/api/post/${postId}/comment`
@@ -62,7 +63,7 @@ const updateCommentUI = (postId,newComment)=>{
             `
                 <div class="comment" data-comment-id="${newComment.id}">
                     <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">   
-                     <strong id="author"><a href="/authorProfile/${newComment.id}">${newComment.author_name}</a></strong>
+                     <strong id="author"><a href="/api/userProfile/${newComment.user_id}">${newComment.author_name}</a></strong>
                      <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${newComment.comment}</p>
                         <div id="comment-gear" class="comment-gear" data-comment-id ="${newComment.id}">⋮</div>

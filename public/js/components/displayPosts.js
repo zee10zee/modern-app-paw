@@ -2,7 +2,9 @@
 const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
 const photo = sessionStorage.getItem('loggedIn_profile')
-     
+     function createPost(){
+      window.href = "/api/newPost"
+     }
  const loggedInUser = document.querySelector('.loggedInUser')
         const profile = document.createElement('img')
         profile.classList.add('profilePic')
@@ -20,7 +22,14 @@ const photo = sessionStorage.getItem('loggedIn_profile')
   }
 
 const renderPosts = (posts)=>{
-    
+    if(posts.length === 0){
+      postsContainer.innerHTML = ''
+       return postsContainer.innerHTML = 
+    `<div class="no-post">
+      <h2 >No posts yet !😴</h2>  <a onclick = "createPost();"href="/api/newPost">Create One  😊 </a>
+    </div>`
+    }
+     
         posts.forEach((post)=>{
            let commentsHTML = ''
           if(Array.isArray(post.comments)){
@@ -34,17 +43,20 @@ const renderPosts = (posts)=>{
                 month : 'short',
                 year : 'numeric'
              });
+             const commentorProfile = comment.author.profile_picture;
+             console.log(commentorProfile)
              commentsHTML+= 
              `
              <div class="comment" data-comment-id="${comment.id}">
-             <img class="user-profile" src="${comment.author.profile_picture}" alt="user-profile">
-            <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
+             <img class="user-profile" src="${commentorProfile}" alt="user-profile">
+            <strong id="author"><a href="/api/userProfile/${comment.author.userId}">${commentAuthor}</a></strong>
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
                      ${comment.is_owner?`
                      <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
                      `:''}
                 </div>
+                <small id="date" class="date">${commentDate}</small>
                 <div class="comment-delete-edit">
                     <span class="close">❌</span>
                       <form id="edit-comment-form">
@@ -53,7 +65,7 @@ const renderPosts = (posts)=>{
                       <form id="delete-comment-button">
                         <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
-                    <small id="date" class="date">${commentDate}</small>
+                    
                 </div>
                 </div>
              `
@@ -72,7 +84,7 @@ const renderPosts = (posts)=>{
                 mediaTag.controls = true
              }
              const ui = document.createElement('div')
-             ui.innerHTML = `
+             postDIV.innerHTML = `
              <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
                     <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
@@ -144,7 +156,7 @@ const renderPosts = (posts)=>{
                
 
              `
-             postDIV.append(ui)
+            
             postsContainer.appendChild(postDIV)
         })
 }
@@ -235,6 +247,8 @@ const loadEditForm = async(postId)=>{
 
 // clicking the eidt button functionlity
 editPostContainer.addEventListener('click', (e)=>{
+    
+
         const newImageBtn = e.target.classList.contains("newImage")
         const updateEditFormButton = e.target.classList.contains("updateButton")
         const cancelUpdateButton = e.target.classList.contains("closeModal")
@@ -326,40 +340,10 @@ editPostContainer.addEventListener('click', (e)=>{
         }
     }
 
-    // delete post
-const deletePost = async(postId)=>{
-  try{
-    const res = await axios.delete(`/api/post/delete/${postId}`, {})
-  console.log(res)
-  if(res.status === 200){
-    console.log('file delete success')
-    window.location.href="/"
-  }
-  }catch(err){
-    console.log(err)
-  }
-}
-
-
    const getUpdatedUi = (post, postId)=>{
     const targetPost = postsContainer.querySelector(`.posts[data-post-id = "${postId}"]`)
      if(!targetPost) return console.log('target post not found')
-      console.log(post.mediafile)
-             const postTitle = targetPost.querySelector('.title')
-             if(!postTitle) return console.log('title tag not found')
-              postTitle.textContent = post.title
-             const postDesc = targetPost.querySelector('.description')
-             if(!postDesc) return console.log('description tag not found')
-              postDesc.textContent = post.description
-             const createdAt = targetPost.querySelector('.date')
-             if(!createdAt) return console.log('date tag not found')
-              createdAt.textContent = post.created_at
-
-             const mediaContainer = targetPost.querySelector('.mediaContainer')
-             console.log(mediaContainer, 'media container')
-             if(!mediaContainer) return console.log('media container not found!')
-              // return console.log(post)
-             const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
+      const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
              if(!mediaFile) return console.log('no media image')
 
              const mediaTag = document.createElement(mediaFile)
@@ -367,15 +351,9 @@ const deletePost = async(postId)=>{
              if(mediaFile === 'video'){
                 mediaTag.controls = true
              }
-
-             mediaContainer.innerHTML = ''
-             mediaContainer.appendChild(mediaTag)
-
-             const commentContainer = targetPost.querySelector('.commentsContainer')
-             if(!commentContainer) return console.log('comments container not found')
-
-          if(Array.isArray(post.comments)){
-             let commentsHTML;
+      console.log(targetPost)
+             let commentsHTML = '';
+      if(Array.isArray(post.comments)){
 
           //  const comments = post.comments.flatMap(comment => comment.comments || [])
            post.comments.forEach(comment =>{
@@ -387,24 +365,19 @@ const deletePost = async(postId)=>{
                 month : 'short',
                 year : 'numeric'
              });
-            commentsHTML= 
+            commentsHTML+= 
              `
              <div class="comment" data-comment-id="${comment.id}">
-            <strong id="author">${commentAuthor}</strong>
-              <ul id="userProfile-chat-modal">
-                    <li>
-                        <a href="/authorProfile/${comment.id}">${commentAuthor}</a>
-                    </li>
-                    <li>
-                        <a href="/api/chatpage">Chat with user</a>
-                    </li>
-              </ul>
-            <strong id="author"><a href="/authorProfile/${comment.id}">${commentAuthor}</a></strong>
+             <a href="/api/userProfile/${comment.author.userId}">
+                <img class="user-profile" src="${comment.author.profile_picture}" alt="profle picture">
+             </a>
+            <strong id="author"><a href="/api/userProfile/${comment.user_id}">${commentAuthor}</a></strong>
 
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
                      <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
                 </div>
+                <small id="date" class="date">${commentDate}</small>
                 <div class="comment-delete-edit">
                     <span class="close">❌</span>
                       <form id="edit-comment-form">
@@ -414,15 +387,126 @@ const deletePost = async(postId)=>{
                         <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
                    </div>
-                <small id="date" class="date">${commentDate}</small>
+                
              </div>
              `
             })
 
-            commentContainer.innerHTML = commentsHTML
+            // commentContainer.innerHTML = commentsHTML
           }
 
+
+           targetPost.innerHTML = ''
+           targetPost.innerHTML = `
+            <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
+              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+                    <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
+                        <a  href="/api/authorProfile/${post.usertoken}">${post.firstname}'s Profile</a>
+                    </li>
+                    <li class="userProfile" data-user-id="${post.user_id}">
+                        <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
+                    </li>
+              </ul>
+               <div class="title-date-burger"> 
+                 <h2 class="title"> ${post.title}
+                   <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
+                 </h2>
+                 ${post.user_id?`
+                 <div id="gear" class="gear">⋮</div>
+                  `:''}
+                 
+               </div>
+               <p class="description">${post.description.substring(0,100)} 
+                  <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
+               </p>
+                  <div class="mediaContainer">
+                    ${mediaTag.outerHTML}
+                  </div>
+                  
+               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
+                  <div class="like">
+                     <form class="likeForm" action="/api/post/${post.id}/like" method="post">
+                      <button class="likeBtn">❤️</button>
+                      </form>
+                      <p id="likesCount" class="likesCount">${post.likecounts}</p>
+                  </div>
+                  <div class="commentsCount">
+                    <button id="commentButton" class="commentBtn">💬</button>
+                    <p>12 comments</p>
+                  </div>
+
+                  <div class="share">
+                    <form action="/api/share/id">
+                      <button class="shareBtn">↗️</button>
+                  </form>
+                    <p>12 shares</p>
+                  </div>
+                 
+                </div>
+                
+                 <form action="/api/post/${post.id}/comment" method="POST" id="commentForm" class="commentingForm">
+                      <input type="hidden" name="post_id" value="${post.id}"> 
+                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                 </form>
+                 <div class="commentsContainer">
+                    ${commentsHTML}
+                    <div class="container commentEditContainer" id="commentEditContainer"></div>
+                 </div>
+                 
+                <div class="edit-delete">
+                
+                   <span class="closep">❌</span>
+                  <form id="editForm" data-post-id="${post.id}">
+                    <button class="postEditBtn">Edit</button>
+                  </form>
+                  <form id="deleteForm" data-post-id="${post.id}">
+                    <button class="postDeleteBtn">Delete</button>
+                 </form>
+                  
+                </div>
+           `
+            //    const dateTag = targetPost.querySelector('.date')
+            //     console.log(dateTag)
+            //  if(!dateTag) return console.log('date tag not found')
+            //   dateTag.textContent = 'abc'
+            //  const postTitle = targetPost.querySelector('.title')
+            //  if(!postTitle) return console.log('title tag not found')
+            //   postTitle.textContent = post.title
+            //  const postDesc = targetPost.querySelector('.description')
+            //  if(!postDesc) return console.log('description tag not found')
+            //   postDesc.textContent = post.description.substring(0,100)
+           
+
+            //  const mediaContainer = targetPost.querySelector('.mediaContainer')
+            //  if(!mediaContainer) return console.log('media container not found!')
+             
+
+            //  mediaContainer.innerHTML = ''
+            //  mediaContainer.appendChild(mediaTag)
+             const commentContainer = targetPost.querySelector('.commentsContainer')
+             if(!commentContainer) return console.log('comments container not found')
+
+          
+
         editPostContainer.style.display = "none"
+}
+
+    // delete post
+const deletePost = async(postId)=>{
+  try{
+    const res = await axios.delete(`/api/post/delete/${postId}`, {})
+  console.log(res)
+  if(res.status !== 200) return console.log('server failure deleting the post ')
+    if(res.data.success){
+       console.log('file delete success')
+        const targetPost = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
+        // return console.log(targetPost)
+        targetPost.remove()
+    }
+   
+  }catch(err){
+    console.log(err)
+  }
 }
 
     // const deleteForm = postsContainer.deleteForm

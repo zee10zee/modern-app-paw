@@ -15,6 +15,7 @@ import bcrypt from "bcrypt"
 import connectPgSimple from "connect-pg-simple"
 import { json } from "stream/consumers"
 import sharedsession from "express-socket.io-session"
+import fs from "fs"
 
 
 dotenv.config()
@@ -623,7 +624,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
             UPDATE posts 
             SET title = $1, 
             description = $2, 
-            mediafile = $3 
+            mediafile = $3
             WHERE id = $4 RETURNING *`, [newTitle,newDesc,mediaFile,postId])
         
     }else{
@@ -643,7 +644,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
 
     
     const updatedPostWithDataQuery = `
-    SELECT posts.*,
+    SELECT users.*, posts.*,
     (SELECT COUNT(*) FROM likes WHERE "postid" = $1) AS likecounts,
      (
       SELECT json_agg(
@@ -654,6 +655,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
         'is_owner',comments.user_id = $2,
         'author', json_build_object(
         'firstname', users.firstname,
+        'userId', users.id,
         'profile_picture',users.profilepicture
         )
         )ORDER BY comments.created_at
@@ -663,7 +665,8 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
         
       )AS comments
 
-        FROM posts WHERE posts.id = $1
+        FROM posts JOIN users ON posts.user_id = users.id
+        WHERE posts.id = $1
     `
     const updatedPostWithData = await pool.query(updatedPostWithDataQuery, [postId, loggedInUser]);
    
@@ -683,16 +686,39 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
 app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
     const postId = parseInt(req.params.id)
 
-    const post = await pool.query('DELETE FROM posts WHERE id = $1', [postId])
+    const likes = await pool.query(`DELETE FROM likes WHERE postid = $1 RETURNING *;`,[postId])
+
+    const comments = await pool.query(`DELETE FROM comments WHERE post_id = $1 RETURNING *`, [postId])
+
+    const post = await pool.query('DELETE FROM posts WHERE id = $1 RETURNING *', [postId])
     if(post.rowCount === 0){
         console.log('failure deleting the post from db')
-        return res.json({message : 'post deleted successfully!'});
+        return res.json({message : 'No post found!'});
     }
-    
+
+     const deletingPost = post.rows[0]
+    //  return console.log(path.join(__dirname,'public',deletingPost.mediafile))
+    const filePath = deletingPost.mediafile.startsWith('video/') ?  
+    path.join(__dirname,'public', deletingPost.mediafile) : 
+    path.join(__dirname,'public', deletingPost.mediafile)
+    if(deletingPost.mediafile){
+      fs.unlink(filePath, err =>{
+        if(err){
+            console.log(err)
+        }else{
+            console.log('post media was deleted from the uploads')
+        }
+      })
+    }else{
+        console.log(deletingPost.mediafile)
+        console.log('unknown file')
+    }
+
     console.log('post deleted success')
     res.json({
         message : 'post deleted successfully !',
-        deletedPost : post.rows[0]
+        deletedPost : deletingPost,
+        success: true
     })
 })
 
@@ -953,8 +979,7 @@ function validateLogin(req,res,next){
 //     created_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`).then(()=> console.log('posts created')).catch((err)=> console.log(err))
 
 // pool.query(`ALTER TABLE posts
-//     ADD CONSTRAINT post_id_foreignkey 
-//     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`).then(()=>{
+//     ALTER COLUMN title type TEXT`).then(()=>{
 //     console.log('COLUMN ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))

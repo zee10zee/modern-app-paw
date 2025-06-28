@@ -5,7 +5,7 @@ const userId = window.location.pathname.split('/').pop()
 console.log(token, userId)
 const mediaList = document.querySelector('.media-list')
 const baseUrl = `http://localhost:3000/`
-
+let currentView = '';
 const profileContained = new Set()
 window.addEventListener('DOMContentLoaded', async()=>{
 const mediaContainer = document.querySelector('.photosWithVideos')
@@ -16,48 +16,59 @@ const mediaContainer = document.querySelector('.photosWithVideos')
         const user = res.data.user;
         const posts = res.data.post;
         document.title= `${user.firstname}'s profile`
-
-            posts.forEach(p =>{
-                if(p.mediafile) displayPostImages(p)
-            // if (p.mediafile.match(/\.(jpg|jpeg|png|gif|avif|webp)$/i) || 
-            //     p.mediafile.startsWith('data:image/')) {
-            // }   
-        })
-
-        mediaContainer.addEventListener('click', (e)=>{
-            posts.forEach(post =>{
-                 if(e.target.classList.contains('profiePics')){
-                if(post.author_profilepicture && !profileContained.has(post.author_profilepicture)){
-                displayProfiles(post.author_profilepicture)
-                }
+        
+// Event delegation for menu clicks
+document.addEventListener('click', (e) => {
+    // Profile menu clicked
+    if (e.target.classList.contains('media-file') && currentView !== 'profiles') {
+        // Clear and show profile images
+        mediaList.innerHTML = '';
+        posts.forEach(post => {
+            if (post.author_profilepicture) {
+                displayProfileImages(post.author_profilepicture);
             }
-            else if(e.target.classList.contains('postedPics')){
-              displayPostImages(post.mediafile)
+        });
+    }
+    // Posts menu clicked
+    else if (e.target.classList.contains('media-file') && currentView !== 'posts') {
+        // Clear and show post images
+        mediaList.innerHTML = '';
+        posts.forEach(post => {
+            if (post.mediafile) {
+                displayPostImages(post.mediafile);
             }
-            })
-           
-        })
+        });
+    }
+});
+
+
 
 })
 
-function displayPostImages(imgpath){
-    const img = document.createElement('img')
-    // img.dataset.postId = post.post_id;
-    let correctedPath = imgpath.replace(/\\/g, '/');
-        const imgURL = baseUrl + correctedPath
-        img.src = imgURL
-        img.alt = 'pic'
-        mediaList.appendChild(img)
+
+function displayProfileImages(imgpath) {
+    // Clear previous content
+    mediaList.innerHTML = '';
+    currentView = 'profiles';
+    
+    const img = document.createElement('img');
+    const correctedPath = imgpath.replace(/\\/g, '/');
+    img.src = baseUrl + correctedPath;
+    img.alt = 'Profile picture';
+    img.classList.add('profilePics');
+    mediaList.appendChild(img);
 }
 
-function displayProfiles(profile){
-    const profileImage = document.createElement('img')
-    // profileImage.dataset.userId = post.user_id;
-    const path = profile.replace(/\\/g, '/');
-    const profileIUrl = baseUrl + path 
-    profileImage.src = profileIUrl
-    mediaList.appendChild(profileImage)
-    profileContained.add(profile)
+function displayPostImages(imgpath) {
+    // Clear previous content
+    mediaList.innerHTML = '';
+    currentView = 'posts';
+    
+    const img = document.createElement('img');
+    const correctedPath = imgpath.replace(/\\/g, '/');
+    img.src = baseUrl + correctedPath;
+    img.alt = 'Post image';
+    img.classList.add('postedPics');
+    mediaList.appendChild(img);
 }
-
 
