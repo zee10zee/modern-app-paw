@@ -121,9 +121,7 @@ const renderPosts = (posts)=>{
                   </div>
 
                   <div class="share">
-                    <form action="/api/share/id">
-                      <button class="shareBtn">↗️</button>
-                  </form>
+                      <button data-post-id="${post.post_id}" class="shareBtn">↗️</button>
                     <p>12 shares</p>
                   </div>
                  
@@ -137,6 +135,10 @@ const renderPosts = (posts)=>{
                     ${commentsHTML}
                     <div class="container commentEditContainer" id="commentEditContainer"></div>
                  </div>
+
+                  <div class="share-container">
+                  
+                  </div>
                  
                 <div class="edit-delete">
                 
@@ -149,10 +151,8 @@ const renderPosts = (posts)=>{
                  </form>
                   
                 </div>
-               
 
                
-
              `
              postDIV.append(ui)
             postsContainer.appendChild(postDIV)

@@ -865,6 +865,36 @@ app.delete('/api/comment/:id/delete', validateLogin, async(req,res)=>{
     })
 });
 
+
+// shares
+// share pop up
+app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
+    const postId = parseInt(req.params.id)
+    const sharePost = await pool.query(`SELECT
+        users.id as user_id,
+        users.firstname AS author_firstname, 
+        users.profilepicture AS author_profilepicture, 
+        posts.id as post_id,
+        posts.title,
+        posts.description,
+        posts.mediafile,
+        posts.created_at
+        FROM posts
+        LEFT JOIN users ON posts.user_id = users.id 
+        WHERE posts.id = $1
+       `, [postId]);
+
+       if(sharePost.rowCount === 0){
+        return res.json({message : 'post not found'})
+       }
+
+    console.log(sharePost.rows[0])
+    res.json({
+        sharedPost : sharePost.rows[0]
+    })
+
+})
+
 // chat 
 
 app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
@@ -906,6 +936,24 @@ function validateLogin(req,res,next){
 //     console.log(err)
 // })
 // all tables
+
+// shares
+
+
+// pool.query(`CREATE TABLE IF NOT EXISTS shares 
+//     (id SERIAL PRIMARY KEY, 
+//      post_id INTEGER REFERENCES posts(id),
+//      user_id INTEGER REFERENCES users(id),
+//      on_platform TEXT NOT NULL,
+//      shared_title TEXT,
+//      shared_description TEXT,
+//      shared_file TEXT,
+//      shared_at TIMESTAMP DEFAULT NOW()
+//     )`).then(data =>{
+//         console.log('shares creatd !')
+//     }).catch(err =>{
+//         console.log(err)
+//     })
 
 // chats
 
@@ -952,9 +1000,14 @@ function validateLogin(req,res,next){
 //     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 //     created_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`).then(()=> console.log('posts created')).catch((err)=> console.log(err))
 
-// pool.query(`ALTER TABLE posts
-//     ADD CONSTRAINT post_id_foreignkey 
-//     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`).then(()=>{
+
+
+// pool.query(`ALTER TABLE shares 
+//   DROP CONSTRAINT IF EXISTS shares_user_token_fkey,	 
+//   ADD CONSTRAINT shares_user_id_fkey
+//   FOREIGN KEY (user_id)
+//   REFERENCES users(id)
+//   ON DELETE CASCADE`).then(()=>{
 //     console.log('COLUMN ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))
