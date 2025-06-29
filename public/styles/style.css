@@ -161,8 +161,8 @@ img {
     justify-content: center;
     height: 90px;
     display: none;
-
 }
+
 comment-delete-edit form:first-child{
     margin-top: 20px;
 }
@@ -434,3 +434,32 @@ main{
     background: #efefef;
     outline: 2px solid #a39a9a;
 } */
+
+/* shares */
+.share-container{
+    position: relative;
+    background: #a39a9a;
+    padding: 30px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    /* position: absolute;
+    top: 50;
+    left: 50;
+    transform: translate(-50%, -50%); */
+}
+
+.closeShareModal{
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    margin-bottom: 20px;
+    right: 5px;
+    background: #fff;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+
+
