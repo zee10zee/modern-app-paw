@@ -13,7 +13,6 @@ import dotenv from "dotenv"
 import crypto from "crypto"
 import bcrypt from "bcrypt"
 import connectPgSimple from "connect-pg-simple"
-import { json } from "stream/consumers"
 import sharedsession from "express-socket.io-session"
 import fs from "fs"
 
@@ -478,6 +477,7 @@ app.get('/api/posts',validateLogin, async(req,res)=>{
 
     const showCommentsQuery = `
     SELECT comments.post_id,
+    COUNT(comments.id) AS commentCounts,
     JSON_AGG(
     JSON_BUILD_OBJECT(
      'id', comments.id,
