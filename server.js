@@ -15,6 +15,8 @@ import bcrypt from "bcrypt"
 import connectPgSimple from "connect-pg-simple"
 import sharedsession from "express-socket.io-session"
 import fs from "fs"
+import { error } from "console"
+import { title } from "process"
 
 
 dotenv.config()
@@ -535,10 +537,36 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
          console.log('no post saved to db')
          return res.status(200).json({message : 'failure saving the media file'})
       }
+      console.log('new post saved !')
 
-      console.log('file saved success')
-      res.json({
-        message : 'New post submitted successfully !'
+      const commentsOfNewPost = await pool.query(`
+           SELECT posts.*,
+           COUNT(comments.id) AS commentCounts,
+           JSON_AGG(
+            JSON_BUILD_OBJECT(
+            'id' , comments.id,
+            'text' , comments.comment,
+            'created_at', comments.created_at,
+            'is_owner', comments.user_id = $1,
+            'author', JSON_BUILD_OBJECT(
+              'id', users.id,
+              'name', users.firstname,
+              'profilePicture', users.profilepicture
+            )
+           )
+           )AS comments
+            FROM posts 
+            LEFT JOIN comments ON comments.post_id = posts.id
+            LEFT JOIN users ON users.id = posts.user_id
+             WHERE comments.post_id  = $2
+             GROUP BY posts.id
+        `, [req.session.userId,newPost.rows[0].id])
+
+      console.log('new post saved and comment...', commentsOfNewPost.rows[0])
+      res.status(201).json({
+        message : 'New post submitted successfully !',
+        newPost : newPost.rows[0],
+        commentsOfPost : commentsOfNewPost.rows[0]? comments : []
       })
 
 
@@ -646,6 +674,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
     const updatedPostWithDataQuery = `
     SELECT users.*, posts.*,
     (SELECT COUNT(*) FROM likes WHERE "postid" = $1) AS likecounts,
+    (SELECT COUNT(*) FROM comments WHERE "post_id" = $1) AS commentcounts,
      (
       SELECT json_agg(
         json_build_object(
@@ -919,6 +948,41 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
         sharedPost : sharePost.rows[0]
     })
 
+})
+
+app.post('/api/sharePost/:id', validateLogin, async(req,res)=>{
+    const postId = parseInt(req.params.id)
+    const {sharingTitle, sharingDesc, platform, sharing_file} = req.body;
+    const platforms = ['facebook', 'whatsapp', 'telegram', 'twitter']
+    const checkShareTimes = await pool.query(`SELECT * FROM shares WHERE post_id = $1 and user_id = $2 AND on_platform = $3`, [postId, req.session.userId, platform])
+
+    if(checkShareTimes.rowCount > 0){
+        // console.log('you have shared the post already in this platform')
+         return res.status(400).json({error : 'you have alrady shared this post on this platform, do you want to share again ?'
+        });
+    }
+
+        const newShare = await pool.query(`INSERT INTO shares (
+        post_id, 
+        user_id, 
+        on_platform, 
+        shared_title, 
+        shared_description, 
+        shared_file)
+        VALUES($1, $2, $3,$4,$5, $6) RETURNING *
+        `, [postId,req.session.userId,platform, sharingTitle, sharingDesc,sharing_file]);
+
+        if(newShare.rowCount === 0){
+            return res.status(404).json({error : 'failure saving the shared file', success: false})
+        }
+
+        console.log('file shared successfully !');
+
+        res.json({
+            sharedFile : newShare.rows[0],
+            message : 'file shared successfully !',
+            success : true
+        })
 })
 
 // chat 

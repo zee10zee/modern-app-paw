@@ -439,7 +439,7 @@ main{
 .share-container{
     position: relative;
     background: #a39a9a;
-    padding: 30px;
+    /* padding: 30px; */
     border-radius: 5px;
     display: flex;
     flex-direction: column;

@@ -3,6 +3,7 @@ const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
 const userNameHTML = document.querySelector('.activeUser')
 const photo = sessionStorage.getItem('loggedIn_profile')
+const username = sessionStorage.getItem('loggedIn_user')
      
  const loggedInUser = document.querySelector('.loggedInUser')
         const profile = document.createElement('img')
@@ -32,14 +33,15 @@ const renderPosts = (posts)=>{
      
         posts.forEach((post)=>{
            let commentsHTML = ''
-           let commentCounts;
+           let commentCounts = 0;
           if(Array.isArray(post.comments)){
           post.comments.forEach(comment =>{
-            commentCounts = comment.commentcounts
+           console.log(typeof(comment.commentcounts))
+            commentCounts = parseInt(comment.commentcounts)
           })
            const comments = post.comments.flatMap(comment => comment.comments || [])
            comments.forEach(comment =>{
-
+            const commentorProfile = comment.author.profile_picture
              const commentAuthor = comment.author.firstname
              const text = comment.text
              const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
@@ -123,7 +125,7 @@ const renderPosts = (posts)=>{
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
-                    <p>${commentCounts}</p>
+                    <p class="commentCount">${commentCounts}</p>
                   </div>
 
                   <div class="share">
@@ -227,7 +229,6 @@ const loadEditForm = async(postId)=>{
             mediaTag.src = post.mediafile
             mediaTag.setAttribute('name', 'previewFile')
             mediaTag.classList.add('previewFile')
-            // return console.log(mediaTag.src)
             
             editingPost.innerHTML = `
                 <h1 id="update-title">Update Post</h1>
@@ -359,9 +360,7 @@ editPostContainer.addEventListener('click', (e)=>{
              let commentsHTML = '';
       if(Array.isArray(post.comments)){
 
-          //  const comments = post.comments.flatMap(comment => comment.comments || [])
            post.comments.forEach(comment =>{
-            //  return console.log(JSON.stringify(comment, null ,2))
              const commentAuthor = comment.author.firstname
              const text = comment.text
              const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
@@ -396,7 +395,6 @@ editPostContainer.addEventListener('click', (e)=>{
              `
             })
 
-            // commentContainer.innerHTML = commentsHTML
           }
 
 
@@ -436,13 +434,13 @@ editPostContainer.addEventListener('click', (e)=>{
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
-                    <p>12 comments</p>
+                    <p class="commentCount">${post.commentcounts}</p>
                   </div>
 
                   <div class="share">
                     <form action="/api/share/id">
                       <button class="shareBtn">↗️</button>
-                  </form>
+                    </form>
                     <p>12 shares</p>
                   </div>
                  
@@ -469,24 +467,7 @@ editPostContainer.addEventListener('click', (e)=>{
                   
                 </div>
            `
-            //    const dateTag = targetPost.querySelector('.date')
-            //     console.log(dateTag)
-            //  if(!dateTag) return console.log('date tag not found')
-            //   dateTag.textContent = 'abc'
-            //  const postTitle = targetPost.querySelector('.title')
-            //  if(!postTitle) return console.log('title tag not found')
-            //   postTitle.textContent = post.title
-            //  const postDesc = targetPost.querySelector('.description')
-            //  if(!postDesc) return console.log('description tag not found')
-            //   postDesc.textContent = post.description.substring(0,100)
-           
-
-            //  const mediaContainer = targetPost.querySelector('.mediaContainer')
-            //  if(!mediaContainer) return console.log('media container not found!')
-             
-
-            //  mediaContainer.innerHTML = ''
-            //  mediaContainer.appendChild(mediaTag)
+          
              const commentContainer = targetPost.querySelector('.commentsContainer')
              if(!commentContainer) return console.log('comments container not found')
 

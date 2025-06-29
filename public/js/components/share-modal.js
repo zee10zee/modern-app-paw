@@ -1,22 +1,33 @@
 
-postsContainer.addEventListener('click', (e)=>{
+postsContainer.addEventListener('click', async(e)=>{
+        let baseUrl = 'http://localhost:3000'
+
     const shareContainer = postsContainer.querySelector('.share-container')
     if(e.target.classList.contains('shareBtn')){
         loadShoreFormModal(e, shareContainer)
     }else if(e.target.classList.contains('closeShareModal')){
         closeShareModal(shareContainer)
-    }else if(e.target.classList.contains('link')){
-        const baseUrl = 'http://localhost:3000'
+    }else if(e.target.classList.contains('facebook')){
         const linktag = e.target.href;
         const url =  linktag
         const fbLink = `https://www.facebook.com/sharer/sharer.php?u=${url}`
-        // return console.log(fbLink)
+        // sharePostOn(platformLink,parseConnectionUrl, newTab)
         window.open(fbLink, '_blank')
+    }else if(e.target.textContent.includes('Copy')){
+        console.log('copy button')
+        const copyElement = e.target.href;
+        const postId = parseInt(copyElement.split('/').pop())
+        const copyLink = `${baseUrl}/api/showPost/${postId}`
+         const copiedText = await navigator.clipboard.writeText(copyLink).then(copiedText => alert('text copied ', copiedText)).catch(err => alert('failure copying the text with : ', err));
+    }else if(e.target.classList.contains('shareOnApp')){
+         console.log('share on the app')
+   
     }
 })
 async function loadShoreFormModal(event, container){
     event.preventDefault()
     container.style.display = "flex"
+     container.style.padding = '30px'
     const postId = parseInt(event.target.dataset.postId)
     console.log(postId)
     const response = await axios.get(`/api/share/post/${postId}`) 
@@ -26,7 +37,7 @@ async function loadShoreFormModal(event, container){
     const href="aa"
     if(response.status === 200){
         generateMeta(sharingPost)
-       
+         
          const mediaFile = isVideo(sharingPost.mediafile) ? 'video' : 'img'
              const mediaTag = document.createElement(mediaFile)
              mediaTag.src = '/' + sharingPost.mediafile
@@ -39,18 +50,16 @@ async function loadShoreFormModal(event, container){
                 ${mediaTag.outerHTML}
                 <h2 class="sharingPostTitle">${sharingPost.title}</h2>
                 <p class="sharingPostDesc">${sharingPost.description}</p>
-                <button id="shareBtn">Share</button>
+                <button id="shareBtn">Share on the app!</button>
             </form>
 
             <div class="links" style="display: flex; gap : 10px;">
-                <a class="link" href="/api/showPost/${sharingPostId}">facebook</a>
-                <a class="link" href="https://wa.me/?text=from_memory_dom%20${href}">whatsApp</a>
-                <a class="link" href="https://twitter.com/intent/tweet?url=${href}&text=from_memory_dom
-">twitter</a>
-                <a class="link" href="https://t.me/share/url?url=${href}&text=from_memory_dom
-">telegram</a>
-                <a class="link" href="https://www.linkedin.com/sharing/share-offsite/?url=${href}
-">linkedIn</a>
+                <a class="link facebook" href="/api/showPost/${sharingPostId}">facebook</a>
+                <a class="link whatsapp"  href="">whatsApp</a>
+                <a class="link twitter"  href="">twitter</a>
+                <a class="link telegram"  href="">telegram</a>
+                <a class="link linkedin"  href="">linkedIn</a>
+                <a class="link copyLink"  href="/api/showPost/${sharingPostId}">Copy Link</a>
             </div>
     `
        container.innerHTML = formHtml

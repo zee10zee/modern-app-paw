@@ -25,20 +25,25 @@ window.addEventListener('DOMContentLoaded', (e)=>{
         event.preventDefault()
         const form = event.target.parentElement
         const postId = parseInt(form.querySelector(`[name="post_id"]`).value)
-        console.log(form)
         const commentText = form.querySelector('.commentInput').value
-        console.log(postId)
-
+        const postDiv = event.target.closest(`.posts[data-post-id="${postId}"]`)
+        const commentCountElement = postDiv.querySelector('.commentCount')
+         console.log(commentCountElement)
         let method = 'post';
         let url = `/api/post/${postId}/comment`
 
         // sending comment to the server
         const res = await axios[method](url,{comment : commentText})
-    
+           if(res.status === 200){
                 const allNewComments = res.data.postComments
+
+                console.log(allNewComments.length)
                 const lastComment = allNewComments[allNewComments.length - 1]
                 updateCommentUI(postId,lastComment)
+                commentCountElement.textContent = allNewComments.length;
                 form.reset()
+           }
+            
     }
 })
 
