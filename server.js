@@ -953,6 +953,7 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
 app.post('/api/sharePost/:id', validateLogin, async(req,res)=>{
     const postId = parseInt(req.params.id)
     const {sharingTitle, sharingDesc, platform, sharing_file} = req.body;
+ console.log(sharing_file)
     const platforms = ['facebook', 'whatsapp', 'telegram', 'twitter']
     const checkShareTimes = await pool.query(`SELECT * FROM shares WHERE post_id = $1 and user_id = $2 AND on_platform = $3`, [postId, req.session.userId, platform])
 

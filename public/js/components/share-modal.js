@@ -20,10 +20,40 @@ postsContainer.addEventListener('click', async(e)=>{
         const copyLink = `${baseUrl}/api/showPost/${postId}`
          const copiedText = await navigator.clipboard.writeText(copyLink).then(copiedText => alert('text copied ', copiedText)).catch(err => alert('failure copying the text with : ', err));
     }else if(e.target.classList.contains('shareOnApp')){
-         console.log('share on the app')
-   
+         alert('share on the app')
+         const shareDiv = e.target.closest('.shareForm')
+         const platform = e.target.textContent;
+         const postId = e.target.dataset.postId;
+         console.log(postId)
+       
+          shareOnTheApp(postId,shareDiv,platform)
     }
 })
+// function shareOnApp
+async function shareOnTheApp(postId,shareDiv,platform){
+    
+  const title = shareDiv.querySelector('.sharingTitle').textContent
+    const description = shareDiv.querySelector('.sharingDesc').textContent
+    const file = shareDiv.querySelector('.mediaTag').getAttribute('src')
+     console.log(file)
+    // const platform = platform
+    const res = await axios.post(`/api/sharePost/${postId}`,
+       {
+         sharingTitle : title,
+         sharingDesc : description,
+         sharing_file : file,
+         platform : platform
+       })
+
+       if(res.data.success){
+         console.log('post shared success')
+         alert('shared file success, UI sould be now updated to see the changes !')
+         window.href="/"
+         const shareContainer = postsContainer.querySelector('.share-container')
+         shareContainer.style.display = "none"
+       }
+
+}
 async function loadShoreFormModal(event, container){
     event.preventDefault()
     container.style.display = "flex"
@@ -40,17 +70,20 @@ async function loadShoreFormModal(event, container){
          
          const mediaFile = isVideo(sharingPost.mediafile) ? 'video' : 'img'
              const mediaTag = document.createElement(mediaFile)
-             mediaTag.src = '/' + sharingPost.mediafile
+             mediaTag.classList.add('mediaTag')
+             mediaTag.src = sharingPost.mediafile
+             mediaTag.dataset.postFile = sharingPost.mediafile
+            
              if(mediaFile === 'video'){
                 mediaTag.controls = true
              }
            const formHtml = `
            <span class="closeShareModal">❌</span>
-            <form id="shareForm">
+            <form id="shareForm" class="shareForm">
                 ${mediaTag.outerHTML}
-                <h2 class="sharingPostTitle">${sharingPost.title}</h2>
-                <p class="sharingPostDesc">${sharingPost.description}</p>
-                <button id="shareBtn">Share on the app!</button>
+                <h2 name="sharingTitle" id="sharingTitle" class="sharingTitle">${sharingPost.title}</h2>
+                <p name="sharingDesc" id="sharingDesc" class="sharingDesc">${sharingPost.description}</p>
+                <button data-post-id="${sharingPostId}" class="shareOnApp" id="shareBtn">Share on the app!</button>
             </form>
 
             <div class="links" style="display: flex; gap : 10px;">
