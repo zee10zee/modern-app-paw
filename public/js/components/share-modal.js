@@ -27,13 +27,12 @@ postsContainer.addEventListener('click', async(e)=>{
          const shareDiv = e.target.closest('.shareForm')
          const platform = e.target.textContent;
          const postId = e.target.dataset.postId;
-        const sharer_message = shareDiv.querySelector('#sharer_message_input').value
-       
-          shareOnTheApp(postId,sharer_message,platform)
+        const message = shareDiv.querySelector('#sharer_message_input').value
+          shareOnTheApp(postId,message,platform)
     }
 })
 // function shareOnApp
-async function shareOnTheApp(postId,sharer_message,platform){
+async function shareOnTheApp(postId,message,platform){
     
     const post = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`);
 
@@ -42,93 +41,85 @@ async function shareOnTheApp(postId,sharer_message,platform){
        {
          postId: postId,
          platform : platform,
-         sharer_message : sharer_message
+         sharer_message : message
        })
-       return console.log(res.data)
+         console.log(res.data)
        if(res.data.success){
         const sharedPost = res.data.sharedPost;
-        const sharer = res.data.postSharer;
 
-         updateSharedpostOnUI(sharedPost, sharer, postId)
+         updateSharedpostOnUI(sharedPost, postId)
          const shareContainer = postsContainer.querySelector('.share-container')
          shareContainer.style.display = "none"
        }
 
 }
 
-function updateSharedpostOnUI(sharedPost,sharer,postId){
+function updateSharedpostOnUI(sharedPost,postId){
     //a postDiv like container
     const shareDiv = document.createElement('div')
     shareDiv.dataset.shareId = sharedPost.id
-    shareDiv.classList.add('.posts')
-    shareDiv.innerHTML= `
-            <img class="ownerPhoto" src="${sharer.profilepicture}" alt="Profile picture">
+    shareDiv.classList.add('posts')
+    let sharerHeader = ''
+    sharerHeader+= `
+            <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li class="ownerProfile" data-token-id="${sharer.usertoken}" data-user-id="${sharer.user_id}">
-                        <a  href="/api/authorProfile/${sharer.usertoken}">${sharer.firstname}'s Profile</a>
+                    <li class="ownerProfile" data-token-id="${sharedPost.sharer_user_token}" data-user-id="${sharedPost.sharer_id}">
+                        <a  href="/api/authorProfile/${sharedPost.sharer_user_token}">${sharedPost.sharer_name}'s Profile</a>
                     </li>
-                    <li class="userProfile" data-user-id="${sharer.id}">
-                        <a  class="userChatLink" href="/api/chatpage/${sharer.id}">Chat with user</a>
+                    <li class="userProfile" data-user-id="${sharedPost.sharer_id}">
+                        <a  class="userChatLink" href="/api/chatpage/${sharedPost.sharer_id}">Chat with user</a>
                     </li>
               </ul>
-               <div class="title-date-burger">
+               <p class="sharer_message">${sharedPost.sharer_message}</p>
     `
 
-    // original post 
-    
-    const origianPostDiv = document.createElement('div')
-    origianPostDiv.classList.add('sharedPost')
-    origianPostDiv.dataset.postId = sharedPost.post_id
-    
-      let prevousPost = '';
-    shareDiv.classList.add('.posts')
-     const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
+     let prevousPost = '';
+     const mediaFile = isVideo(sharedPost.mediafile) ? 'video' : 'img'
         if(!mediaFile) return console.log('no media image')
 
         const mediaTag = document.createElement(mediaFile)
-        mediaTag.src = '/' + post.mediafile
+        mediaTag.src = '/' + sharedPost.mediafile
         if(mediaFile === 'video'){
           mediaTag.controls = true
         }
 
 
-prevousPost+= `
-     
-       <img class="ownerPhoto" src="${sharedPost.author_profilepicture}" alt="Profile picture">
+  prevousPost+= `
+    <div class="shared_post" data-post-id="${postId}">
+       <img class="ownerPhoto" src="${sharedPost.original_author_profile}" alt="Profile picture">
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li class="ownerProfile" data-token-id="${sharedPost.usertoken}" data-user-id="${postOwnerId}">
-                        <a  href="/api/authorProfile/${sharedPost.usertoken}">${sharedPost.firstname}'s Profile</a>
+                    <li class="ownerProfile" data-token-id="${sharedPost.original_user_token}" data-user-id="${sharedPost.original_author_id}">
+                        <a  href="/api/authorProfile/${sharedPost.original_user_token}">${sharedPost.original_author_name}'s Profile</a>
                     </li>
-                    <li class="userProfile" data-user-id="${postOwnerId}">
-                        <a  class="userChatLink" href="/api/chatpage/${postOwnerId}">Chat with user</a>
+                    <li class="userProfile" data-user-id="${sharedPost.original_author_id}">
+                        <a  class="userChatLink" href="/api/chatpage/${sharedPost.original_author_id}">Chat with user</a>
                     </li>
               </ul>
                <div class="title-date-burger"> 
                  <h2 class="title"> ${sharedPost.title}
                    <span id="date" class="date">${new Date(sharedPost.created_at).toLocaleDateString()}</span>
                  </h2>
-                 ${postOwnerId?`
-                 <div id="gear" class="gear">⋮</div>
-                  `:''}
-                 
                </div>
                <p class="description">${sharedPost.description.substring(0,100)} 
-                  <a class="showMoreLink" href="/api/showPost/${sharedPost.post_id}">Read more...</a>
+                  <a class="showMoreLink" href="/api/showPost/${postId}">Read more...</a>
                </p>
                   <div class="mediaContainer">
                     ${mediaTag.outerHTML}
                   </div>
-                  
-               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
+        </div>
+    `
+
+    const sharer_comment_part = `
+                   <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
                   <div class="like">
-                     <form class="likeForm" action="/api/post/${sharedPost.post_id}/like" method="post">
+                     <form class="likeForm" action="/api/post/${sharedPost.id}/like" method="post">
                       <button class="likeBtn">❤️</button>
                       </form>
-                      <p id="likesCount" class="likesCount">${sharedPost.likecounts}</p>
+                      <p id="likesCount" class="likesCount">${sharedPost.likes_count}</p>
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
-                    <p class="commentCount">${sharedPost.commentcounts}</p>
+                    <p class="commentCount">${sharedPost.comments_count}</p>
                   </div>
 
                   <div class="share">
@@ -140,11 +131,16 @@ prevousPost+= `
                  
                 </div>
 
+                 <form action="/api/post/${sharedPost.id}/comment" method="POST" id="commentForm"            class="commentingForm">
+                      <input type="hidden" name="post_id" value="${sharedPost.id}"> 
+                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                 </form>
                  <div class="commentsContainer">
-                    ${commentsHTML}
+                   comments here !
+                    <div class="container commentEditContainer" id="commentEditContainer"></div>
                  </div>
     `
-       
+    shareDiv.innerHTML = sharerHeader + prevousPost + sharer_comment_part
        postsContainer.appendChild(shareDiv)
        // insertAjacentHTML('insertbeforeend', prevousPost)
 

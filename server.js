@@ -959,13 +959,13 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
     
     // one post should be shared once
     const platforms = ['facebook', 'whatsapp', 'telegram', 'twitter']
-    const checkShareTimes = await pool.query(`SELECT * FROM shares WHERE post_id = $1 and user_id = $2 AND on_platform = $3`, [postId, req.session.userId, platform])
+    // const checkShareTimes = await pool.query(`SELECT * FROM shares WHERE post_id = $1 and user_id = $2 AND on_platform = $3`, [postId, req.session.userId, platform])
 
-    if(checkShareTimes.rowCount > 0){
-        // console.log('you have shared the post already in this platform')
-         return res.status(400).json({error : 'you have alrady shared this post on this platform'
-        });
-    }
+    // if(checkShareTimes.rowCount > 0){
+    //     // console.log('you have shared the post already in this platform')
+    //      return res.status(400).json({error : 'you have alrady shared this post on this platform'
+    //     });
+    // }
 
         const newShare = await pool.query(`INSERT INTO shares (
         post_id, 
@@ -994,12 +994,13 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
             original_author.id as original_author_id,
             original_author.firstname as original_author_name,
             original_author.profilepicture as original_author_Profile,
+            original_author.usertoken as original_user_token,
             sharer.id as sharer_id,
             sharer.firstname as sharer_name,
             sharer.profilepicture as sharer_profile,
-
-            (SELECT COUNT(*) FROM likes WHERE post_id = shares.id) AS like_count, 
-            (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comment_count            
+            sharer.usertoken as sharer_user_token,
+            (SELECT COUNT(*) FROM likes WHERE post_id = shares.id) AS likes_count, 
+            (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comments_count            
             FROM shares
             LEFT JOIN posts ON shares.post_id = posts.id 
             LEFT JOIN users AS original_author ON posts.user_id = original_author.id
