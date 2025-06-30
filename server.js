@@ -929,7 +929,9 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
         users.id as user_id,
         users.firstname AS author_firstname, 
         users.profilepicture AS author_profilepicture, 
+        users.usertoken AS user_token,
         posts.id as post_id,
+        posts.user_id AS post_user_id,
         posts.title,
         posts.description,
         posts.mediafile,
@@ -943,23 +945,25 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
         return res.json({message : 'post not found'})
        }
 
-    console.log(sharePost.rows[0])
+    console.log(sharePost.rows[0], req.session.userId)
     res.json({
         sharedPost : sharePost.rows[0]
     })
 
 })
 
-app.post('/api/sharePost/:id', validateLogin, async(req,res)=>{
-    const postId = parseInt(req.params.id)
-    const {sharingTitle, sharingDesc, platform, sharing_file} = req.body;
- console.log(sharing_file)
+app.post('/api/sharePost', validateLogin, async(req,res)=>{
+    const shareId = parseInt(req.params.shareId)
+    const { platform,postId,sharer_message} = req.body;
+    // return console.log(platform,postId,sharer_message)
+    
+    // one post should be shared once
     const platforms = ['facebook', 'whatsapp', 'telegram', 'twitter']
     const checkShareTimes = await pool.query(`SELECT * FROM shares WHERE post_id = $1 and user_id = $2 AND on_platform = $3`, [postId, req.session.userId, platform])
 
     if(checkShareTimes.rowCount > 0){
         // console.log('you have shared the post already in this platform')
-         return res.status(400).json({error : 'you have alrady shared this post on this platform, do you want to share again ?'
+         return res.status(400).json({error : 'you have alrady shared this post on this platform'
         });
     }
 
@@ -967,20 +971,48 @@ app.post('/api/sharePost/:id', validateLogin, async(req,res)=>{
         post_id, 
         user_id, 
         on_platform, 
-        shared_title, 
-        shared_description, 
-        shared_file)
-        VALUES($1, $2, $3,$4,$5, $6) RETURNING *
-        `, [postId,req.session.userId,platform, sharingTitle, sharingDesc,sharing_file]);
+        sharer_message
+        )
+        VALUES($1, $2, $3,$4) RETURNING *
+        `, [postId,req.session.userId,platform, sharer_message]);
 
         if(newShare.rowCount === 0){
             return res.status(404).json({error : 'failure saving the shared file', success: false})
         }
 
-        console.log('file shared successfully !');
+           console.log('file saved successfully !', newShare.rows[0])
+
+
+
+        const sharedPostAndSharer = await pool.query(`
+            SELECT shares.*,
+            posts.id AS post_id,
+            posts.title,
+            posts.description,
+            posts.created_at,
+            posts.mediafile,
+            original_author.id as original_author_id,
+            original_author.firstname as original_author_name,
+            original_author.profilepicture as original_author_Profile,
+            sharer.id as sharer_id,
+            sharer.firstname as sharer_name,
+            sharer.profilepicture as sharer_profile,
+
+            (SELECT COUNT(*) FROM likes WHERE post_id = shares.id) AS like_count, 
+            (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comment_count            
+            FROM shares
+            LEFT JOIN posts ON shares.post_id = posts.id 
+            LEFT JOIN users AS original_author ON posts.user_id = original_author.id
+            LEFT JOIN users AS sharer ON shares.user_id = sharer.id
+            
+            WHERE shares.id = $1`, [newShare.rows[0].id])
+            if(sharedPostAndSharer.rowCount === 0){
+                console.log('no shared file yet !')
+            }
+
 
         res.json({
-            sharedFile : newShare.rows[0],
+            sharedPost : sharedPostAndSharer.rows[0],
             message : 'file shared successfully !',
             success : true
         })
@@ -1094,11 +1126,7 @@ function validateLogin(req,res,next){
 
 
 // pool.query(`ALTER TABLE shares 
-//   DROP CONSTRAINT IF EXISTS shares_user_token_fkey,	 
-//   ADD CONSTRAINT shares_user_id_fkey
-//   FOREIGN KEY (user_id)
-//   REFERENCES users(id)
-//   ON DELETE CASCADE`).then(()=>{
+//   ADD COLUMN sharedpost_comments INTEGER`).then(()=>{
 //     console.log('COLUMN ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))
@@ -1127,7 +1155,7 @@ function validateLogin(req,res,next){
 
 
 
-
+// pool.query(`ALTER TABLE shares alter column sharer_message  SET DEFAULT 'NO message' `).then(() =>console.log('default constrsaint added')).catch(err =>console.log(err))
 
 
 
