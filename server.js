@@ -17,6 +17,7 @@ import sharedsession from "express-socket.io-session"
 import fs from "fs"
 import { error } from "console"
 import { title } from "process"
+import { json } from "stream/consumers"
 
 
 dotenv.config()
@@ -487,6 +488,7 @@ app.get('/api/posts',validateLogin, async(req,res)=>{
      'created_at', comments.created_at,
      'is_owner', (comments.user_id = $1),
      'author', JSON_BUILD_OBJECT(
+        'user_id', users.id,
        'firstname', users.firstname,
        'profile_picture', users.profilepicture
         )
@@ -702,7 +704,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
     if(updatedPostWithData.rowCount === 0){
         return res.json({message : 'failed to updated the post'})
     }
-       console.log(updatedPostWithData.rows)
+    //    return console.log(updatedPostWithData.rows[0])
 
     res.json({
         message : 'memory updated successfully !',
@@ -715,7 +717,8 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
 app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
     const postId = parseInt(req.params.id)
 
-    const likes = await pool.query(`DELETE FROM likes WHERE postid = $1 RETURNING *;`,[postId])
+   try{
+     const likes = await pool.query(`DELETE FROM likes WHERE postid = $1 RETURNING *;`,[postId])
 
     const comments = await pool.query(`DELETE FROM comments WHERE post_id = $1 RETURNING *`, [postId])
 
@@ -749,6 +752,14 @@ app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
         deletedPost : deletingPost,
         success: true
     })
+   }catch(error){
+      if(error.code){
+        return res.status(400).json({error : error.detail})
+      }
+
+      console.error(error)
+      res.status(500).json({error : error.detail})
+   }
 })
 
 
@@ -955,17 +966,6 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
 app.post('/api/sharePost', validateLogin, async(req,res)=>{
     const shareId = parseInt(req.params.shareId)
     const { platform,postId,sharer_message} = req.body;
-    // return console.log(platform,postId,sharer_message)
-    
-    // one post should be shared once
-    const platforms = ['facebook', 'whatsapp', 'telegram', 'twitter']
-    // const checkShareTimes = await pool.query(`SELECT * FROM shares WHERE post_id = $1 and user_id = $2 AND on_platform = $3`, [postId, req.session.userId, platform])
-
-    // if(checkShareTimes.rowCount > 0){
-    //     // console.log('you have shared the post already in this platform')
-    //      return res.status(400).json({error : 'you have alrady shared this post on this platform'
-    //     });
-    // }
 
         const newShare = await pool.query(`INSERT INTO shares (
         post_id, 
@@ -985,7 +985,14 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
 
 
         const sharedPostAndSharer = await pool.query(`
-            SELECT shares.*,
+            SELECT shares.sharer_message,
+            shares.id,
+            shares.post_id,
+            shares.user_id,
+            shares.on_platform,
+            shares.shared_at,
+            COUNT(shares.id) AS shares_count,
+            (shares.user_id = $1) AS postOwner,
             posts.id AS post_id,
             posts.title,
             posts.description,
@@ -1005,8 +1012,14 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
             LEFT JOIN posts ON shares.post_id = posts.id 
             LEFT JOIN users AS original_author ON posts.user_id = original_author.id
             LEFT JOIN users AS sharer ON shares.user_id = sharer.id
-            
-            WHERE shares.id = $1`, [newShare.rows[0].id])
+            WHERE shares.id = $2
+            GROUP BY 
+            shares.id,
+            posts.id,
+            original_author.id,
+            sharer.id
+            ORDER BY shares.shared_at`, [req.session.userId,newShare.rows[0].id])
+
             if(sharedPostAndSharer.rowCount === 0){
                 console.log('no shared file yet !')
             }
@@ -1017,6 +1030,59 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
             message : 'file shared successfully !',
             success : true
         })
+})
+
+app.patch('/api/update/message/:shareId', validateLogin, async(req,res)=>{
+    const shareId = req.params.shareId;
+    const {post_id, sharer_message} = req.body;
+    // const userId = req.session.userId;
+    const findSharePost = await pool.query('SELECT * FROM shares WHERE id = $1;',[shareId])
+
+    if(findSharePost.rowCount === 0) return res.status(404).json({error : 'share message not found'})
+        const updatedMessage = await pool.query(`UPDATE shares SET sharer_message = $1 WHERE id = $2 RETURNING *;`, [sharer_message, shareId])
+
+            if(updatedMessage.rowCount === 0){
+                return res.json(403).json({error : 'updating the share message failed !'})
+            }
+
+            res.json({
+                updated_message : updatedMessage.rows[0],
+                message : 'post successfully updated !',
+                success : true
+            })
+})
+
+app.delete('/api/deleteSharerPost/:id', validateLogin, async(req,res)=>{
+    const shareId = req.params.id;
+
+    const postsExists = await pool.query('SELECT * FROM shares WHERE id = $1', [shareId])
+
+    if(postsExists.rowCount === 0) return res.status(403).json({error: 'No share post found'})
+
+        const deletedPost = await pool.query(`DELETE FROM shares WHERE id = $1`, [shareId])
+
+        if(deletedPost.rowCount === 0) return res.status(401).json({error : 'share post did not deleted from the post'})
+
+            res.json({
+                message : 'post successfully deleted!',
+                deletedPost : deletedPost.rows[0],
+                success : true
+            })
+
+})
+
+
+// edit post sharer
+app.get('/api/editPost/:share_id', validateLogin, async(req,res)=>{
+   const shareId = parseInt(req.params.share_id)
+
+   const post = await pool.query(`SELECT * FROM shares WHERE id = $1`, [shareId])
+   if(post.rowCount === 0) return res.status(404).json({message : 'not found post'})
+    console.log(post.rows[0])
+    res.json({
+        post : post.rows[0],
+        success : true
+    })
 })
 
 // chat 
@@ -1041,9 +1107,9 @@ app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
     })
 })
 
+
 // CHATS 
 
-// app.get('/')
 
 
 
@@ -1069,9 +1135,7 @@ function validateLogin(req,res,next){
 //      post_id INTEGER REFERENCES posts(id),
 //      user_id INTEGER REFERENCES users(id),
 //      on_platform TEXT NOT NULL,
-//      shared_title TEXT,
-//      shared_description TEXT,
-//      shared_file TEXT,
+//       sharer_message TEXT,
 //      shared_at TIMESTAMP DEFAULT NOW()
 //     )`).then(data =>{
 //         console.log('shares creatd !')
@@ -1126,9 +1190,10 @@ function validateLogin(req,res,next){
 
 
 
-// pool.query(`ALTER TABLE shares 
-//   ADD COLUMN sharedpost_comments INTEGER`).then(()=>{
-//     console.log('COLUMN ALTERED SUCCESS !')
+// pool.query(`ALTER TABLE comments 
+//     DROP CONSTRAINT IF EXISTS share_id_fk,
+//   ADD CONSTRAINT share_id_fk FOREIGN KEY (share_id) REFERENCES shares(id)`).then(()=>{
+//     console.log('constraint ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))
 

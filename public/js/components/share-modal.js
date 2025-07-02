@@ -27,12 +27,13 @@ postsContainer.addEventListener('click', async(e)=>{
          const shareDiv = e.target.closest('.shareForm')
          const platform = e.target.textContent;
          const postId = e.target.dataset.postId;
-        const message = shareDiv.querySelector('#sharer_message_input').value
-          shareOnTheApp(postId,message,platform)
+        const messageInput = shareDiv.querySelector('#sharer_message_input')
+        const message = messageInput.value
+          shareOnTheApp(postId,messageInput,platform)
     }
 })
 // function shareOnApp
-async function shareOnTheApp(postId,message,platform){
+async function shareOnTheApp(postId,messageInput,platform){
     
     const post = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`);
 
@@ -41,15 +42,19 @@ async function shareOnTheApp(postId,message,platform){
        {
          postId: postId,
          platform : platform,
-         sharer_message : message
+         sharer_message : messageInput.value
        })
          console.log(res.data)
        if(res.data.success){
         const sharedPost = res.data.sharedPost;
 
          updateSharedpostOnUI(sharedPost, postId)
+         const actualPostofShared = postsContainer.querySelector(`.posts[data-post-id = "${postId}"]`)
+         actualPostofShared.querySelector('.sharesCount').textContent = sharedPost.shares_count
+         console.log(actualPostofShared)
          const shareContainer = postsContainer.querySelector('.share-container')
          shareContainer.style.display = "none"
+         messageInput.value = ''
        }
 
 }
@@ -60,20 +65,9 @@ function updateSharedpostOnUI(sharedPost,postId){
     shareDiv.dataset.shareId = sharedPost.id
     shareDiv.classList.add('posts')
     let sharerHeader = ''
-    sharerHeader+= `
-            <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
-              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li class="ownerProfile" data-token-id="${sharedPost.sharer_user_token}" data-user-id="${sharedPost.sharer_id}">
-                        <a  href="/api/authorProfile/${sharedPost.sharer_user_token}">${sharedPost.sharer_name}'s Profile</a>
-                    </li>
-                    <li class="userProfile" data-user-id="${sharedPost.sharer_id}">
-                        <a  class="userChatLink" href="/api/chatpage/${sharedPost.sharer_id}">Chat with user</a>
-                    </li>
-              </ul>
-               <p class="sharer_message">${sharedPost.sharer_message}</p>
-    `
-
+   let sharer_comment_part = ''
      let prevousPost = '';
+
      const mediaFile = isVideo(sharedPost.mediafile) ? 'video' : 'img'
         if(!mediaFile) return console.log('no media image')
 
@@ -83,10 +77,46 @@ function updateSharedpostOnUI(sharedPost,postId){
           mediaTag.controls = true
         }
 
+    sharerHeader+= `
+            <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
+             ${!sharedPost.postowner?`
+              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+                    <li class="ownerProfile" data-token-id="${sharedPost.sharer_user_token}" data-user-id="${sharedPost.sharer_id}">
+                        <a  href="/api/authorProfile/${sharedPost.sharer_user_token}">${sharedPost.sharer_name}'s Profile</a>
+                    </li>
+                    <li class="userProfile" data-user-id="${sharedPost.sharer_id}">
+                        <a  class="userChatLink" href="/api/chatpage/${sharedPost.sharer_id}">Chat with user</a>
+                    </li>
+              </ul>
+              `:''}
+                 <div class="title-date-burger"> 
+                     <span id="date" class="date">${new Date(sharedPost.shared_at). toLocaleDateString()}</span>
+                      ${sharedPost.postowner ?`
+                    <div id="gear" class="gear">⋮</div>
+                  `:''}                                    
+               </div>
+                  <p class="sharer_message">${sharedPost.sharer_message}</p>
 
+
+               <div class="edit-delete">
+                
+                   <span class="closep">❌</span>
+                  <form id="editForm" >
+                    <button data-share-id="${sharedPost.id}" class="postSharerEditBtn">Edit</button>
+                  </form>
+                  <form id="deleteForm" >
+                    <button data-share-id="${sharedPost.id}" class="postSharerDeleteBtn">Delete</button>
+                 </form>
+                </div>
+
+    `
+     
   prevousPost+= `
     <div class="shared_post" data-post-id="${postId}">
        <img class="ownerPhoto" src="${sharedPost.original_author_profile}" alt="Profile picture">
+
+              ${sharedPost.original_author_id !== sharedPost.sharer_id?
+                `
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
                     <li class="ownerProfile" data-token-id="${sharedPost.original_user_token}" data-user-id="${sharedPost.original_author_id}">
                         <a  href="/api/authorProfile/${sharedPost.original_user_token}">${sharedPost.original_author_name}'s Profile</a>
@@ -95,6 +125,9 @@ function updateSharedpostOnUI(sharedPost,postId){
                         <a  class="userChatLink" href="/api/chatpage/${sharedPost.original_author_id}">Chat with user</a>
                     </li>
               </ul>
+              `
+              :''}
+
                <div class="title-date-burger"> 
                  <h2 class="title"> ${sharedPost.title}
                    <span id="date" class="date">${new Date(sharedPost.created_at).toLocaleDateString()}</span>
@@ -108,8 +141,7 @@ function updateSharedpostOnUI(sharedPost,postId){
                   </div>
         </div>
     `
-
-    const sharer_comment_part = `
+    sharer_comment_part += `
                    <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
                   <div class="like">
                      <form class="likeForm" action="/api/post/${sharedPost.id}/like" method="post">
@@ -142,7 +174,6 @@ function updateSharedpostOnUI(sharedPost,postId){
     `
     shareDiv.innerHTML = sharerHeader + prevousPost + sharer_comment_part
        postsContainer.appendChild(shareDiv)
-       // insertAjacentHTML('insertbeforeend', prevousPost)
 
     // inside the postDiv another postDiv with indentation
 }
@@ -154,11 +185,8 @@ async function loadShareFormModal(event, container){
     const postId = parseInt(event.target.dataset.postId)
     console.log(postId)
     const response = await axios.get(`/api/share/post/${postId}`) 
-    // return console.log(response.data)
     const sharingPost = response.data.sharedPost
-    // return console.log(sharingPost)
     const sharingPostId = sharingPost.post_id;
-    const href="aa"
 
     if(response.status === 200){ 
          const mediaFile = isVideo(sharingPost.mediafile) ? 'video' : 'img'
@@ -200,5 +228,7 @@ function closeShareModal(container){
      container.style.display = "none"
    }
 }
+
+
 
 

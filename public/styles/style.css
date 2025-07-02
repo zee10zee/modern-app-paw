@@ -67,6 +67,11 @@ img {
     border-radius: 10px;
 }
 
+.shared_post{
+    width: 90%;
+    margin-left: 50px;
+}
+
 .posts button{
     background: none;
     border: none;
@@ -229,13 +234,14 @@ comment-delete-edit form:first-child{
     position: absolute;
     right: 5px;
     top: 5px;
-    width: 20px;
     margin-left: auto;
     cursor: pointer;
-    background: #555;
+    background: #fff;
     border-radius: 30px;
-    padding: 1px;
     font-size: 10px;
+    line-height: 2;
+    text-align: center;
+    padding: 0 5px;
 }
   
 
@@ -443,17 +449,23 @@ main{
 } */
 
 /* shares */
-.share-container{
+.share-container, .editShareContentModal{
     position: fixed;
-    background: #a39a9a;
+    background: #c9c6c6;
     border-radius: 5px;
     display: flex;
     flex-direction: column;
-    color: #fff;
+    color: #555;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%); 
     z-index: 1000;
+}
+.editShareContentModal{
+    display: none;
+}
+.editShareContentModal .message{
+    color: #000;
 }
 
 .closeShareModal{

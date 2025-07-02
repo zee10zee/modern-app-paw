@@ -130,7 +130,7 @@ const renderPosts = (posts)=>{
 
                   <div class="share">
                       <button data-post-id="${post.post_id}" class="shareBtn">↗️</button>
-                    <p>12 shares</p>
+                    <p class="sharesCount"></p>
                   </div>
                  
                 </div>
@@ -186,7 +186,7 @@ const setupEventListener = ()=>{
    if(editBtn){
       e.preventDefault()
       editPostContainer.innerHTML = ''
-      await loadEditForm(postId)
+      await loadEditForm(postId,editPostContainer)
     }else if(deleteBtn){
         await deletePost(postId)
         e.preventDefault()
@@ -214,7 +214,7 @@ const setupEventListener = ()=>{
 
 // load edit form
 
-const loadEditForm = async(postId)=>{
+const loadEditForm = async(postId,editPostContainer)=>{
   const editingPost =  document.createElement('div')
   editingPost.classList.add('editPostContainer')
   editingPost.dataset.postId = postId
@@ -223,7 +223,6 @@ const loadEditForm = async(postId)=>{
 
         if(response.status === 200){
             const post = response.data.post;
-            console.log(post)
             const mediaFile = isVideo(post.mediafile)?'video' : 'img'
             const mediaTag = document.createElement(mediaFile)
             mediaTag.src = post.mediafile
@@ -362,6 +361,9 @@ editPostContainer.addEventListener('click', (e)=>{
 
            post.comments.forEach(comment =>{
              const commentAuthor = comment.author.firstname
+            console.log('comment and first name of commentor : ', comment.author.id, comment)
+
+            const commentorId = comment.author.userId;
              const text = comment.text
              const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
                 weekday : 'short', 
@@ -371,10 +373,10 @@ editPostContainer.addEventListener('click', (e)=>{
             commentsHTML+= 
              `
              <div class="comment" data-comment-id="${comment.id}">
-             <a href="/api/userProfile/${comment.author.userId}">
+             <a href="/api/userProfile/${commentorId}">
                 <img class="user-profile" src="${comment.author.profile_picture}" alt="profle picture">
              </a>
-            <strong id="author"><a href="/api/userProfile/${comment.user_id}">${commentAuthor}</a></strong>
+            <strong id="author"><a href="/api/userProfile/${commentorId}">${commentAuthor}</a></strong>
 
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
@@ -382,13 +384,13 @@ editPostContainer.addEventListener('click', (e)=>{
                 </div>
                 <small id="date" class="date">${commentDate}</small>
                 <div class="comment-delete-edit">
-                    <span class="close">❌</span>
                       <form id="edit-comment-form">
                         <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
                       </form>
                       <form id="delete-comment-button">
                         <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
+                      <span class="close">❌</span>
                    </div>
                 
              </div>
@@ -400,7 +402,9 @@ editPostContainer.addEventListener('click', (e)=>{
 
            targetPost.innerHTML = ''
            targetPost.innerHTML = `
-            <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
+            <img class="ownerPhoto" src="${post.profilepicture}" alt="Profile picture">
+               ${post.is_owner?
+                `
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
                     <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
                         <a  href="/api/authorProfile/${post.usertoken}">${post.firstname}'s Profile</a>
@@ -409,6 +413,7 @@ editPostContainer.addEventListener('click', (e)=>{
                         <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
                     </li>
               </ul>
+              `: ''}
                <div class="title-date-burger"> 
                  <h2 class="title"> ${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
@@ -456,15 +461,13 @@ editPostContainer.addEventListener('click', (e)=>{
                  </div>
                  
                 <div class="edit-delete">
-                
                    <span class="closep">❌</span>
-                  <form id="editForm" data-post-id="${post.id}">
-                    <button class="postEditBtn">Edit</button>
-                  </form>
-                  <form id="deleteForm" data-post-id="${post.id}">
-                    <button class="postDeleteBtn">Delete</button>
-                 </form>
-                  
+                    <form id="editForm" data-post-id="${post.id}">
+                      <button class="postEditBtn">Edit</button>
+                    </form>
+                    <form id="deleteForm" data-post-id="${post.id}">
+                      <button class="postDeleteBtn">Delete</button>
+                    </form>
                 </div>
            `
           
@@ -478,19 +481,24 @@ editPostContainer.addEventListener('click', (e)=>{
 
     // delete post
 const deletePost = async(postId)=>{
+   if(!postId) return console.log('post id undefined')
+    const confirmDelete = prompt('are you sure deleting the post ?')
+  if(!confirmDelete || !confirmDelete.toLowerCase().includes('yes')) return console.log('delete canceled .')
+    console.log('proceed deleting ...')
   try{
     const res = await axios.delete(`/api/post/delete/${postId}`, {})
-  console.log(res)
-  if(res.status !== 200) return console.log('server failure deleting the post ')
-    if(res.data.success){
+  if(res.status !== 200 && !res.data.success) return alert('server failure deleting the post ', res.data.error);
        console.log('file delete success')
         const targetPost = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
-        // return console.log(targetPost)
         targetPost.remove()
-    }
    
   }catch(err){
-    console.log(err)
+    // alert(err)
+    if(err.code){
+      alert(err.response.data.error)
+    }else{
+      alert(err)
+    }
   }
 }
 
