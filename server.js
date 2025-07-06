@@ -1006,7 +1006,7 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
             sharer.firstname as sharer_name,
             sharer.profilepicture as sharer_profile,
             sharer.usertoken as sharer_user_token,
-            (SELECT COUNT(*) FROM likes WHERE post_id = shares.id) AS likes_count, 
+            (SELECT COUNT(*) FROM likes WHERE post_id = shares.id AND share_id = shares.id) AS likes_count, 
             (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comments_count            
             FROM shares
             LEFT JOIN posts ON shares.post_id = posts.id 
@@ -1071,6 +1071,49 @@ app.delete('/api/deleteSharerPost/:id', validateLogin, async(req,res)=>{
 
 })
 
+app.post('/api/likeSharePost/:shareId', validateLogin, async(req,res)=>{
+    const shareId = parseInt(req.params.shareId)
+    // const {postId,userId} = req.body;
+    const userId = req.session.userId;
+
+    const postExists = await pool.query(`select * from shares where id = $1`, [shareId])
+    if(postExists.rowCount === 0) return res.status(404).json({error : 'post not found'})
+    
+    // check if the like has been by login user
+    const checkLike = await pool.query(`SELECT * FROM likes WHERE share_id = $1 AND userid = $2`, [shareId, userId])
+
+    if(checkLike.rowCount > 0){
+       console.log(checkLike.rowCount)
+       const deletedLike = await pool.query(`DELETE FROM likes WHERE share_id = $1 RETURNING *;`, [checkLike.rows[0].share_id])
+
+       if(deletedLike.rowCount === 0) return res.json({error : 'like did not deleted from db'})
+        console.log('dislike success')
+      const like = await pool.query(`SELECT COUNT(*) as likescount FROM likes WHERE share_id = $1`, [shareId])
+      return res.json({
+        error : 'you have already liked this post',
+        likesCount : like.rows[0].likescount
+
+      })
+    }
+
+    const newLike = await pool.query(`INSERT INTO likes (userid, share_id) VALUES($1,$2) RETURNING *`, [req.session.userId, shareId])
+
+    if(newLike.rowCount === 0) return res.json({error : 'like didnt save in db'})
+
+    const likecount = await pool.query(`SELECT COUNT(*) AS likes FROM likes WHERE share_id = $1`, [shareId])
+
+    if(likecount.rowCount > 0){
+        res.json({
+        success : true,
+        likesCount : likecount.rows[0].likes
+    })
+    }
+
+    
+
+
+
+})
 
 // edit post sharer
 app.get('/api/editPost/:share_id', validateLogin, async(req,res)=>{
@@ -1105,6 +1148,23 @@ app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
         receiver : checkReceiver.rows[0],
         senderId : req.session.userId
     })
+})
+
+// adding comment of share post
+app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
+    const {comment} = req.body;
+    const shareId = req.params.shareId;
+
+    const newComment = await pool.query(`INSERT INTO comments (comment,user_id,share_id) 
+        VALUES($1,$2,$3) RETURNING *`, [comment, req.session.userId,shareId])
+
+    if(newComment.rowCount === 0) return res.json({error : 'comment did not save in db'})
+
+        res.json({
+            success: true,
+            message: 'comment successfully added',
+            newComment : newComment.rows[0]
+        })
 })
 
 
@@ -1190,7 +1250,7 @@ function validateLogin(req,res,next){
 
 
 
-// pool.query(`ALTER TABLE comments 
+// pool.query(`ALTER TABLE likes 
 //     DROP CONSTRAINT IF EXISTS share_id_fk,
 //   ADD CONSTRAINT share_id_fk FOREIGN KEY (share_id) REFERENCES shares(id)`).then(()=>{
 //     console.log('constraint ALTERED SUCCESS !')
@@ -1221,7 +1281,12 @@ function validateLogin(req,res,next){
 
 
 
-// pool.query(`ALTER TABLE shares alter column sharer_message  SET DEFAULT 'NO message' `).then(() =>console.log('default constrsaint added')).catch(err =>console.log(err))
+// pool.query(`ALTER TABLE likes ADD CONSTRAINT oposite_null_value
+//     CHECK(
+//     (postid IS NOT NULL AND share_id IS NULL)
+//                   OR
+//     (postid IS NULL AND share_id IS NOT NULL)
+//      ) `).then(() =>console.log('COSNTRAINT conditionaly set !')).catch(err =>console.log(err))
 
 
 

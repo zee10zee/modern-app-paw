@@ -167,6 +167,14 @@ const renderPosts = (posts)=>{
         })
 }
 
+const clickHandler = (e, container,parentContainer) => {
+            if (!container.contains(e.target) && 
+                e.target !== gear && 
+                e.target !== parentContainer) {
+                container.style.display = "none";
+                window.removeEventListener('click', clickHandler);
+            }
+        };
 
 const setupEventListener = ()=>{
    postsContainer.addEventListener('click', async(e)=>{
@@ -181,8 +189,6 @@ const setupEventListener = ()=>{
      const postEditDeleteModal = e.target.classList.contains('closep')
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
      const postId = postDiv.dataset.postId;
-
-      
    if(editBtn){
       e.preventDefault()
       editPostContainer.innerHTML = ''
@@ -193,11 +199,15 @@ const setupEventListener = ()=>{
         
     }else if(gear || postEditDeleteModal){
       const editDeleteContainer = postDiv.querySelector('.edit-delete')
-       if(editDeleteContainer.style.display === "block") {
-        editDeleteContainer.style.display = "none";
+      window.removeEventListener('click', editDeleteContainer)
+
+       if(editDeleteContainer.style.display === "block"){
+           editDeleteContainer.style.display = "none";
+           
      }else {
         editDeleteContainer.style.display = "block";
      }
+
 
     }else if(showMoreLink){
         window.location.href=`/api/showPost/${postId}`
@@ -215,6 +225,7 @@ const setupEventListener = ()=>{
 // load edit form
 
 const loadEditForm = async(postId,editPostContainer)=>{
+  closeAnyModal(editPostContainer)
   const editingPost =  document.createElement('div')
   editingPost.classList.add('editPostContainer')
   editingPost.dataset.postId = postId
@@ -493,13 +504,8 @@ const deletePost = async(postId)=>{
         targetPost.remove()
    
   }catch(err){
-    // alert(err)
-    if(err.code){
-      alert(err.response.data.error)
-    }else{
       alert(err)
-    }
-  }
+}
 }
 
     // const deleteForm = postsContainer.deleteForm
@@ -517,3 +523,13 @@ const deletePost = async(postId)=>{
     }  
       setupEventListener()
 })
+
+
+function closeAnyModal(modalElement){
+  window.addEventListener('click', (e)=>{
+    const containerArea = e.target.closest('.posts');
+    if(modalElement.style.display !== "none" && !containerArea){
+         modalElement.style.display = "none"
+  }
+  })
+}

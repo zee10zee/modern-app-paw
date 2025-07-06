@@ -47,6 +47,8 @@ async function shareOnTheApp(postId,messageInput,platform){
          console.log(res.data)
        if(res.data.success){
         const sharedPost = res.data.sharedPost;
+        console.log(sharedPost.likesCount);
+
 
          updateSharedpostOnUI(sharedPost, postId)
          const actualPostofShared = postsContainer.querySelector(`.posts[data-post-id = "${postId}"]`)
@@ -134,7 +136,7 @@ function updateSharedpostOnUI(sharedPost,postId){
                  </h2>
                </div>
                <p class="description">${sharedPost.description.substring(0,100)} 
-                  <a class="showMoreLink" href="/api/showPost/${postId}">Read more...</a>
+                  <a class="showMoreLink" href="/api/showOnePost/${postId}">Read more...</a>
                </p>
                   <div class="mediaContainer">
                     ${mediaTag.outerHTML}
@@ -145,27 +147,27 @@ function updateSharedpostOnUI(sharedPost,postId){
                    <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
                   <div class="like">
                      <form class="likeForm" action="/api/post/${sharedPost.id}/like" method="post">
-                      <button class="likeBtn">❤️</button>
+                      <button class="sharePostLikeBtn" data-share-id="${sharedPost.id}">❤️</button>
                       </form>
                       <p id="likesCount" class="likesCount">${sharedPost.likes_count}</p>
                   </div>
                   <div class="commentsCount">
-                    <button id="commentButton" class="commentBtn">💬</button>
+                    <button id="commentButton" class="sharePostCommentBtn" data-share-id="${sharedPost.id}">💬</button>
                     <p class="commentCount">${sharedPost.comments_count}</p>
                   </div>
 
                   <div class="share">
                     <form action="/api/share/id">
-                      <button class="shareBtn">↗️</button>
+                      <button class="sharePostShareBtn">↗️</button>
                     </form>
                     <p>12 shares</p>
                   </div>
                  
                 </div>
 
-                 <form action="/api/post/${sharedPost.id}/comment" method="POST" id="commentForm"            class="commentingForm">
-                      <input type="hidden" name="post_id" value="${sharedPost.id}"> 
-                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                 <form  id="commentForm" >
+                      <input type="hidden" name="share_id" value="${sharedPost.id}"> 
+                      <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
                  </form>
                  <div class="commentsContainer">
                    comments here !

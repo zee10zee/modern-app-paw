@@ -1,7 +1,5 @@
 const paramId = window.location.pathname.split('/').pop()
-console.log(paramId)
-   const showPostContainer = document.getElementById('showPostContainer')
-
+const showPostContainer = document.getElementById('showPostContainer')
 
  function isVideo(filename){
       return /\.(mp4|webm|ogg)$/i.test(filename);
@@ -33,7 +31,7 @@ const loadSpecificPost = (post)=>{
                  <h2 class="title">${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
                  </h2>
-                 <div id="gear" class="gear">⚙️</div>
+                 <div id="gear" class="gear">...</div>
                  
                </div>
                <p class="description">${post.description} </p>
