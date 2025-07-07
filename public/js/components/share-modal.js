@@ -169,10 +169,10 @@ function updateSharedpostOnUI(sharedPost,postId){
                       <input type="hidden" name="share_id" value="${sharedPost.id}"> 
                       <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
                  </form>
-                 <div class="commentsContainer">
+                  <div class="commentsContainer">
                    comments here !
-                    <div class="container commentEditContainer" id="commentEditContainer"></div>
                  </div>
+                 <div class="container commentEditContainer" id="commentEditContainer"></div>
     `
     shareDiv.innerHTML = sharerHeader + prevousPost + sharer_comment_part
        postsContainer.appendChild(shareDiv)

@@ -448,24 +448,39 @@ app.get('/api/posts',validateLogin, async(req,res)=>{
         users.id as user_id,
         users.usertoken, 
         users.firstname AS author_firstname, 
-        users.profilepicture AS author_profilepicture, 
+        users.profilepicture AS author_profilepicture,
+
         posts.id as post_id,
         posts.title,
         posts.description,
         posts.mediafile,
         posts.created_at,
         posts.user_id = $1 AS postOwner,
-        COUNT(likes.id) AS likeCounts
+        posts.is_shared as is_shared,
+        
+        COUNT(likes.id) AS likeCounts,
+        
+        shares.id as share_id,
+        shares.sharer_message as share_message,
+        shares.post_id as shared_post_id,
+        shares.shared_at as share_created_at,
+        shares.user_id as sharer_id
         FROM posts
         LEFT JOIN users ON users.id = posts.user_id 
         LEFT JOIN likes ON likes.postid = posts.id 
+        LEFT JOIN shares ON shares.post_id = posts.id
         GROUP BY 
         users.id,                   
         posts.id,
         posts.title,
         posts.description,
         posts.mediafile,
-        posts.created_at
+        posts.created_at,
+        shares.id,
+        shares.sharer_message,
+        shares.post_id,
+        shares.shared_at,
+        shares.user_id
         ORDER BY posts.created_at DESC`, [req.session.userId]);
 
     if(allPosts.rows.length === 0 ){
@@ -1032,6 +1047,21 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
         })
 })
 
+
+// edit post sharer
+app.get('/api/editPost/:share_id', validateLogin, async(req,res)=>{
+    const shareId = parseInt(req.params.share_id)
+ 
+    const post = await pool.query(`SELECT * FROM shares WHERE id = $1`, [shareId])
+    if(post.rowCount === 0) return res.status(404).json({message : 'not found post'})
+     console.log(post.rows[0])
+     res.json({
+         post : post.rows[0],
+         success : true
+     })
+ })
+
+
 app.patch('/api/update/message/:shareId', validateLogin, async(req,res)=>{
     const shareId = req.params.shareId;
     const {post_id, sharer_message} = req.body;
@@ -1051,6 +1081,7 @@ app.patch('/api/update/message/:shareId', validateLogin, async(req,res)=>{
                 success : true
             })
 })
+
 
 app.delete('/api/deleteSharerPost/:id', validateLogin, async(req,res)=>{
     const shareId = req.params.id;
@@ -1108,24 +1139,36 @@ app.post('/api/likeSharePost/:shareId', validateLogin, async(req,res)=>{
         likesCount : likecount.rows[0].likes
     })
     }
-
-    
-
-
-
 })
 
-// edit post sharer
-app.get('/api/editPost/:share_id', validateLogin, async(req,res)=>{
-   const shareId = parseInt(req.params.share_id)
+// adding comment of share post
+app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
+    const {comment} = req.body;
+    const shareId = req.params.shareId;
 
-   const post = await pool.query(`SELECT * FROM shares WHERE id = $1`, [shareId])
-   if(post.rowCount === 0) return res.status(404).json({message : 'not found post'})
-    console.log(post.rows[0])
-    res.json({
-        post : post.rows[0],
-        success : true
-    })
+    const newComment = await pool.query(`INSERT INTO comments (comment,user_id,share_id) 
+        VALUES($1,$2,$3) RETURNING *`, [comment, req.session.userId,shareId])
+
+    if(newComment.rowCount === 0) return res.json({error : 'comment did not save in db'})
+
+
+    const commentAndAuthor = await pool.query(`SELECT 
+        users.firstname AS author_name,
+        users.profilepicture AS user_profile_picture,
+        comments.*,
+        (comments.user_id = $2) AS is_owner
+        FROM comments 
+        JOIN users ON comments.user_id = users.id
+        WHERE comments.share_id = $1
+        ORDER BY comments.created_at`, [shareId, req.session.userId])
+
+        if(commentAndAuthor.rowCount === 0) return res.json({error : 'no comments found'})
+            console.log(commentAndAuthor.rows[0], 'comment and author')
+        res.json({
+            commentAndAuthor : commentAndAuthor.rows[0],
+            message : 'comment successfully added',
+            success : true
+        })          
 })
 
 // chat 
@@ -1150,22 +1193,7 @@ app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
     })
 })
 
-// adding comment of share post
-app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
-    const {comment} = req.body;
-    const shareId = req.params.shareId;
 
-    const newComment = await pool.query(`INSERT INTO comments (comment,user_id,share_id) 
-        VALUES($1,$2,$3) RETURNING *`, [comment, req.session.userId,shareId])
-
-    if(newComment.rowCount === 0) return res.json({error : 'comment did not save in db'})
-
-        res.json({
-            success: true,
-            message: 'comment successfully added',
-            newComment : newComment.rows[0]
-        })
-})
 
 
 // CHATS 
@@ -1289,6 +1317,7 @@ function validateLogin(req,res,next){
 //      ) `).then(() =>console.log('COSNTRAINT conditionaly set !')).catch(err =>console.log(err))
 
 
+//    pool.query(`ALTER TABLE posts ALTER COLUMN shared_post_id SET DEFAULT NULL`).then(()=>console.log('is_shared column added')).catch((err)=>console.log(err))
 
 
 
