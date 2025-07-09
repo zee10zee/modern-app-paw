@@ -1,11 +1,13 @@
 postsContainer.addEventListener('keypress', (e)=>{
     if(e.target.classList.contains('shareCommentInput') && e.key === 'Enter'){
         e.preventDefault()
+        const inputElement = e.target;
         const sharePost = e.target.closest('.posts')
         console.log(sharePost, 'working here')
         const shareId = sharePost.dataset.shareId;
         console.log(shareId)
         handleCommenting(e,shareId,sharePost)
+        inputElement.value = ''
     }    
 })
 
@@ -22,9 +24,10 @@ async function handleCommenting(event,shareId,sharePost){
     try{
         const response = await axios.post(`/api/sharePost/${shareId}/comment`, {comment : comment})
     if(response.status === 200 && response.data.success){
-        const newComment = response.data.commentAndAuthor;
-          console.log(newComment)
-          const commentHTML = document.createElement('div')
+        const allComments = response.data.comments;
+        const newComment = response.data.newComment;
+        //   return console.log(newComment)
+        const commentContainer = sharePost.querySelector('.commentContainer')
           commentHTML.innerHTML = addNewComment(newComment)
           commentContainer.appendChild(commentHTML)
     }    

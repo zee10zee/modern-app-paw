@@ -1,9 +1,11 @@
 // const postsContainer = document.getElementById('postsContainer')
 postsContainer.addEventListener('click', (e)=>{
      const likeBtnElement = e.target;
+     console.log(likeBtnElement)
      if(!likeBtnElement) return;
      if(likeBtnElement.classList.contains('sharePostLikeBtn')){
         const shareId = likeBtnElement.dataset.shareId;
+        // return console.log(shareId)
         if(!shareId) return;
         const postDiv = likeBtnElement.closest(`.posts[data-share-id="${shareId}"]`)
          console.log(postDiv)

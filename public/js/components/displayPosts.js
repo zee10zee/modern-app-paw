@@ -22,6 +22,18 @@ const username = sessionStorage.getItem('loggedIn_user')
       return /\.(mp4|webm|ogg)$/i.test(filename);
   }
 
+   function renderMedia(file){
+               const mediaFile = isVideo(file) ? 'video' : 'img'
+             const mediaTag = document.createElement(mediaFile)
+             mediaTag.src = '/' + file
+             if(mediaFile === 'video'){
+                mediaTag.controls = true
+             }
+             return `<div class="mediaContainer">
+                    ${mediaTag.outerHTML}
+              </div>`
+            }
+
 const renderPosts = (posts)=>{
     if(posts.length === 0){
       postsContainer.innerHTML = ''
@@ -32,6 +44,17 @@ const renderPosts = (posts)=>{
     }
      
         posts.forEach((post)=>{
+
+          // posts variables
+           const postDIV = document.createElement('div')
+             postDIV.classList.add('posts')
+             if(post.is_shared){
+              postDIV.dataset.shareId = post.share_id
+             }else{
+              postDIV.dataset.postId = post.post_id
+             }
+           
+            //  comments variables
            let commentsHTML = ''
            let commentCounts = 0;
           if(Array.isArray(post.comments)){
@@ -51,6 +74,7 @@ const renderPosts = (posts)=>{
              });
              commentsHTML+= 
              `
+
              <div class="comment" data-comment-id="${comment.id}">
              <img class="user-profile" src="${commentorProfile}" alt="user-profile">
             <strong id="author"><a href="/api/userProfile/${comment.author.userId}">${commentAuthor}</a></strong>
@@ -76,21 +100,69 @@ const renderPosts = (posts)=>{
 
            })             
           }
-             const postDIV = document.createElement('div')
-             postDIV.classList.add('posts')
-             postDIV.dataset.postId = post.post_id
-            
-           
-             const mediaFile = isVideo(post.mediafile) ? 'video' : 'img'
-             const mediaTag = document.createElement(mediaFile)
-             mediaTag.src = '/' + post.mediafile
-             if(mediaFile === 'video'){
-                mediaTag.controls = true
-             }
-             const ui = document.createElement('div')
-             postDIV.innerHTML = `
+
+          let html = ''
+
+          if(post.is_shared){
+            html += `
+                    <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
+             ${!post.is_owner?`
+              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+                    <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="">
+                        <a  href="/api/authorProfile/${post.usertoken}">${post.author_firstname}'s Profile</a>
+                    </li>
+                    <li class="userProfile" data-user-id="${post.user_id}">
+                        <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
+                    </li>
+              </ul>
+              `:''}
+                 <div class="title-date-burger"> 
+                     <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
+                      ${post.is_owner ?`
+                    <div id="gear" class="gear">⋮</div>
+                  `:''}                                    
+               </div>
+                  <p class="sharer_message">${post.description}</p>
+
+
+               <div class="edit-delete">
+                
+                   <span class="closep">❌</span>
+                  <form id="editForm" >
+                    <button data-share-id="${post.share_id}" class="postSharerEditBtn">Edit</button>
+                  </form>
+                  <form id="deleteForm" >
+                    <button data-share-id="${post.share_id}" class="postSharerDeleteBtn">Delete</button>
+                 </form>
+                </div>
+                    <div class="shared_post" data-post-id="${post.post_id}">
+                        <img class="ownerPhoto" src="${post.share_data.original_author.profile}" alt="Profile picture">
+                        <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+                              <li class="ownerProfile" data-token-id="${post.share_data.original_author.usertoken}" data-user-id="${post.share_data.original_author.id}">
+                                  <a  href="/api/authorProfile/${post.share_data.original_author.id}">${post.share_data.original_author.name}'s Profile</a>
+                              </li>
+                              <li class="userProfile" data-user-id="${post.share_data.original_author.id}">
+                                  <a  class="userChatLink" href="/api/chatpage/${post.share_data.original_author.id}">Chat with user</a>
+                              </li>
+                        </ul>
+                      
+                        <div class="title-date-burger"> 
+                          <h2 class="title"> ${post.share_data.original_title}
+                            <span id="date" class="date">${new Date(post.share_data.original_created_at).toLocaleDateString()}</span>
+                          </h2>
+                        </div>
+                        <p class="description">${post.share_data.original_description.substring(0,100)} 
+                            <a class="showMoreLink" href="/api/showOnePost/${post.share_data.original_author.id}">Read more...</a>
+                        </p>
+                        <div class="mediaContainer">
+                          ${renderMedia(post.share_data.original_media)}
+                        </div>
+                    </div>
+             `
+          }else{
+            html+= `
              <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
-             ${!post.postowner?`
+             ${!post.is_owner?`
               <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
                     <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
                         <a  href="/api/authorProfile/${post.usertoken}">${post.author_firstname}'s Profile</a>
@@ -100,32 +172,48 @@ const renderPosts = (posts)=>{
                     </li>
               </ul>
               ` : ''}
-               <div class="title-date-burger"> 
-                 <h2 class="title"> ${post.title}
-                   <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
-                 </h2>
-                 ${post.postowner?`
-                 <div id="gear" class="gear">⋮</div>
-                  `:''}
-                 
-               </div>
-               <p class="description">${post.description.substring(0,100)} 
-                  <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
-               </p>
-                  <div class="mediaContainer">
-                    ${mediaTag.outerHTML}
+               <div class="title-date-burger">
+       
+                  <h2 class="title"> ${post.title}
+                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
+                  </h2>
+
+                  ${post.is_owner?`
+                  <div id="gear" class="gear">⋮</div>
+                    `:''}
                   </div>
+
+                  <p class="description">${post.description.substring(0,100)} 
+                      <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
+                  </p>
                   
-               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
+                  ${renderMedia(post.mediafile)}
+               `
+          }
+
+          html+=`
+             <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
                   <div class="like">
-                     <form class="likeForm" action="/api/post/${post.id}/like" method="post">
-                      <button class="likeBtn">❤️</button>
+                  ${post.is_shared?`
+                     <form class="likeForm" action="/api/post/${post.share_id}/like" method="post">
+                         <button class="sharePostLikeBtn" data-share-id="${post.share_id}">❤️</button>
                       </form>
-                      <p id="likesCount" class="likesCount">${post.likecounts}</p>
+                      `:
+                      ` <form class="likeForm" action="/api/post/${post.post_id}/like" method="post">
+                         <button class="likeBtn">❤️</button>
+                      </form>`}
+
+                      ${post.is_shared?`
+                      <p id="likesCount" class="likesCount">${post.like_count}</p>
+                      `:
+                      `<p id="likesCount" class="likesCount">${post.likecounts}</p>`}
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
-                    <p class="commentCount">${commentCounts}</p>
+                    ${post.is_shared?`
+                    <p class="commentCount">${post.comment_count}</p>
+                    `:
+                    ` <p class="commentCount">${commentCounts}</p>`}
                   </div>
 
                   <div class="share">
@@ -137,7 +225,7 @@ const renderPosts = (posts)=>{
                 
                  <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
                       <input type="hidden" name="post_id" value="${post.post_id}"> 
-                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                      <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
                  </form>
                  <div class="commentsContainer">
                     ${commentsHTML}
@@ -159,11 +247,10 @@ const renderPosts = (posts)=>{
                  </form>
                   
                 </div>
+          `
 
-               
-             `
-            
-            postsContainer.appendChild(postDIV)
+          postDIV.innerHTML = html
+          postsContainer.appendChild(postDIV)
         })
 }
 
@@ -512,9 +599,10 @@ const deletePost = async(postId)=>{
 
   document.addEventListener('DOMContentLoaded', async(e)=>{
   const res = await axios.get('/api/posts')
+  // return console.log(res.data.posts)
     if(res.status === 200){
         Allposts = res.data.posts
-        // return console.log(posts)
+         console.log(Allposts)
         if(Allposts && Array.isArray(Allposts)){
            renderPosts(Allposts)
         }else{

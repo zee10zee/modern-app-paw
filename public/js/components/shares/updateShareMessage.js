@@ -3,10 +3,12 @@
 const modalContainer = document.querySelector('.editShareContentModal')
     modalContainer.addEventListener('click', (e)=>{
         console.log('clicked the modal container')
-        const saveBtn = e.target
+         const saveBtn = e.target
+
         if(saveBtn.classList.contains('saveBtn')){
-        console.log(saveBtn)
+            // e.preventDefault()
             const shareId = e.target.dataset.shareId;
+
             updateSharePostMessage(e,shareId,modalContainer)
         }
     })
@@ -16,11 +18,9 @@ const modalContainer = document.querySelector('.editShareContentModal')
 
 const updateSharePostMessage = async(event,shareId, modalContainer)=>{
     event.preventDefault()
-   console.log(modalContainer)
+//    return console.log(modalContainer.querySelector('.message'))
    const sharerMessageInput = modalContainer.querySelector('.message')
    const sharerMessage = sharerMessageInput.value
-  
-
   try{
      const res = await axios.patch(`/api/update/message/${shareId}`, {sharer_message : sharerMessage})
 
@@ -38,6 +38,7 @@ const updateSharePostMessage = async(event,shareId, modalContainer)=>{
    }
   }catch(err){
      modalContainer.textContent = err;
+     console.log(err)
   }
 
 }

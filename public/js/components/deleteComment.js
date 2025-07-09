@@ -16,6 +16,9 @@ const deleteComment = async(event,comId, commentDiv)=>{
         console.log(response.data)
      if(response.data.success){
         commentDiv.remove()
+        const commentCountElement = commentDiv.querySelector('.commentsCount')
+        console.log(commentCountElement)
+      //   commentCommentElement.textContent = response.data.commentCount; //should be done on delete route
      }
      }catch(err){
         console.log(err)

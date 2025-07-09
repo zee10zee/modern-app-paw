@@ -444,53 +444,167 @@ app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
 
 app.get('/api/posts',validateLogin, async(req,res)=>{
 
-    const allPosts = await pool.query(`SELECT
-        users.id as user_id,
-        users.usertoken, 
-        users.firstname AS author_firstname, 
-        users.profilepicture AS author_profilepicture,
+    // const actualPosts = `SELECT
+    //     users.id as user_id,
+    //     users.usertoken, 
+    //     users.firstname AS author_firstname, 
+    //     users.profilepicture AS author_profilepicture,
+    //     posts.id as post_id,
+    //     posts.title,
+    //     posts.description,
+    //     posts.mediafile,
+    //     posts.created_at,
+    //     posts.user_id = $1 AS postOwner,
+    //     COUNT(likes.id) AS likeCounts
+    //     FROM posts
+    //     LEFT JOIN users ON users.id = posts.user_id 
+    //     LEFT JOIN likes ON likes.postid = posts.id 
+    //     LEFT JOIN shares ON shares.post_id = posts.id
+    //     GROUP BY 
+    //     users.id,                   
+    //     posts.id,
+    //     posts.title,
+    //     posts.description,
+    //     posts.mediafile,
+    //     posts.created_at
+    //     ORDER BY posts.created_at DESC`
 
-        posts.id as post_id,
-        posts.title,
-        posts.description,
-        posts.mediafile,
-        posts.created_at,
-        posts.user_id = $1 AS postOwner,
-        posts.is_shared as is_shared,
-        
-        COUNT(likes.id) AS likeCounts,
-        
-        shares.id as share_id,
-        shares.sharer_message as share_message,
-        shares.post_id as shared_post_id,
-        shares.shared_at as share_created_at,
-        shares.user_id as sharer_id
-        FROM posts
-        LEFT JOIN users ON users.id = posts.user_id 
-        LEFT JOIN likes ON likes.postid = posts.id 
-        LEFT JOIN shares ON shares.post_id = posts.id
-        GROUP BY 
-        users.id,                   
-        posts.id,
-        posts.title,
-        posts.description,
-        posts.mediafile,
-        posts.created_at,
-        shares.id,
-        shares.sharer_message,
-        shares.post_id,
-        shares.shared_at,
-        shares.user_id
-        ORDER BY posts.created_at DESC`, [req.session.userId]);
+    //      // share post 
 
-    if(allPosts.rows.length === 0 ){
-        console.log('no posts found')
-        return res.json({posts : []})
-    }
+    // const sharePosts = `SELECT 
+    //    shares.id as share_id,
+    //    shares.usertoken = 
+    //    shares.sharer_message as description,
+    //    shares.shared_at, 
+    //    shares.post_id as share_post_id,
+    //    shares.user_id = $1 as shareOwner,
+       
+    //    original_post.id AS original_post_id,
+    //    original_post.title as original_post_title,
+    //    original_post.description as original_post_description,
+    //    original_post.mediafile as original_post_media,
+    //    original_post.created_at as original_post_created_at,
+    //    original_post.user_id = $1 as isPostOwner,
+
+    //    COUNT (DISTINCT share_post_likes.id) as count_sharePostLikes,
+    //    COUNT (DISTINCT share_post_comments.id) as count_sharePostComments,
+
+    //    post_sharer.id as sharer_id,
+    //    post_sharer.profilepicture as sharer_profilepicture,
+    //    post_sharer.firstname as sharer_name,
+       
+    //    original_post_author.firstname as original_post_author_firstname,
+    //    original_post_author.profilepicture as original_author_profilepicture,
+    //    original_post_author.id as original_post_author_id
+
+    //    FROM shares 
+
+    //    LEFT JOIN posts AS original_post ON original_post.id = shares.post_id
+    //    LEFT JOIN users AS original_post_author ON original_post_author.id = posts.user_id
+    //    LEFT JOIN users AS post_sharer ON post_sharer.id = shares.user_id
+    //    LEFT JOIN likes AS share_post_likes ON share_post_likes.id = shares.id
+       
+    //    GROUP BY 
+    //    shares.id,
+    //    posts.id,
+    //    users.id
+    //    ORDER BY shares.shared_at
+    //    `;
+
+    // const allPosts = await pool.query(`${actualPosts} UNION ALL ${sharePosts}`, [req.session.userId])
+
+    // ai joined one! 
+    // Original posts query
+const actualPosts = `SELECT
+  users.id as user_id,
+  users.usertoken, 
+  users.firstname AS author_firstname, 
+  users.profilepicture AS author_profilepicture,
+  posts.id as post_id,
+  posts.title,
+  posts.description,
+  posts.mediafile,
+  posts.created_at,
+  posts.user_id = $1 AS is_owner,
+  FALSE AS is_shared,  
+  NULL AS share_data, 
+  COUNT(likes.id) AS likecounts,
+  COUNT(comments.id) AS commentcounts
+FROM posts
+LEFT JOIN users ON users.id = posts.user_id 
+LEFT JOIN likes ON likes.postid = posts.id 
+LEFT JOIN comments ON comments.post_id = posts.id
+GROUP BY 
+  users.id,
+  posts.id
+ORDER BY posts.created_at DESC`;
+
+// Shared posts query
+const sharePosts = `SELECT
+  shares.id as share_id,
+  shares.user_id as user_id,
+  shares.user_id as usertoken, 
+  users.firstname AS author_firstname,
+  users.profilepicture AS author_profilepicture,
+  shares.id as post_id,  
+  NULL AS title,  
+  shares.sharer_message AS description,
+  NULL AS mediafile,  
+  shares.shared_at AS created_at,
+  shares.user_id = $1 AS is_owner,
+  TRUE AS is_shared,
+  JSON_BUILD_OBJECT(
+    'original_post_id', original_post.id,
+    'original_title', original_post.title,
+    'original_description', original_post.description,
+    'original_media', original_post.mediafile,
+    'original_created_at', original_post.created_at,
+    'original_author', JSON_BUILD_OBJECT(
+      'id', original_author.id,
+      'name', original_author.firstname,
+      'profile', original_author.profilepicture
+    )
+  ) AS share_data,
+  COUNT(DISTINCT share_likes.id) AS like_count,
+  COUNT(DISTINCT share_comments.id) AS comment_count
+FROM shares
+LEFT JOIN users ON users.id = shares.user_id
+LEFT JOIN posts AS original_post ON original_post.id = shares.post_id
+LEFT JOIN users AS original_author ON original_author.id = original_post.user_id
+LEFT JOIN likes AS share_likes ON share_likes.share_id = shares.id
+LEFT JOIN comments AS share_comments ON share_comments.share_id = shares.id
+GROUP BY 
+  shares.id,
+  users.id,
+  original_post.id,
+  original_author.id
+ORDER BY shares.shared_at DESC`;
+
+// Execute as separate queries (better than UNION for this case)
+const [originalPosts, sharedPosts] = await Promise.all([
+  pool.query(actualPosts, [req.session.userId]),
+  pool.query(sharePosts, [req.session.userId])
+]);
+
+// Combine results
+const allPosts = [
+  ...originalPosts.rows,
+  ...sharedPosts.rows.map(share => ({
+    ...share,
+    // You can transform shared posts here if needed
+  }))
+].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+   if(allPosts.length === 0){
+    console.log('no posts or shrae posts')
+     return res.json({
+        posts  : []
+     })
+   }   
 
 
     // getting all the comments of the posts
-    const postsIds = allPosts.rows.map(post => post.post_id)
+    const postsIds = allPosts.map(post => post.post_id)
     console.log("post ids ",postsIds)
 
     const showCommentsQuery = `
@@ -518,7 +632,7 @@ app.get('/api/posts',validateLogin, async(req,res)=>{
 
     // merge the comments to their posts
 
-    const posts = allPosts.rows.map(post =>{
+    const posts = allPosts.map(post =>{
         const postComments = allComments.rows.filter(comment => comment.post_id === post.post_id)
         console.log(postComments, 'posts comments')
         return {
@@ -1084,7 +1198,7 @@ app.patch('/api/update/message/:shareId', validateLogin, async(req,res)=>{
 
 
 app.delete('/api/deleteSharerPost/:id', validateLogin, async(req,res)=>{
-    const shareId = req.params.id;
+    const shareId = parseInt(req.params.id);
 
     const postsExists = await pool.query('SELECT * FROM shares WHERE id = $1', [shareId])
 
@@ -1152,20 +1266,21 @@ app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
     if(newComment.rowCount === 0) return res.json({error : 'comment did not save in db'})
 
 
-    const commentAndAuthor = await pool.query(`SELECT 
+    const commentsAndAuthors = await pool.query(`SELECT 
         users.firstname AS author_name,
         users.profilepicture AS user_profile_picture,
         comments.*,
-        (comments.user_id = $2) AS is_owner
+        (comments.user_id = $2) as is_owner
         FROM comments 
         JOIN users ON comments.user_id = users.id
         WHERE comments.share_id = $1
-        ORDER BY comments.created_at`, [shareId, req.session.userId])
+        ORDER BY comments.created_at`, [shareId,req.session.userId])
 
-        if(commentAndAuthor.rowCount === 0) return res.json({error : 'no comments found'})
-            console.log(commentAndAuthor.rows[0], 'comment and author')
+        if(commentsAndAuthors.rowCount === 0) return res.json({error : 'no comments found'})
+            console.log(commentsAndAuthors.rows[0], 'comment and author')
         res.json({
-            commentAndAuthor : commentAndAuthor.rows[0],
+            newComment : newComment.rows[0],
+            comments : commentsAndAuthors.rows,
             message : 'comment successfully added',
             success : true
         })          
