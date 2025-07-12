@@ -444,76 +444,7 @@ app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
 
 app.get('/api/posts',validateLogin, async(req,res)=>{
 
-    // const actualPosts = `SELECT
-    //     users.id as user_id,
-    //     users.usertoken, 
-    //     users.firstname AS author_firstname, 
-    //     users.profilepicture AS author_profilepicture,
-    //     posts.id as post_id,
-    //     posts.title,
-    //     posts.description,
-    //     posts.mediafile,
-    //     posts.created_at,
-    //     posts.user_id = $1 AS postOwner,
-    //     COUNT(likes.id) AS likeCounts
-    //     FROM posts
-    //     LEFT JOIN users ON users.id = posts.user_id 
-    //     LEFT JOIN likes ON likes.postid = posts.id 
-    //     LEFT JOIN shares ON shares.post_id = posts.id
-    //     GROUP BY 
-    //     users.id,                   
-    //     posts.id,
-    //     posts.title,
-    //     posts.description,
-    //     posts.mediafile,
-    //     posts.created_at
-    //     ORDER BY posts.created_at DESC`
-
-    //      // share post 
-
-    // const sharePosts = `SELECT 
-    //    shares.id as share_id,
-    //    shares.usertoken = 
-    //    shares.sharer_message as description,
-    //    shares.shared_at, 
-    //    shares.post_id as share_post_id,
-    //    shares.user_id = $1 as shareOwner,
-       
-    //    original_post.id AS original_post_id,
-    //    original_post.title as original_post_title,
-    //    original_post.description as original_post_description,
-    //    original_post.mediafile as original_post_media,
-    //    original_post.created_at as original_post_created_at,
-    //    original_post.user_id = $1 as isPostOwner,
-
-    //    COUNT (DISTINCT share_post_likes.id) as count_sharePostLikes,
-    //    COUNT (DISTINCT share_post_comments.id) as count_sharePostComments,
-
-    //    post_sharer.id as sharer_id,
-    //    post_sharer.profilepicture as sharer_profilepicture,
-    //    post_sharer.firstname as sharer_name,
-       
-    //    original_post_author.firstname as original_post_author_firstname,
-    //    original_post_author.profilepicture as original_author_profilepicture,
-    //    original_post_author.id as original_post_author_id
-
-    //    FROM shares 
-
-    //    LEFT JOIN posts AS original_post ON original_post.id = shares.post_id
-    //    LEFT JOIN users AS original_post_author ON original_post_author.id = posts.user_id
-    //    LEFT JOIN users AS post_sharer ON post_sharer.id = shares.user_id
-    //    LEFT JOIN likes AS share_post_likes ON share_post_likes.id = shares.id
-       
-    //    GROUP BY 
-    //    shares.id,
-    //    posts.id,
-    //    users.id
-    //    ORDER BY shares.shared_at
-    //    `;
-
-    // const allPosts = await pool.query(`${actualPosts} UNION ALL ${sharePosts}`, [req.session.userId])
-
-    // ai joined one! 
+   
     // Original posts query
 const actualPosts = `SELECT
   users.id as user_id,
@@ -528,8 +459,8 @@ const actualPosts = `SELECT
   posts.user_id = $1 AS is_owner,
   FALSE AS is_shared,  
   NULL AS share_data, 
-  COUNT(likes.id) AS likecounts,
-  COUNT(comments.id) AS commentcounts
+  COUNT(likes.id) AS likes_count,
+  COUNT(comments.id) AS comments_count
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id 
 LEFT JOIN likes ON likes.postid = posts.id 
@@ -565,8 +496,8 @@ const sharePosts = `SELECT
       'profile', original_author.profilepicture
     )
   ) AS share_data,
-  COUNT(DISTINCT share_likes.id) AS like_count,
-  COUNT(DISTINCT share_comments.id) AS comment_count
+  COUNT(DISTINCT share_likes.id) AS likes_count,
+  COUNT(DISTINCT share_comments.id) AS comments_count
 FROM shares
 LEFT JOIN users ON users.id = shares.user_id
 LEFT JOIN posts AS original_post ON original_post.id = shares.post_id
@@ -580,7 +511,6 @@ GROUP BY
   original_author.id
 ORDER BY shares.shared_at DESC`;
 
-// Execute as separate queries (better than UNION for this case)
 const [originalPosts, sharedPosts] = await Promise.all([
   pool.query(actualPosts, [req.session.userId]),
   pool.query(sharePosts, [req.session.userId])
@@ -591,7 +521,6 @@ const allPosts = [
   ...originalPosts.rows,
   ...sharedPosts.rows.map(share => ({
     ...share,
-    // You can transform shared posts here if needed
   }))
 ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -602,12 +531,12 @@ const allPosts = [
      })
    }   
 
-
+   
     // getting all the comments of the posts
-    const postsIds = allPosts.map(post => post.post_id)
-    console.log("post ids ",postsIds)
+    const postsIds = allPosts.filter(post =>!post.is_shared).map(post => post.post_id)
+    const shareIds = allPosts.filter(post =>post.is_shared).map(post => post.share_id)
 
-    const showCommentsQuery = `
+    const actualPostComments = `
     SELECT comments.post_id,
     COUNT(comments.id) AS commentCounts,
     JSON_AGG(
@@ -626,23 +555,47 @@ const allPosts = [
      FROM comments JOIN users ON users.id = comments.user_id
      WHERE comments.post_id = ANY($2)
      GROUP BY comments.post_id
-    
     `
-    const allComments = await pool.query(showCommentsQuery, [req.session.userId,postsIds])
+    const sharePostComments = `
+     SELECT comments.share_id,
+     JSON_AGG(
+     JSON_BUILD_OBJECT(
+       'id',comments.id,
+       'text', comments.comment,
+       'created_at', comments.created_at,
+       'is_owner', (comments.user_id = $1),
+       'author', JSON_BUILD_OBJECT(
+        'user_id', users.id,
+        'firstname', users.firstname,
+        'profile_picture', users.profilepicture
+       )
+     )ORDER BY comments.created_at
+     ) AS comments 
+     FROM comments 
+     JOIN users ON users.id = comments.user_id
+     WHERE comments.share_id = ANY($2)
+     GROUP BY comments.share_id
+    `
 
-    // merge the comments to their posts
+    const [originalPostComments,sharedPostComments] = await Promise.all([
+        pool.query(actualPostComments,[req.session.userId,postsIds]),
+        pool.query(sharePostComments, [req.session.userId, shareIds])
+    ])
 
-    const posts = allPosts.map(post =>{
-        const postComments = allComments.rows.filter(comment => comment.post_id === post.post_id)
-        console.log(postComments, 'posts comments')
-        return {
-            ...post,
-            comments : postComments
-        }
-    })
+    // const allPostComments = [...postComments,...sharePostComments]
+
+    const postsWithComments = allPosts.map(post => {
+  const comments = post.is_shared
+    ? sharedPostComments.rows.find(c => c.share_id === post.share_id)?.comments || []
+    : originalPostComments.rows.find(c => c.post_id === post.post_id)?.comments || [];
+    
+  return { ...post, comments };
+});
+
+ console.log("posts with comments ",postsWithComments)
 
     res.json({
-        posts : posts
+        posts : postsWithComments
     })
     
 });

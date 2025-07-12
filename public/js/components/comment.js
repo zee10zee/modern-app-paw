@@ -7,11 +7,12 @@ window.addEventListener('DOMContentLoaded', (e)=>{
     // on submitting the comment
     postsContainer.addEventListener('keypress', async(e)=>{
           const commentInput = e.target
-          console.log(commentInput)
-          const commentDiv = e.target.closest('.posts').querySelector('.comment')
+        //   const commentDiv = commentInput.closest('.posts').querySelector('.comment')
 
         if(e.target.classList.contains('commentInput') && e.key === 'Enter'){
             e.preventDefault()
+            // return console.log('entered actual post comment !', commentDiv)
+
             if(!commentInput.classList.contains('editingMode')){
                 if(!commentInput.dataset.commentId){
                     await handleComment(e)

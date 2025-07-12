@@ -3,7 +3,6 @@ postsContainer.addEventListener('keypress', (e)=>{
         e.preventDefault()
         const inputElement = e.target;
         const sharePost = e.target.closest('.posts')
-        console.log(sharePost, 'working here')
         const shareId = sharePost.dataset.shareId;
         console.log(shareId)
         handleCommenting(e,shareId,sharePost)
@@ -15,8 +14,7 @@ postsContainer.addEventListener('keypress', (e)=>{
 
 async function handleCommenting(event,shareId,sharePost){
     // event.preventDefault()
-    const commentContainer = sharePost.querySelector('.commentsContainer')
-    commentContainer.innerHTML = ''
+    // const commentContainer = sharePost.querySelector('.commentsContainer')
     const formElement = event.target.parentElement;
     const form = new FormData(formElement)
     const comment = form.get('comment')
@@ -25,18 +23,24 @@ async function handleCommenting(event,shareId,sharePost){
         const response = await axios.post(`/api/sharePost/${shareId}/comment`, {comment : comment})
     if(response.status === 200 && response.data.success){
         const allComments = response.data.comments;
-        const newComment = response.data.newComment;
-        //   return console.log(newComment)
-        const commentContainer = sharePost.querySelector('.commentContainer')
-          commentHTML.innerHTML = addNewComment(newComment)
-          commentContainer.appendChild(commentHTML)
+        const tartgetComment = allComments[allComments.length - 1]
+        const commentCountElement = sharePost.querySelector('.commentCount')
+        console.log(commentCountElement)
+        commentCountElement.textContent = allComments.length;
+
+        const commentContainer = sharePost.querySelector('.commentsContainer')
+        const shareCommentElement = document.createElement('div')
+        shareCommentElement.classList.add('comment')
+        shareCommentElement.dataset.commentId = tartgetComment.id
+
+          shareCommentElement.innerHTML = addNewComment(tartgetComment)
+        //   return console.log(commentContainer)
+          commentContainer.appendChild(shareCommentElement)
     }    
     }catch(err){
         console.log(err)
     }
 }
-
-
 function addNewComment(comment){
     const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
         weekday : 'short', 

@@ -2,7 +2,6 @@
 
 const modalContainer = document.querySelector('.editShareContentModal')
     modalContainer.addEventListener('click', (e)=>{
-        console.log('clicked the modal container')
          const saveBtn = e.target
 
         if(saveBtn.classList.contains('saveBtn')){
@@ -18,7 +17,6 @@ const modalContainer = document.querySelector('.editShareContentModal')
 
 const updateSharePostMessage = async(event,shareId, modalContainer)=>{
     event.preventDefault()
-//    return console.log(modalContainer.querySelector('.message'))
    const sharerMessageInput = modalContainer.querySelector('.message')
    const sharerMessage = sharerMessageInput.value
   try{
@@ -31,10 +29,17 @@ const updateSharePostMessage = async(event,shareId, modalContainer)=>{
        const targetedPost = postsContainer.querySelector(`.posts[data-share-id="${shareId}"]`);
        
        const messageElement = targetedPost.querySelector('.sharer_message')
-    //    return console.log(messageElement,targetedPost)
        messageElement.textContent = newMessage
        modalContainer.style.display = "none"
-       alert('message updated successfully !')
+
+    //    pop the success message !
+       modalContainer.style.display = "block"
+       modalContainer.style.color = "#fff"
+       modalContainer.innerHTML = 'message updated successfully !'
+       setTimeout(() => {
+        modalContainer.innerHTML = ''
+        modalContainer.style.display = "none"
+       }, 2000);
    }
   }catch(err){
      modalContainer.textContent = err;

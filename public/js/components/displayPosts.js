@@ -44,7 +44,6 @@ const renderPosts = (posts)=>{
     }
      
         posts.forEach((post)=>{
-
           // posts variables
            const postDIV = document.createElement('div')
              postDIV.classList.add('posts')
@@ -59,11 +58,7 @@ const renderPosts = (posts)=>{
            let commentCounts = 0;
           if(Array.isArray(post.comments)){
           post.comments.forEach(comment =>{
-           console.log(typeof(comment.commentcounts))
-            commentCounts = parseInt(comment.commentcounts)
-          })
-           const comments = post.comments.flatMap(comment => comment.comments || [])
-           comments.forEach(comment =>{
+          console.log(JSON.stringify(comment, null, 2))
             const commentorProfile = comment.author.profile_picture
              const commentAuthor = comment.author.firstname
              const text = comment.text
@@ -72,12 +67,14 @@ const renderPosts = (posts)=>{
                 month : 'short',
                 year : 'numeric'
              });
-             commentsHTML+= 
-             `
-
-             <div class="comment" data-comment-id="${comment.id}">
-             <img class="user-profile" src="${commentorProfile}" alt="user-profile">
-            <strong id="author"><a href="/api/userProfile/${comment.author.userId}">${commentAuthor}</a></strong>
+              commentsHTML+=  `
+              ${post.comments.length === 0?
+                `<p>No comments yet !</p>`
+                :
+                `
+              <div class="comment" data-comment-id="${comment.id}">
+                <img class="user-profile" src="${commentorProfile}" alt="user-profile">
+                <strong id="author"><a href="/api/userProfile/${comment.author.user_id}">${commentAuthor}</a></strong>
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
                      ${comment.is_owner?`
@@ -96,10 +93,13 @@ const renderPosts = (posts)=>{
                     
                 </div>
                 </div>
-             `
+                `}
 
-           })             
+
+               `
+           })
           }
+          
 
           let html = ''
 
@@ -122,7 +122,7 @@ const renderPosts = (posts)=>{
                     <div id="gear" class="gear">⋮</div>
                   `:''}                                    
                </div>
-                  <p class="sharer_message">${post.description}</p>
+                  <p class="sharer_message" onclick="#">${post.description}</p>
 
 
                <div class="edit-delete">
@@ -183,7 +183,7 @@ const renderPosts = (posts)=>{
                     `:''}
                   </div>
 
-                  <p class="description">${post.description.substring(0,100)} 
+                  <p class="description" data-full-text="${post.description}">${post.description.substring(0,100)} 
                       <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
                   </p>
                   
@@ -203,17 +203,11 @@ const renderPosts = (posts)=>{
                          <button class="likeBtn">❤️</button>
                       </form>`}
 
-                      ${post.is_shared?`
-                      <p id="likesCount" class="likesCount">${post.like_count}</p>
-                      `:
-                      `<p id="likesCount" class="likesCount">${post.likecounts}</p>`}
+                      <p id="likesCount" class="likesCount">${post.likes_count}</p>
                   </div>
                   <div class="commentsCount">
                     <button id="commentButton" class="commentBtn">💬</button>
-                    ${post.is_shared?`
-                    <p class="commentCount">${post.comment_count}</p>
-                    `:
-                    ` <p class="commentCount">${commentCounts}</p>`}
+                    <p class="commentCount"> ${post.comments_count}</p>
                   </div>
 
                   <div class="share">
@@ -222,15 +216,25 @@ const renderPosts = (posts)=>{
                   </div>
                  
                 </div>
-                
-                 <form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
-                      <input type="hidden" name="post_id" value="${post.post_id}"> 
+                ${post.is_shared?`
+                 <form action="/api/post/${post.share_id}/comment" method="POST" id="commentForm" class="commentingForm">
+                      <input type="hidden" name="post_id" value="${post.share_id}"> 
                       <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
                  </form>
                  <div class="commentsContainer">
                     ${commentsHTML}
                     <div class="container commentEditContainer" id="commentEditContainer"></div>
                  </div>
+                 `
+                 :
+                 `<form action="/api/post/${post.post_id}/comment" method="POST" id="commentForm" class="commentingForm">
+                      <input type="hidden" name="post_id" value="${post.post_id}"> 
+                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
+                 </form>
+                 <div class="commentsContainer">
+                    ${commentsHTML}
+                    <div class="container commentEditContainer" id="commentEditContainer"></div>
+                 </div>`}
 
                   <div class="share-container">
                   
@@ -295,9 +299,21 @@ const setupEventListener = ()=>{
         editDeleteContainer.style.display = "block";
      }
 
-
     }else if(showMoreLink){
-        window.location.href=`/api/showPost/${postId}`
+      // expand the description
+      const desc = postDiv.querySelector('.description')
+      const fullText = desc.dataset.fullText || desc.textContent
+      const isExpanded = desc.textContent.length === fullText.length;
+
+      if(!isExpanded){
+          desc.innerHTML = `${fullText} <a class="showMoreLink" href="#">show less</a>`
+      }else{
+        desc.textContent = fullText.substring(0, 100) + "...";
+        showMoreLink.innerHTML = '<a class="showMoreLink" href="#">Show more</a>';
+      }
+
+
+      
     }else if(userChatLink){
      const userid = userProfileUserData.dataset.userId
         window.location.href=`/api/chatpage/${userid}`
@@ -312,7 +328,6 @@ const setupEventListener = ()=>{
 // load edit form
 
 const loadEditForm = async(postId,editPostContainer)=>{
-  closeAnyModal(editPostContainer)
   const editingPost =  document.createElement('div')
   editingPost.classList.add('editPostContainer')
   editingPost.dataset.postId = postId
@@ -349,7 +364,6 @@ const loadEditForm = async(postId,editPostContainer)=>{
 
 // clicking the eidt button functionlity
 editPostContainer.addEventListener('click', (e)=>{
-    
 
         const newImageBtn = e.target.classList.contains("newImage")
         const updateEditFormButton = e.target.classList.contains("updateButton")
@@ -381,7 +395,6 @@ editPostContainer.addEventListener('click', (e)=>{
     // previewing the uploaded file
     function handleFilePreview(e){
       const selectedFile = e.target.files[0]
-      console.log(selectedFile)
       const previewContainer = e.target.closest('.file-input')
       console.log(previewContainer)
       let isVideoFile = isVideo(selectedFile.name)
@@ -521,7 +534,7 @@ editPostContainer.addEventListener('click', (e)=>{
                   `:''}
                  
                </div>
-               <p class="description">${post.description.substring(0,100)} 
+               <p class="description" data-full-text="${post.description}">${post.description.substring(0,100)} 
                   <a class="showMoreLink" href="/api/showPost/${post.post_id}">Read more...</a>
                </p>
                   <div class="mediaContainer">
@@ -613,10 +626,11 @@ const deletePost = async(postId)=>{
 })
 
 
-function closeAnyModal(modalElement){
+function closeAnyModal(modalElement,secondContainer){
   window.addEventListener('click', (e)=>{
     const containerArea = e.target.closest('.posts');
-    if(modalElement.style.display !== "none" && !containerArea){
+
+    if(modalElement.style.display !== "none" && !containerArea || secondContainer){
          modalElement.style.display = "none"
   }
   })

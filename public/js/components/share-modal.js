@@ -169,15 +169,12 @@ function updateSharedpostOnUI(sharedPost,postId){
                       <input type="hidden" name="share_id" value="${sharedPost.id}"> 
                       <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
                  </form>
-                  <div class="commentsContainer">
-                   comments here !
-                 </div>
+                  <div class="commentsContainer"></div>
                  <div class="container commentEditContainer" id="commentEditContainer"></div>
     `
     shareDiv.innerHTML = sharerHeader + prevousPost + sharer_comment_part
        postsContainer.appendChild(shareDiv)
 
-    // inside the postDiv another postDiv with indentation
 }
 
 async function loadShareFormModal(event, container){
