@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <script defer src="https://cdn.tailwindcss.com"></script>
+     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+   <script defer src="/js/components/loggedInUserProfile.js"></script>
+    <title>My Profile</title>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+
+  <div class="max-w-7xl mx-auto px-4 py-6 userProfileContainer">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+      <!-- Left Sidebar -->
+      <aside class="left-container md:col-span-3 bg-white p-4 rounded-xl shadow">
+ 
+      </aside>
+
+      <!-- Center: Media Viewer -->
+      <main class="center-container md:col-span-6 bg-white p-4 rounded-xl shadow">
+        <h2 class="text-2xl font-bold mb-4 text-center">Uploaded Files</h2>
+
+        <!-- Buttons at Top -->
+        <div class="flex justify-center gap-4 mb-6">
+          <button class="clicker postedPics px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+           Photos
+          </button>
+          <button class="clicker profiePics px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+            Profile Pics
+          </button>
+          <button class="clicker videos px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition">
+            Videos
+          </button>
+        </div>
+
+        <!-- Media Output -->
+        <div class="photosWithVideos">
+          <div class="media-list grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <!-- Dynamically inserted images go here -->
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Sidebar (Optional) -->
+      <aside class="right-container md:col-span-3 bg-white p-4 rounded-xl shadow">
+        <h2 class="text-xl font-semibold mb-4">Right Sidebar</h2>
+        <p class="text-sm text-gray-600">Optional content like ads or friend suggestions.</p>
+      </aside>
+
+    </div>
+  </div>
+<!-- loading -->
+  <div id="loading" class="hidden text-center w-full">
+  <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-600 mx-auto"></div>
+</div>
+</body>
+</html>

@@ -386,6 +386,44 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
    })
 })
 
+
+app.get('/loginUserProfile/:token',validateLogin,async(req,res)=>{
+    const token = req.params.token
+   res.sendFile(basedir + 'loginUserProfile.html')
+});
+
+
+app.get('/api/loginUserProfile/:token',validateLogin,async(req,res)=>{
+    const token = req.params.token;
+    const userId = req.session.userId;
+
+    const userExists = await pool.query(`SELECT * FROM users WHERE id = $1 AND usertoken = $2`,[userId, token])
+
+    if(userExists.rowCount === 0){
+        return res.json({error : 'USER NOT FOUND'})
+    }
+
+
+    const activeUserPosts = await pool.query(`
+        SELECT * FROM posts 
+        WHERE posts.user_id = $1
+        `, [userId]);
+
+        if(activeUserPosts.rowCount === 0){
+            return res.json({error : 'users posts not found'})
+        }
+
+    console.log(userExists, activeUserPosts)
+
+        // return console.log(userExists.rows[0])
+
+    res.json({
+        user : userExists.rows[0],
+        posts : activeUserPosts.rows,
+        success : true
+    })
+})
+
 // user profile
 app.get('/userProfile/:token/:id', validateLogin, async(req,res)=>{
     const token = req.params.token;
@@ -395,7 +433,7 @@ app.get('/userProfile/:token/:id', validateLogin, async(req,res)=>{
 
 app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
     const userToken = req.params.token
-    const userid = parseInt(req.params.id)
+    const userId = parseInt(req.params.id)
 
     const userExist = await pool.query(`SELECT * FROM users WHERE usertoken = $1`, [userToken])
     if(userExist.rowCount === 0){
@@ -403,30 +441,7 @@ app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
     }
 
     console.log(userExist)
-    const userPosts = await pool.query(`SELECT
-        users.id as user_id,
-        users.usertoken, 
-        users.firstname AS author_firstname, 
-        users.profilepicture AS author_profilepicture, 
-        posts.id as post_id,
-        posts.title,
-        posts.description,
-        posts.mediafile,
-        posts.created_at,
-        COUNT(likes.id) AS likeCounts
-        FROM posts
-        LEFT JOIN users ON users.id = posts.user_id 
-        LEFT JOIN likes ON likes.postid = posts.id 
-         WHERE posts.user_id = $1
-        GROUP BY 
-        users.id,                   
-        posts.id,
-        posts.title,
-        posts.description,
-        posts.mediafile,
-        posts.created_at
-        ORDER BY posts.created_at DESC`, [userid]);
-
+    const userPosts = await pool.query(`SELECT * FROM posts WHERE user_id = $1`, [userId])
 
         if(userPosts.rowCount === 0){
             return res.json({message : 'posts not found'})
@@ -435,7 +450,7 @@ app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
 
     res.json({
         user : userExist.rows[0],
-        post : userPosts.rows
+        posts : userPosts.rows
     })
 })
 
@@ -444,7 +459,6 @@ app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
 
 app.get('/api/posts',validateLogin, async(req,res)=>{
 
-   
     // Original posts query
 const actualPosts = `SELECT
   users.id as user_id,
@@ -474,7 +488,7 @@ ORDER BY posts.created_at DESC`;
 const sharePosts = `SELECT
   shares.id as share_id,
   shares.user_id as user_id,
-  shares.user_id as usertoken, 
+  shares.user_token as sharer_token,
   users.firstname AS author_firstname,
   users.profilepicture AS author_profilepicture,
   shares.id as post_id,  
@@ -493,7 +507,9 @@ const sharePosts = `SELECT
     'original_author', JSON_BUILD_OBJECT(
       'id', original_author.id,
       'name', original_author.firstname,
-      'profile', original_author.profilepicture
+      'profile', original_author.profilepicture,
+      'token', original_author.usertoken,
+      'is_owner', original_author.id = $1
     )
   ) AS share_data,
   COUNT(DISTINCT share_likes.id) AS likes_count,
@@ -1048,15 +1064,21 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
 app.post('/api/sharePost', validateLogin, async(req,res)=>{
     const shareId = parseInt(req.params.shareId)
     const { platform,postId,sharer_message} = req.body;
+    // return console.log(req.session.userId, 'user id when share')
+     const user = await pool.query(`SELECT * FROM users WHERE id = $1`, [req.session.userId])
+
+     if(user.rowCount === 0) return res.json({error : 'user not found'})
+        console.log(user.rows[0].usertoken, 'user token')
 
         const newShare = await pool.query(`INSERT INTO shares (
         post_id, 
         user_id, 
         on_platform, 
-        sharer_message
+        sharer_message,
+        user_token
         )
-        VALUES($1, $2, $3,$4) RETURNING *
-        `, [postId,req.session.userId,platform, sharer_message]);
+        VALUES($1, $2, $3,$4, $5) RETURNING *
+        `, [postId,req.session.userId,platform, sharer_message,user.rows[0].usertoken]);
 
         if(newShare.rowCount === 0){
             return res.status(404).json({error : 'failure saving the shared file', success: false})
@@ -1239,11 +1261,11 @@ app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
         })          
 })
 
+// 
 // chat 
 
 app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
     const receiverId = parseInt(req.params.id)
-
     res.sendFile(basedir + 'chatpage.html')
 })
 
@@ -1261,13 +1283,7 @@ app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
     })
 })
 
-
-
-
 // CHATS 
-
-
-
 
 function validateLogin(req,res,next){
     if(req.session.userId){
@@ -1278,7 +1294,11 @@ function validateLogin(req,res,next){
 }
 
 
-// pool.query('delete from likes').then(()=> console.log('deleted users')).catch((err)=>{
+// pool.query(`ALTER TABLE shares
+//     ADD CONSTRAINT fk_shares_user_token
+//     FOREIGN KEY (user_token) 
+//     REFERENCES users(usertoken)
+//     ON DELETE SET NULL`).then(()=> console.log('deleted users')).catch((err)=>{
 //     console.log(err)
 // })
 // all tables
@@ -1346,9 +1366,9 @@ function validateLogin(req,res,next){
 
 
 
-// pool.query(`ALTER TABLE likes 
+// pool.query(`ALTER TABLE comments 
 //     DROP CONSTRAINT IF EXISTS share_id_fk,
-//   ADD CONSTRAINT share_id_fk FOREIGN KEY (share_id) REFERENCES shares(id)`).then(()=>{
+//   ADD CONSTRAINT share_id_fk FOREIGN KEY (share_id) REFERENCES shares(id) ON DELETE CASCADE`).then(()=>{
 //     console.log('constraint ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))
@@ -1377,12 +1397,10 @@ function validateLogin(req,res,next){
 
 
 
-// pool.query(`ALTER TABLE likes ADD CONSTRAINT oposite_null_value
-//     CHECK(
-//     (postid IS NOT NULL AND share_id IS NULL)
-//                   OR
-//     (postid IS NULL AND share_id IS NOT NULL)
-//      ) `).then(() =>console.log('COSNTRAINT conditionaly set !')).catch(err =>console.log(err))
+// pool.query(`ALTER TABLE shares ADD COLUMN IF NOT EXISTS user_token TEXT,
+//     ADD CONSTRAINT fk_user_token
+//     FOREIGN KEY (user_token) REFERENCES users(usertoken)`
+// ).then(() =>console.log('COSNTRAINT conditionaly set !')).catch(err =>console.log(err))
 
 
 //    pool.query(`ALTER TABLE posts ALTER COLUMN shared_post_id SET DEFAULT NULL`).then(()=>console.log('is_shared column added')).catch((err)=>console.log(err))

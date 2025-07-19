@@ -3,17 +3,18 @@ const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
 const userNameHTML = document.querySelector('.activeUser')
 const photo = sessionStorage.getItem('loggedIn_profile')
-const username = sessionStorage.getItem('loggedIn_user')
+const username = sessionStorage.getItem('loggedIn_name')
+const userToken = sessionStorage.getItem('loggedIn_userToken')
      
  const loggedInUser = document.querySelector('.loggedInUser')
         const profile = document.createElement('img')
         profile.classList.add('profilePic')
         const profileLink = document.createElement('a')
-        profileLink.href = '/api/currentUser/${postOwner}/profile'
+        profileLink.href = `/loginUserProfile/${userToken}`
         profileLink.append(profile)
         profile.src = photo
         userNameHTML.textContent = username
-        loggedInUser.appendChild(profile)
+        loggedInUser.appendChild(profileLink)
         
     let Allposts = []
 // to get the posts.comments array we need to transform the join table to map like objects 
@@ -94,28 +95,33 @@ const renderPosts = (posts)=>{
                 </div>
                 </div>
                 `}
-
-
                `
            })
           }
-          
 
+          
           let html = ''
 
           if(post.is_shared){
             html += `
                     <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
              ${!post.is_owner?`
-              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="">
-                        <a  href="/api/authorProfile/${post.usertoken}">${post.author_firstname}'s Profile</a>
+              <ul id="userProfile-chat-modal" class="userProfile-chatmodal">
+                    <li class="ownerProfile" data-token-id="${post.sharer_token}" data-user-id="">
+                        <a  href="/userProfile/${post.sharer_token}/${post.user_id}">${post.author_firstname}'s Profile</a>
                     </li>
                     <li class="userProfile" data-user-id="${post.user_id}">
                         <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
                     </li>
               </ul>
-              `:''}
+            `:`   
+              <ul id="userProfile-chat-modal" class="userProfile-chatmodal">
+                    <li class="ownerProfile" data-token-id="${post.sharer_token}" data-user-id="">
+                      <a  href="/userProfile/${post.sharer_token}/${post.user_id}">your Profile</a>
+                    </li>
+                   
+              </ul>`
+                  }
                  <div class="title-date-burger"> 
                      <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
                       ${post.is_owner ?`
@@ -131,15 +137,19 @@ const renderPosts = (posts)=>{
                   <form id="editForm" >
                     <button data-share-id="${post.share_id}" class="postSharerEditBtn">Edit</button>
                   </form>
-                  <form id="deleteForm" >
+                  <form id="deleteForm">
                     <button data-share-id="${post.share_id}" class="postSharerDeleteBtn">Delete</button>
                  </form>
                 </div>
                     <div class="shared_post" data-post-id="${post.post_id}">
+                        ${!post.share_data.original_author.is_owner || (post.share_data.original_author.token!==post.sharer_token && post.user_id !== post.share_id)?`
                         <img class="ownerPhoto" src="${post.share_data.original_author.profile}" alt="Profile picture">
-                        <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+                        `:''}
+
+                        
+                        <ul id="userProfile-chat-modal" class="userProfile-chatmodal">
                               <li class="ownerProfile" data-token-id="${post.share_data.original_author.usertoken}" data-user-id="${post.share_data.original_author.id}">
-                                  <a  href="/api/authorProfile/${post.share_data.original_author.id}">${post.share_data.original_author.name}'s Profile</a>
+                                  <a  href="/userProfile/${post.share_data.original_author.token}/${post.share_data.original_author.id}">${post.share_data.original_author.name}'s Profile</a>
                               </li>
                               <li class="userProfile" data-user-id="${post.share_data.original_author.id}">
                                   <a  class="userChatLink" href="/api/chatpage/${post.share_data.original_author.id}">Chat with user</a>
@@ -162,16 +172,22 @@ const renderPosts = (posts)=>{
           }else{
             html+= `
              <img class="ownerPhoto" src="${post.author_profilepicture}" alt="Profile picture">
-             ${!post.is_owner?`
-              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+             
+              <ul id="userProfile-chat-modal" class="userProfile-chatmodal">
                     <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
-                        <a  href="/api/authorProfile/${post.usertoken}">${post.author_firstname}'s Profile</a>
+                  ${post.is_owner?`
+                        <a  href="/userProfile/${post.usertoken}/${post.user_id}">Your Profile</a>
+                         ` : `
+                        <a  href="/userProfile/${post.usertoken}/${post.user_id}">${post.author_firstname}'s Profile</a>
+                        `}
                     </li>
                     <li class="userProfile" data-user-id="${post.user_id}">
+                       ${!post.is_owner?`
                         <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
+                        `:''}
                     </li>
               </ul>
-              ` : ''}
+             
                <div class="title-date-burger">
        
                   <h2 class="title"> ${post.title}
@@ -273,8 +289,9 @@ const setupEventListener = ()=>{
      const deleteBtn = e.target.classList.contains('postDeleteBtn')
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
-     const userProfile_userChatModal = e.target.classList.contains('userProfile-chat-modal')
-     const postOwnerProfileLink = e.target.closest('.ownerProfile')
+     let userProfile_userChatModal = e.target.classList.contains('userProfile-chat-modal')
+     const ownerPhoto = e.target.classList.contains('ownerPhoto');
+     const postOwnerProfileLink = e.target.closest('.ownerProfile a')
      const userChatLink = e.target.classList.contains('userChatLink')
      const userProfileUserData = e.target.closest('.userProfile')
      const postEditDeleteModal = e.target.classList.contains('closep')
@@ -301,32 +318,26 @@ const setupEventListener = ()=>{
 
     }else if(showMoreLink){
       // expand the description
-      const desc = postDiv.querySelector('.description')
-      const fullText = desc.dataset.fullText || desc.textContent
-      const isExpanded = desc.textContent.length === fullText.length;
-
-      if(!isExpanded){
-          desc.innerHTML = `${fullText} <a class="showMoreLink" href="#">show less</a>`
-      }else{
-        desc.textContent = fullText.substring(0, 100) + "...";
-        showMoreLink.innerHTML = '<a class="showMoreLink" href="#">Show more</a>';
-      }
-
-
-      
+      toggleDescriptionExpand(postDiv)
+     
     }else if(userChatLink){
      const userid = userProfileUserData.dataset.userId
         window.location.href=`/api/chatpage/${userid}`
     }else if(postOwnerProfileLink){
      const userToken = postOwnerProfileLink.dataset.tokenId
      const userId = postOwnerProfileLink.dataset.userId
-        window.location.href=`/userProfile/${userToken}/${userId}`
+       console.log(postOwnerProfileLink.href)
+        window.location.href = postOwnerProfileLink.href
+    }else if(ownerPhoto){
+       const targetModalDiv = e.target.closest('.posts,.shared_post')
+       const targetModal = targetModalDiv.querySelector('#userProfile-chat-modal')
+        console.log(targetModal.style.display)
+       targetModal.style.display = targetModal.style.display === "block"? 'none' : 'block'
     }
 })
 }
 
-// load edit form
-
+{/* //load edit form */}
 const loadEditForm = async(postId,editPostContainer)=>{
   const editingPost =  document.createElement('div')
   editingPost.classList.add('editPostContainer')
@@ -516,7 +527,7 @@ editPostContainer.addEventListener('click', (e)=>{
             <img class="ownerPhoto" src="${post.profilepicture}" alt="Profile picture">
                ${post.is_owner?
                 `
-              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
+              <ul id="userProfile-chat-modal" class="userProfile-chatmodal">
                     <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
                         <a  href="/api/authorProfile/${post.usertoken}">${post.firstname}'s Profile</a>
                     </li>
@@ -624,6 +635,20 @@ const deletePost = async(postId)=>{
     }  
       setupEventListener()
 })
+
+
+ function toggleDescriptionExpand(postDiv){
+        const desc = postDiv.querySelector('.description')
+      const fullText = desc.dataset.fullText || desc.textContent
+      const isExpanded = desc.textContent.length === fullText.length;
+
+      if(!isExpanded){
+          desc.innerHTML = `${fullText} <a class="showMoreLink" href="#">show less</a>`
+      }else{
+        desc.textContent = fullText.substring(0, 100) + "...";
+        showMoreLink.innerHTML = '<a class="showMoreLink" href="#">Show more</a>';
+      }
+      }
 
 
 function closeAnyModal(modalElement,secondContainer){

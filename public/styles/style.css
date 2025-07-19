@@ -67,6 +67,9 @@ img {
     border-radius: 10px;
 }
 
+/* user profile and chat modal */
+
+
 .shared_post{
     width: 90%;
     margin-left: 50px;
@@ -212,6 +215,7 @@ comment-delete-edit form:first-child{
 }
 
 #userProfile-chat-modal{
+    display : none;
     background: lightblue;
     padding: 5px;
     border-radius: 3px;
