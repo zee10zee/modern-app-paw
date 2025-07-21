@@ -75,7 +75,9 @@ const renderPosts = (posts)=>{
                 `
               <div class="comment" data-comment-id="${comment.id}">
                 <img class="user-profile" src="${commentorProfile}" alt="user-profile">
-                <strong id="author"><a href="/api/userProfile/${comment.author.user_id}">${commentAuthor}</a></strong>
+                ${!comment.is_owner?`
+                <strong id="author"><a class="user-link" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${comment.author.user_token}">You</a></strong>`}
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
                      ${comment.is_owner?`
@@ -85,13 +87,17 @@ const renderPosts = (posts)=>{
                 <small id="date" class="date">${commentDate}</small>
                 <div class="comment-delete-edit">
                     <span class="close">❌</span>
+                    ${!post.is_shared?`
                       <form id="edit-comment-form">
                         <button class="edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
                       </form>
+                      `: 
+                      `<form id="edit-comment-form">
+                        <button class="sharePost-edit-comment-button" data-comment-id = "${comment.id}">Edit</button>
+                      </form>`}
                       <form id="delete-comment-button">
                         <button class="commentDeleteBtn" data-comment-id = "${comment.id}">Delete</button>
                       </form>
-                    
                 </div>
                 </div>
                 `}
@@ -295,6 +301,7 @@ const setupEventListener = ()=>{
      const userChatLink = e.target.classList.contains('userChatLink')
      const userProfileUserData = e.target.closest('.userProfile')
      const postEditDeleteModal = e.target.classList.contains('closep')
+     const commentorNameLink = e.target.classList.contains('user-link');
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
      const postId = postDiv.dataset.postId;
    if(editBtn){
@@ -333,6 +340,9 @@ const setupEventListener = ()=>{
        const targetModal = targetModalDiv.querySelector('#userProfile-chat-modal')
         console.log(targetModal.style.display)
        targetModal.style.display = targetModal.style.display === "block"? 'none' : 'block'
+    }else if(commentorNameLink){
+      const targetHTML = e.target.closest('.comment')?.querySelector('.user-link')
+      window.location.href = targetHTML.getAttribute('href')
     }
 })
 }
@@ -626,7 +636,7 @@ const deletePost = async(postId)=>{
   // return console.log(res.data.posts)
     if(res.status === 200){
         Allposts = res.data.posts
-         console.log(Allposts)
+         console.log(Allposts, 'home route')
         if(Allposts && Array.isArray(Allposts)){
            renderPosts(Allposts)
         }else{

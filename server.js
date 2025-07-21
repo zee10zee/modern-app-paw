@@ -564,7 +564,8 @@ const allPosts = [
      'author', JSON_BUILD_OBJECT(
         'user_id', users.id,
        'firstname', users.firstname,
-       'profile_picture', users.profilepicture
+       'profile_picture', users.profilepicture,
+       'user_token' , users.usertoken
         )
       ) ORDER BY comments.created_at
     ) AS comments 
@@ -583,7 +584,8 @@ const allPosts = [
        'author', JSON_BUILD_OBJECT(
         'user_id', users.id,
         'firstname', users.firstname,
-        'profile_picture', users.profilepicture
+        'profile_picture', users.profilepicture,
+        'user_token', users.usertoken
        )
      )ORDER BY comments.created_at
      ) AS comments 
@@ -651,7 +653,8 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
             'author', JSON_BUILD_OBJECT(
               'id', users.id,
               'name', users.firstname,
-              'profilePicture', users.profilepicture
+              'profilePicture', users.profilepicture,
+              'user_token', users.usertoken
             )
            )
            )AS comments
@@ -785,7 +788,8 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
         'author', json_build_object(
         'firstname', users.firstname,
         'userId', users.id,
-        'profile_picture',users.profilepicture
+        'profile_picture',users.profilepicture,
+        'user_token', users.usertoken
         )
         )ORDER BY comments.created_at
         ) FROM comments 
@@ -929,17 +933,25 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
     return res.send('failure saving comment on db')
    }
 
+   const currentUser = await pool.query(`SELECT * FROM users WHERE id = $1`, [req.session.userId]);
+
+   if(currentUser.rowCount === 0) return res.json({error : 'login user not found'})
+
+
 //    after posting new comment we gotta get ALL COMMENTS of that exact post
    const allComments = await pool.query(`SELECT 
     users.firstname AS author_name,
     users.profilepicture AS user_profile_picture,
-    comments.* FROM comments 
+    users.usertoken as usersToken,
+    comments.*
+    FROM comments 
     JOIN users ON comments.user_id = users.id
     WHERE comments.post_id = $1
     ORDER BY comments.created_at`, [postId])
 
     if(allComments.rowCount === 0){
         return console.log('no COMMENTS found !')
+        
     }
 
     console.log(allComments.rows)
@@ -947,7 +959,8 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
    console.log('successfully commented')
    res.json({
     message : 'comment successfully made !',
-    postComments : allComments.rows
+    postComments : allComments.rows,
+    currentUser : currentUser.rows[0]
    });
 })
 
@@ -982,8 +995,8 @@ app.patch('/api/comment/:id/update', validateLogin, async(req,res)=>{
     const updatedCommentUser = await pool.query(`
           SELECT users.firstname AS author_name, 
           users.profilepicture AS user_profile_picture,
-          comments.* 
-          FROM comments 
+          comments.*
+          FROM comments
           JOIN users ON comments.user_id = users.id
           WHERE comments.id = $1
         `, [commentId]);
@@ -1001,29 +1014,27 @@ app.patch('/api/comment/:id/update', validateLogin, async(req,res)=>{
 });
 
 
-app.delete('/api/comment/:id/delete', validateLogin, async(req,res)=>{
-    const commentId = parseInt(req.params.id)
+app.delete('/api/comment/:post_id/:comment_id/delete', validateLogin, async(req,res)=>{
+    const commentId = parseInt(req.params.comment_id)
+    const postId = parseInt(req.params.post_id)
 
-    const deletingComment = await pool.query(`SELECT 
-        users.firstname,
-        users.profilepicture, comments.*
-        FROM comments JOIN users ON comments.user_id = users.id 
-        WHERE comments.id = $1`, [commentId])
-
-    if(deletingComment.rowCount === 0){
-        return res.status(404).json({message : 'comment not found!'})
-    }
-
-    const deletedComment = await pool.query(`DELETE FROM comments WHERE id = $1 AND user_id = $2`, [commentId, req.session.userId])
+      const deletedComment = await pool.query(`DELETE FROM comments WHERE id = $1 AND user_id = $2`, [commentId, req.session.userId])
 
     if(deletedComment.rowCount === 0){
         return res.status(404).json({success : false,message : 'You aint authorized to delete this !'})
-
     }
 
-    console.log('comment deleted !')
+    const allComments = await pool.query(`SELECT * FROM comments WHERE post_id = $1 OR share_id = $1 `, [postId])
+
+    if(allComments.rowCount === 0){
+        return console.log('no comment for now !')
+    }
+
+    console.log('comment deleted !', deletedComment.rows[0])
+
      res.json({
        deletedComment : deletedComment.rows[0],
+       allComments : allComments.rows,
        message : 'comment sucessfully deleted !',
        success : true
     })
@@ -1244,12 +1255,13 @@ app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
     const commentsAndAuthors = await pool.query(`SELECT 
         users.firstname AS author_name,
         users.profilepicture AS user_profile_picture,
+        users.usertoken as userstoken,
         comments.*,
         (comments.user_id = $2) as is_owner
         FROM comments 
         JOIN users ON comments.user_id = users.id
         WHERE comments.share_id = $1
-        ORDER BY comments.created_at`, [shareId,req.session.userId])
+        ORDER BY comments.created_at DESC`, [shareId,req.session.userId])
 
         if(commentsAndAuthors.rowCount === 0) return res.json({error : 'no comments found'})
             console.log(commentsAndAuthors.rows[0], 'comment and author')
@@ -1261,7 +1273,28 @@ app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
         })          
 })
 
-// 
+// edit share post comment
+app.patch('/api/sharePost/comment/:id/edit', validateLogin, async(req,res)=>{
+    const commentId = parseInt(req.params.id)
+    const {comment} = req.body
+
+    const commentExist = await pool.query(`SELECT * FROM comments WHERE id = $1`, [commentId])
+
+    if(commentExist.rowCount === 0){
+        res.status(404).json({error :'Comment not found'})
+    }
+
+    const updatedComment = await pool.query(`UPDATE comments SET comment = $1 WHERE id = $2 RETURNING *`, [comment, commentId])
+
+    if(updatedComment.rowCount === 0) return res.status(404).json({error : 'comment not found'})
+
+     console.log('update comment succes', updatedComment.rows[0])
+    res.json({
+        success: true,
+        updatedComment : updatedComment.rows[0]
+    })
+})
+
 // chat 
 
 app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
@@ -1364,11 +1397,13 @@ function validateLogin(req,res,next){
 //     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 //     created_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`).then(()=> console.log('posts created')).catch((err)=> console.log(err))
 
-
+// pool.query(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS user_token TEXT`).then(data => console.log('created')).catch(err =>{
+//     console.log(err)
+// })
 
 // pool.query(`ALTER TABLE comments 
-//     DROP CONSTRAINT IF EXISTS share_id_fk,
-//   ADD CONSTRAINT share_id_fk FOREIGN KEY (share_id) REFERENCES shares(id) ON DELETE CASCADE`).then(()=>{
+//     DROP CONSTRAINT IF EXISTS user_token_fk,
+//   ADD CONSTRAINT user_token_fk FOREIGN KEY (user_token) REFERENCES users(usertoken) ON DELETE CASCADE`).then(()=>{
 //     console.log('constraint ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))

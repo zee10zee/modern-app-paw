@@ -44,7 +44,7 @@ const postDiv = inputComment.closest('.posts')
     if(response.status === 200){
        console.log(commentDiv)
        const updatedComment = response.data.updatedComment
-       console.log(updatedComment)
+    //    return console.log(updatedComment)
 
        const updatedCommentDate = new Date(updatedComment.created_at).toLocaleDateString('en-US',{
                 weekday : 'short', 
@@ -53,7 +53,9 @@ const postDiv = inputComment.closest('.posts')
              });
        commentDiv.innerHTML = `
              <img class="user-profile" src="${updatedComment.user_profile_picture}" alt="user-profile">   
-             <strong id="author"><a href="/authorProfile/${updatedComment.id}">${updatedComment.author_name}</a></strong>
+              ${!comment.is_owner?`
+                <strong id="author"><a class="user-link" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${comment.author.user_token}">You</a></strong>`}
                     <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${updatedComment.comment}</p>
                          <div id="comment-gear" class="comment-gear" data-comment-id = "${updatedComment.id}">⋮</div>

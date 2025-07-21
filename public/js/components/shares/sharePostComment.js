@@ -1,5 +1,5 @@
 postsContainer.addEventListener('keypress', (e)=>{
-    if(e.target.classList.contains('shareCommentInput') && e.key === 'Enter'){
+    if(e.target.classList.contains('shareCommentInput') && e.key === 'Enter' && !e.target.classList.contains('editMode')){
         e.preventDefault()
         const inputElement = e.target;
         const sharePost = e.target.closest('.posts')
@@ -23,9 +23,11 @@ async function handleCommenting(event,shareId,sharePost){
         const response = await axios.post(`/api/sharePost/${shareId}/comment`, {comment : comment})
     if(response.status === 200 && response.data.success){
         const allComments = response.data.comments;
-        const tartgetComment = allComments[allComments.length - 1]
+       console.log(allComments)
+        const tartgetComment = allComments[0]
+        
         const commentCountElement = sharePost.querySelector('.commentCount')
-        console.log(commentCountElement)
+        // return console.log(tartgetComment.user_id,allComments)
         commentCountElement.textContent = allComments.length;
 
         const commentContainer = sharePost.querySelector('.commentsContainer')
@@ -35,7 +37,8 @@ async function handleCommenting(event,shareId,sharePost){
 
           shareCommentElement.innerHTML = addNewComment(tartgetComment)
         //   return console.log(commentContainer)
-          commentContainer.appendChild(shareCommentElement)
+        // commentContainer.insertAdjacentHTML('afterbegin', commentHTML)
+          commentContainer.prepend(shareCommentElement)
     }    
     }catch(err){
         console.log(err)
@@ -50,7 +53,9 @@ function addNewComment(comment){
     return `
      
              <img class="user-profile" src="${comment.user_profile_picture}" alt="user-profile">
-            <strong id="author"><a href="/api/userProfile/${comment.user_id}">${comment.author_name}</a></strong>
+            ${!comment.is_owner?`
+                <strong id="author"><a class="user-link" href="/userProfile/${comment.userstoken}/${comment.user_id}">${comment.author_name}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${comment.userstoken}">You</a></strong>`}
                 <div class="text-commentGear">
                      <p id="text">${comment.comment}</p>
                      ${comment.is_owner?`

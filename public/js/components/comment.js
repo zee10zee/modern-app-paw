@@ -1,6 +1,4 @@
 
-
-
 window.addEventListener('DOMContentLoaded', (e)=>{
     const postsContainer = document.getElementById('postsContainer')
     
@@ -37,10 +35,10 @@ window.addEventListener('DOMContentLoaded', (e)=>{
         const res = await axios[method](url,{comment : commentText})
            if(res.status === 200){
                 const allNewComments = res.data.postComments
-
-                console.log(allNewComments.length)
+                const currentUser = res.data.currentUser
+                // return console.log(allNewComments)
                 const lastComment = allNewComments[allNewComments.length - 1]
-                updateCommentUI(postId,lastComment)
+                updateCommentUI(postId,lastComment,currentUser)
                 commentCountElement.textContent = allNewComments.length;
                 form.reset()
            }
@@ -52,7 +50,8 @@ window.addEventListener('DOMContentLoaded', (e)=>{
 
 
 // UPDATE COMMENTS UI
-const updateCommentUI = (postId,newComment)=>{
+const updateCommentUI = (postId,newComment,currentUser)=>{
+    
     const postDiv = 
             postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
             if(!postsContainer) return;
@@ -69,7 +68,9 @@ const updateCommentUI = (postId,newComment)=>{
             `
                 <div class="comment" data-comment-id="${newComment.id}">
                     <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">   
-                     <strong id="author"><a href="/api/userProfile/${newComment.user_id}">${newComment.author_name}</a></strong>
+                     ${newComment.user_id !== currentUser.id?`
+                <strong id="author"><a class="user-link" href="/userProfile/${newComment.userstoken}/${newComment.user_id}">${newComment.author_name}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${newComment.userstoken}">You</a></strong>`}
                      <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
                         <p id="text">${newComment.comment}</p>
                         <div id="comment-gear" class="comment-gear" data-comment-id ="${newComment.id}">⋮</div>
@@ -90,3 +91,4 @@ const updateCommentUI = (postId,newComment)=>{
             commentsContainer.insertAdjacentHTML('afterbegin', commentHTML)
 
         }
+        
