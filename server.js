@@ -995,11 +995,13 @@ app.patch('/api/comment/:id/update', validateLogin, async(req,res)=>{
     const updatedCommentUser = await pool.query(`
           SELECT users.firstname AS author_name, 
           users.profilepicture AS user_profile_picture,
-          comments.*
+          users.usertoken as userstoken,
+          comments.*,
+          (comments.user_id = $2) AS is_owner
           FROM comments
           JOIN users ON comments.user_id = users.id
           WHERE comments.id = $1
-        `, [commentId]);
+        `, [commentId, req.session.userId]);
 
         if(updatedCommentUser.rowCount === 0){
             console.log('join failure')

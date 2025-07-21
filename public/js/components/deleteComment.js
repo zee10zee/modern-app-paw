@@ -5,18 +5,10 @@ postContainer.addEventListener('click', (e)=>{
        const postDiv = e.target.closest('.posts')
 
        const postId = postDiv.dataset.postId || postDiv.dataset.shareId
-      //  const targetPost = Allposts.find(post => post.post_id === parseInt(postId) || post.share_id === parseInt(postId))
-      //  return console.log(targetPost.comments.length, postId)
-      console.log(postId)
+     
         deleteComment(e,commentId, commentDiv, postId)
     }
 })
-
-// async function getComments(postId){
-//    const commentRes = await axios.get(`/api/post/${postId}/${postId}/comments`)
-//    return console.log('comments : ', commentRes)
-// }
-
 
 
 const deleteComment = async(event,comId, commentDiv, postId)=>{

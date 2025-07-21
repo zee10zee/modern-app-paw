@@ -89,6 +89,5 @@ const updateCommentUI = (postId,newComment,currentUser)=>{
                 </div>
             `
             commentsContainer.insertAdjacentHTML('afterbegin', commentHTML)
-
         }
         
