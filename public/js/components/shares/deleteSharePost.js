@@ -15,11 +15,19 @@ postsContainer.addEventListener('click', async(e)=>{
                 console.log('proceed deleting ...')
        try{
          const deleteResult = await axios.delete(`/api/deleteSharerPost/${shareId}`);
+        //  return console.log('shareCounts',.post)
+        const sharesOfPost = deleteResult.data.shareCounts
+        const oneShare = sharesOfPost.find(post => post.post_id)
+        // return console.log(oneShare)
+
+        const parentPost = postsContainer.querySelector(`.posts[data-post-id="${oneShare.post_id}"]`)
+
         if(deleteResult.status === 200 && deleteResult.data.success){
             const targetPost = deletBtnElement.closest('.posts')
-        console.log(targetPost)
         if(!targetPost) return console.log('post not found')
             targetPost.remove()
+            console.log(sharesOfPost.length)
+            parentPost.querySelector('.sharesCount').textContent = sharesOfPost.length;
             alert('post successfully deleted !')
         }
        }catch(err){

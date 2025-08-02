@@ -40,7 +40,7 @@ const renderPosts = (posts)=>{
       postsContainer.innerHTML = ''
        return postsContainer.innerHTML = 
     `<div class="no-post">
-      <h2 >No posts yet !😴</h2>  <a onclick = "createPost();"href="/api/newPost">Create One  😊 </a>
+      <h2 >No posts yet !😴</h2>  <a href="/api/newPost">Create One  😊 </a>
     </div>`
     }
      
@@ -234,7 +234,9 @@ const renderPosts = (posts)=>{
 
                   <div class="share">
                       <button data-post-id="${post.post_id}" class="shareBtn">↗️</button>
-                    <p class="sharesCount"></p>
+                      ${post.is_shared?`
+                    <p class="sharesCount">${post.share_shares_count}</p>
+                    `:`<p class="sharesCount">${post.shares_count}</p>`}
                   </div>
                  
                 </div>
@@ -303,7 +305,8 @@ const setupEventListener = ()=>{
      const postEditDeleteModal = e.target.classList.contains('closep')
      const commentorNameLink = e.target.classList.contains('user-link');
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
-     const postId = postDiv.dataset.postId;
+     const addPostExtra = e.target.closest('.no-post')?.querySelector('a')
+     const postId = postDiv ? postDiv.dataset.postId : null; 
    if(editBtn){
       e.preventDefault()
       editPostContainer.innerHTML = ''
@@ -343,6 +346,10 @@ const setupEventListener = ()=>{
     }else if(commentorNameLink){
       const targetHTML = e.target.closest('.comment')?.querySelector('.user-link')
       window.location.href = targetHTML.getAttribute('href')
+    }else if(addPostExtra){
+      window.location.href = addPostExtra.getAttribute('href')
+    }else if(addPostExtra){
+      window.location.href = addPostExtra.getAttribute('href')
     }
 })
 }
@@ -578,7 +585,7 @@ editPostContainer.addEventListener('click', (e)=>{
                     <form action="/api/share/id">
                       <button class="shareBtn">↗️</button>
                     </form>
-                    <p>12 shares</p>
+                    <p>${post.shares_count}</p>
                   </div>
                  
                 </div>

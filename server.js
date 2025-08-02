@@ -86,9 +86,25 @@ io.on('connection', async(socket)=>{
     })
 
     // received message listener
-    socket.on('newMessage-send', (data)=>{
+    socket.on('newMessage-send', async(data)=>{
         const receiver = activeUsers.get(data.userId)
-     socket.to(receiver).emit('received-message', data)
+        // return console.log(data, loggedInUser.id)
+        const messageDetails = {
+            sender_id : loggedInUser.id,
+            receiver_id : data.userId,
+            msg : data.msg,
+            is_read : 'false'
+        }
+
+        const newMessage = await pool.query(`INSERT INTO chats(sender_id, receiver_id, message, is_read)
+            VALUES($1, $2, $3,$4) RETURNING *`, [messageDetails.sender_id,messageDetails.receiver_id, messageDetails.msg, messageDetails.is_read])
+
+        if(newMessage.rowCount === 0){
+            return console.log('failure saving the chat message in db')
+        }
+
+    console.log('successfully saved on db' ,newMessage.rows)
+     socket.to(receiver).emit('received-message', newMessage.rows[0])
     })
 
     socket.on('disconnect', ()=>{
@@ -474,7 +490,8 @@ const actualPosts = `SELECT
   FALSE AS is_shared,  
   NULL AS share_data, 
   COUNT(likes.id) AS likes_count,
-  COUNT(comments.id) AS comments_count
+  COUNT(comments.id) AS comments_count,
+  (SELECT COUNT (*) FROM shares WHERE shares.post_id  = posts.id) AS shares_count
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id 
 LEFT JOIN likes ON likes.postid = posts.id 
@@ -484,6 +501,7 @@ GROUP BY
   posts.id
 ORDER BY posts.created_at DESC`;
 
+// parent share id and root post id was add in table share we could use them to tranck the shares count of share post and the all shares of the first post
 // Shared posts query
 const sharePosts = `SELECT
   shares.id as share_id,
@@ -497,6 +515,8 @@ const sharePosts = `SELECT
   NULL AS mediafile,  
   shares.shared_at AS created_at,
   shares.user_id = $1 AS is_owner,
+  shares.root_post_id,
+  shares.parent_share_id,
   TRUE AS is_shared,
   JSON_BUILD_OBJECT(
     'original_post_id', original_post.id,
@@ -513,15 +533,16 @@ const sharePosts = `SELECT
     )
   ) AS share_data,
   COUNT(DISTINCT share_likes.id) AS likes_count,
-  COUNT(DISTINCT share_comments.id) AS comments_count
+  COUNT(DISTINCT share_comments.id) AS comments_count,
+  (SELECT COUNT(*) FROM shares WHERE shares.post_id = original_post.id)
 FROM shares
 LEFT JOIN users ON users.id = shares.user_id
 LEFT JOIN posts AS original_post ON original_post.id = shares.post_id
 LEFT JOIN users AS original_author ON original_author.id = original_post.user_id
 LEFT JOIN likes AS share_likes ON share_likes.share_id = shares.id
 LEFT JOIN comments AS share_comments ON share_comments.share_id = shares.id
-GROUP BY 
-  shares.id,
+GROUP BY
+ shares.id, 
   users.id,
   original_post.id,
   original_author.id
@@ -806,7 +827,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
     if(updatedPostWithData.rowCount === 0){
         return res.json({message : 'failed to updated the post'})
     }
-    //    return console.log(updatedPostWithData.rows[0])
+       return console.log(updatedPostWithData.rows[0])
 
     res.json({
         message : 'memory updated successfully !',
@@ -1108,7 +1129,6 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
             shares.user_id,
             shares.on_platform,
             shares.shared_at,
-            COUNT(shares.id) AS shares_count,
             (shares.user_id = $1) AS postOwner,
             posts.id AS post_id,
             posts.title,
@@ -1124,7 +1144,7 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
             sharer.profilepicture as sharer_profile,
             sharer.usertoken as sharer_user_token,
             (SELECT COUNT(*) FROM likes WHERE post_id = shares.id AND share_id = shares.id) AS likes_count, 
-            (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comments_count            
+            (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comments_count
             FROM shares
             LEFT JOIN posts ON shares.post_id = posts.id 
             LEFT JOIN users AS original_author ON posts.user_id = original_author.id
@@ -1141,8 +1161,14 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
                 console.log('no shared file yet !')
             }
 
+            const mainPost = await pool.query(`SELECT
+                posts.id, 
+            (SELECT COUNT(*) FROM shares WHERE shares.post_id = posts.id) AS shares_count
+            FROM posts WHERE id = $1`, [postId])
 
+            if(mainPost.rowCount === 0) return console.log('no main post')
         res.json({
+            mainPost : mainPost.rows[0],
             sharedPost : sharedPostAndSharer.rows[0],
             message : 'file shared successfully !',
             success : true
@@ -1196,7 +1222,19 @@ app.delete('/api/deleteSharerPost/:id', validateLogin, async(req,res)=>{
 
         if(deletedPost.rowCount === 0) return res.status(401).json({error : 'share post did not deleted from the post'})
 
+            const targetPostShares = await pool.query(`SELECT posts.*,
+                shares.*
+                FROM shares 
+                JOIN posts ON shares.post_id = posts.id
+               `)
+
+            if(targetPostShares.rowCount === 0) return console.log('empty')
+
+                // return console.log('SHARE COUNTS ',targetPostShares.rows.shared_data.original_post.auto)
+
+            
             res.json({
+                shareCounts : targetPostShares.rows,
                 message : 'post successfully deleted!',
                 deletedPost : deletedPost.rows[0],
                 success : true
@@ -1304,6 +1342,26 @@ app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
     res.sendFile(basedir + 'chatpage.html')
 })
 
+
+// load all messasges on page start
+app.get('/api/allChats/:receiverId', validateLogin, async(req,res)=>{
+    const receiverId = parseInt(req.params.receiverId);
+    const senderId = req.session.userId;
+    const initialChats = await pool.query(`SELECT * FROM chats WHERE (sender_id = $1 AND receiver_id = $2)
+        OR
+     (sender_id = $2 AND receiver_id = $1)`, [senderId, receiverId])
+
+    if(initialChats.rowCount === 0){
+        return console.log('no chat yet !')
+        // return res.json({error :'no chat found'})
+    }
+
+    res.json({
+        chats : initialChats.rows,
+        success : true
+    })
+})
+// chat buddy name
 app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
     const receiverId = parseInt(req.params.id)
     
@@ -1399,7 +1457,12 @@ function validateLogin(req,res,next){
 //     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 //     created_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`).then(()=> console.log('posts created')).catch((err)=> console.log(err))
 
-// pool.query(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS user_token TEXT`).then(data => console.log('created')).catch(err =>{
+// pool.query(`ALTER TABLE shares 
+// ALTER COLUMN parent_share_id SET DEFAULT NULL`).then(data => console.log('created')).catch(err =>{
+//     console.log(err)
+// })
+
+// pool.query(`CREATE INDEX root_post_id_index ON shares(root_post_id)`).then(data => console.log('index created')).catch(err =>{
 //     console.log(err)
 // })
 

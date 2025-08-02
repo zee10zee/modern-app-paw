@@ -2,9 +2,8 @@
 const socket = io()
 const messageContainer = document.querySelector('.chat-container');
 const messageInput = document.getElementById('chatInput')
-const userid = parseInt(window.location.pathname.split('/').pop())
+const receiverId = parseInt(window.location.pathname.split('/').pop())
 const typingIndicator = document.querySelector('.typing-event')
-
 
    socket.on('user-joined', (message)=>{
     console.log(message)
@@ -18,7 +17,8 @@ socket.on('user-typing', username =>{
 
 // listen to receiving message
 socket.on('received-message', (data)=>{
-    displayMessage(data.msg, data.date, 'receivingMessage')
+     console.log(data.message)
+    displayMessage(data.message, formatDate(data.created_at), 'receivingMessage')
 })
 
 
@@ -28,10 +28,10 @@ const submitBtn = document.querySelector('.chatSubmitBtn').addEventListener('cli
     const messageData = {
         msg : message, 
         date : formatDate(),
-        userId : userid
+        userId : receiverId
     }
     socket.emit('newMessage-send', messageData)
-    displayMessage(message, formatDate(), 'sendingMessage')
+    // displayMessage(mes, formatDate(), 'sendingMessage')
     messageInput.value = ''
 })
 
@@ -39,9 +39,8 @@ const submitBtn = document.querySelector('.chatSubmitBtn').addEventListener('cli
 // typing event
 
 messageInput.addEventListener('keypress', (e)=>{
-    socket.emit('user-typing', userid)
+    socket.emit('user-typing', receiverId)
 })
-
 
 
 

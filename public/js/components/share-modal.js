@@ -32,11 +32,9 @@ postsContainer.addEventListener('click', async(e)=>{
           shareOnTheApp(postId,messageInput,platform)
     }
 })
+
 // function shareOnApp
 async function shareOnTheApp(postId,messageInput,platform){
-    
-    const post = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`);
-
     // const platform = platform
     const res = await axios.post(`/api/sharePost`,
        {
@@ -44,20 +42,33 @@ async function shareOnTheApp(postId,messageInput,platform){
          platform : platform,
          sharer_message : messageInput.value
        })
-         console.log(res.data)
+        
        if(res.data.success){
+        console.log(res.data)
         const sharedPost = res.data.sharedPost;
-        console.log(sharedPost.likesCount);
+        console.log('count shares ', res.data.mainPost.shares_count)
+        let mainPostShareCounts = res.data.mainPost.shares_count;
 
+         updateSharedpostOnUI(sharedPost, postId);
+          
+         // count shares of a post 
+         const actualPostofShared = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
+         const shareCountElement = actualPostofShared.querySelector('.sharesCount')         
+         shareCountElement.textContent = mainPostShareCounts
 
-         updateSharedpostOnUI(sharedPost, postId)
-         const actualPostofShared = postsContainer.querySelector(`.posts[data-post-id = "${postId}"]`)
-         actualPostofShared.querySelector('.sharesCount').textContent = sharedPost.shares_count
-         console.log(actualPostofShared)
+        //  close share modal 
          const shareContainer = postsContainer.querySelector('.share-container')
          shareContainer.style.display = "none"
          messageInput.value = ''
        }
+
+}
+
+function updateShareCount(postId, sharesCount){
+      const actualPostHTML = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`);
+      const shareCountHTML = actualPostHTML.querySelector('.share')?.querySelector('p')
+      shareCountHTML.textContent = ''
+      shareCountHTML.textContent = sharesCount
 
 }
 
@@ -112,7 +123,6 @@ function updateSharedpostOnUI(sharedPost,postId){
                 </div>
 
     `
-     
   prevousPost+= `
     <div class="shared_post" data-post-id="${postId}">
        <img class="ownerPhoto" src="${sharedPost.original_author_profile}" alt="Profile picture">
@@ -165,7 +175,7 @@ function updateSharedpostOnUI(sharedPost,postId){
                  
                 </div>
 
-                 <form  id="commentForm" >
+                 <form  id="commentForm">
                       <input type="hidden" name="share_id" value="${sharedPost.id}"> 
                       <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
                  </form>
@@ -173,17 +183,19 @@ function updateSharedpostOnUI(sharedPost,postId){
                  <div class="container commentEditContainer" id="commentEditContainer"></div>
     `
     shareDiv.innerHTML = sharerHeader + prevousPost + sharer_comment_part
-       postsContainer.appendChild(shareDiv)
-
+       postsContainer.prepend(shareDiv)
 }
+
+
+
 
 async function loadShareFormModal(event, container){
     event.preventDefault()
     container.style.display = "flex"
      container.style.padding = '30px'
     const postId = parseInt(event.target.dataset.postId)
-    console.log(postId)
     const response = await axios.get(`/api/share/post/${postId}`) 
+
     const sharingPost = response.data.sharedPost
     const sharingPostId = sharingPost.post_id;
 
@@ -227,7 +239,3 @@ function closeShareModal(container){
      container.style.display = "none"
    }
 }
-
-
-
-
