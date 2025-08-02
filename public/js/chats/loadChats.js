@@ -1,20 +1,22 @@
-//   const container =document.querySelector('.chat-container')
-//   return console.log(container.dataset.loggedinuserId)
-        
 
 window.addEventListener('DOMContentLoaded', async(e)=>{
-    // alert(receiverId)
     const res = await axios.get(`/api/allChats/${receiverId}`)
-    // console.log('initial chats of one to one ', res)
 
     if(res.status === 200 && res.data.success){
         const chats = res.data.chats;
-        if(chats.receiver_id === parseInt(receiverId)){
-            chats.forEach(chat =>{ return console.log(chats.receiver_id, receiverId); loadInitialChats(chat.message, formatDate(chats.created_at), 'receivingMessage')})
-        }else{
-            chats.forEach(chat => loadInitialChats(chat.message, formatDate(chats.created_at), 'sendingMessage'))
-        }
-        
+             if(chats.length === 0){
+                console.log('no chat yet !')
+                messageContainer.innerHTML = '<p class="noChat">No chat yet !</p>'
+                return;
+             }
+        chats.forEach(chat => {
+             console.log(chat)
+            const message = chat.message;
+            const date = chat.created_at;
+            const direction = chat.sender_id === parseInt(receiverId) ? 'receivingMessage' : 'sendingMessage';
+            loadInitialChats(message,formatDate(date) , direction)
+        })
+    
     }
 })
 

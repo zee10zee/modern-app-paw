@@ -23,6 +23,7 @@ loading.classList.remove('hidden')
     if (res.status !== 200) throw new Error('Server error');
 
     const { user, posts } = res.data;
+
     document.title = `${user.firstname}'s profile`;
     document.querySelector('.user').textContent = `${user.firstname}'s Uploaded files`;
 

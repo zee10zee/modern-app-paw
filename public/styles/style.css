@@ -61,10 +61,30 @@ img {
 }
 
 .posts{
-    margin: 80px auto;
+    margin: 0px auto;
     background-color: #efefef;
     padding: 10px 40px;
     border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+/* chats */
+.chat-item{
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    display: flex;
+}
+.chat-item a{
+    color: #333;
+    text-decoration: none;
+}
+
+.rightContainer, .leftContainer{
+    width: 25% !important;
+    background-color: #efefef;
+    overflow: hidden;
 }
 
 /* user profile and chat modal */
@@ -281,10 +301,15 @@ comment-delete-edit form:first-child{
    cursor: pointer;
 }
 
+.chats-posts-users{
+    display: flex;
+}
+
 .container{
     max-width: 600px;
     width: auto;
-    margin: 0 auto;
+    margin: 10px auto;
+    padding: 0 10px;
 }
 
 .nav{
@@ -311,6 +336,12 @@ comment-delete-edit form:first-child{
     margin: 50px auto;
     background: azure;
     margin: 0;
+    overflow: scroll;
+    padding: 10px;
+    border-radius: 5px;
+}
+.chat-container::-webkit-scrollbar {
+    width: 8px;
 }
 .chat-container p{
     display: flex;
@@ -325,6 +356,7 @@ comment-delete-edit form:first-child{
     color: #fff;
     padding: 0;
     margin: 0;
+    margin-bottom: 10px;
 }
 .chat-container .sendingMessage{
     margin-right: auto;

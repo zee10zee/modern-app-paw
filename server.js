@@ -460,9 +460,8 @@ app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
     const userPosts = await pool.query(`SELECT * FROM posts WHERE user_id = $1`, [userId])
 
         if(userPosts.rowCount === 0){
-            return res.json({message : 'posts not found'})
+            console.log('no posts found or no posts uploaded by this user')
         }
-
 
     res.json({
         user : userExist.rows[0],
@@ -1343,13 +1342,13 @@ app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
 })
 
 
-// load all messasges on page start
+// load all messasges on page start with details
 app.get('/api/allChats/:receiverId', validateLogin, async(req,res)=>{
     const receiverId = parseInt(req.params.receiverId);
     const senderId = req.session.userId;
     const initialChats = await pool.query(`SELECT * FROM chats WHERE (sender_id = $1 AND receiver_id = $2)
         OR
-     (sender_id = $2 AND receiver_id = $1)`, [senderId, receiverId])
+     (sender_id = $2 AND receiver_id = $1)`,[senderId, receiverId])
 
     if(initialChats.rowCount === 0){
         return console.log('no chat yet !')
@@ -1375,6 +1374,35 @@ app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
         senderId : req.session.userId
     })
 })
+
+// list all chats of the user
+app.get('/api/loginUserChats', validateLogin, async(req,res)=>{  
+    const userId = req.session.userId;
+    const allChats = await pool.query(`SELECT chats.*, 
+        CASE 
+            WHEN chats.sender_id = $1 THEN 'sender'
+            ELSE 'receiver'
+        END AS chat_role,
+        CASE 
+            WHEN chats.sender_id = $1 THEN chats.receiver_id
+            ELSE chats.sender_id
+        END AS other_user_id,
+        users.firstname AS other_user_name,
+        users.profilepicture AS other_user_profile_picture
+        FROM chats 
+        JOIN users ON (users.id = chats.receiver_id OR users.id = chats.sender_id)
+        WHERE chats.sender_id = $1 OR chats.receiver_id = $1
+        ORDER BY chats.created_at DESC`, [userId]);
+
+    if(allChats.rowCount === 0){
+        return res.json({message : 'no chats found'})
+    }
+
+    res.json({
+        chats : allChats.rows,
+        success : true
+    })
+})  
 
 // CHATS 
 

@@ -31,8 +31,11 @@ const submitBtn = document.querySelector('.chatSubmitBtn').addEventListener('cli
         userId : receiverId
     }
     socket.emit('newMessage-send', messageData)
-    // displayMessage(mes, formatDate(), 'sendingMessage')
+    displayMessage(message, formatDate(), 'sendingMessage')
     messageInput.value = ''
+   if(messageContainer.scrollHeight > messageContainer.clientHeight){
+        messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
+    }
 })
 
 

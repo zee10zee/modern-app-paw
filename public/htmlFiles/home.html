@@ -26,13 +26,36 @@
             </ul>
         </div>
     </div>
+
+    <!-- new post add -->
+
     <div class="container addNewPost">
         <a href="/api/newPost">Add Memory</a>
     </div>
 
-   <div class="container " id="postsContainer"></div>
-       <div class="container" id="updateFormContainer" class="EditFormContainer">
-    </div>
+     <div class="chats-posts-users">
+                <!-- left container My chats -->
+            <div class="container chat-list-container leftContainer">
+                <h2>My Chats</h2>
+                   
+            </div>
+
+        <!-- posts -->
+        <div class="container " id="postsContainer"></div>
+            <div class="container" id="updateFormContainer" class="EditFormContainer">
+        </div>
+
+            <!-- right one -->
+            <div class="container rightContainer">
+                <h2>online users</h2>
+                    <div class="chatsPreview">
+                        <li>users 1</li>
+                        <li>users 1</li>
+                        <li>users 1</li>
+                        <li>users 1</li>
+                    </div>
+            </div>
+     </div>
     <!-- sharer post -->
     <div class="editShareContentModal"></div>
     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -51,5 +74,6 @@
    <script defer src="/js/components/shares/sharePostComment.js"></script>
    <script defer src="/js/components/shares/sharePostEditComment.js"></script>
    <script defer src="/js/components/shares/sharePostUpdateComment.js"></script>
+   <script defer src="/js/chats/loginUserChatList.js"></script>
 </body>
 </html>
