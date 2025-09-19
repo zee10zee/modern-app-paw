@@ -6,44 +6,52 @@ const modalContainer = document.querySelector('.editShareContentModal')
 
         if(saveBtn.classList.contains('saveBtn')){
             // e.preventDefault()
-            const shareId = e.target.dataset.shareId;
-
-            updateSharePostMessage(e,shareId,modalContainer)
+            const postId = parseInt(e.target.dataset.postId);
+            updateSharePostMessage(e,postId,modalContainer)
         }
     })
 
 
 
 
-const updateSharePostMessage = async(event,shareId, modalContainer)=>{
+const updateSharePostMessage = async(event,postId, modalContainer)=>{
     event.preventDefault()
    const sharerMessageInput = modalContainer.querySelector('.message')
    const sharerMessage = sharerMessageInput.value
   try{
-     const res = await axios.patch(`/api/update/message/${shareId}`, {sharer_message : sharerMessage})
+     const res = await axios.patch(`/api/update/message/${postId}`, {sharer_message : sharerMessage})
 
+    //   return console.log(res.data)
    if(res.status === 200 && res.data.success){
        const updatedPost = res.data.updated_message;
-       const newMessage = updatedPost.sharer_message;
-       console.log(updatedPost)
-       const targetedPost = postsContainer.querySelector(`.posts[data-share-id="${shareId}"]`);
-       
-       const messageElement = targetedPost.querySelector('.sharer_message')
+       const newMessage = updatedPost.title;
+    //    console.log(updatedPost, postsContainer)
+       const targetedPost = postsContainer.querySelector(`.posts[data-post-id="${postId}"]
+        `);
+
+          modalContainer.style.display = "none"
+         const messageElement = targetedPost.querySelector('.sharer_message')
+         console.log(targetedPost, messageElement)
        messageElement.textContent = newMessage
-       modalContainer.style.display = "none"
+       
+      
 
     //    pop the success message !
-       modalContainer.style.display = "block"
-       modalContainer.style.color = "#fff"
-       modalContainer.innerHTML = 'message updated successfully !'
-       setTimeout(() => {
-        modalContainer.innerHTML = ''
-        modalContainer.style.display = "none"
-       }, 2000);
+       popSuccessMessage()
    }
   }catch(err){
      modalContainer.textContent = err;
      console.log(err)
   }
+}
 
+function popSuccessMessage(){
+    modalContainer.style.display = "block"
+       modalContainer.style.color = "#fff"
+       modalContainer.style.background = 'darkgreen'
+       modalContainer.innerHTML = 'message updated successfully !'
+       setTimeout(() => {
+        modalContainer.innerHTML = ''
+        modalContainer.style.display = "none"
+       }, 2000);
 }

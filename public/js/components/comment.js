@@ -1,15 +1,30 @@
 
+socket.on('comment_notif', data =>{
+    // const newComment = data.newComment
+    const commentor = data.commentor
+    const comments = data.comments;
+    // return console.log(, 'LAST COMMENT')
+    const newComment = comments[comments.length - 1]
+
+    updateCommentUI(data.post_id,newComment)
+    const postDiv = postsContainer.querySelector(`.posts[data-post-id="${data.post_id}"]`);
+    
+    const commentCountElement = postDiv.querySelector('.commentCount')
+    commentCountElement.textContent = comments.length;
+    
+})
+
+
 window.addEventListener('DOMContentLoaded', (e)=>{
     const postsContainer = document.getElementById('postsContainer')
     
     // on submitting the comment
     postsContainer.addEventListener('keypress', async(e)=>{
           const commentInput = e.target
-        //   const commentDiv = commentInput.closest('.posts').querySelector('.comment')
-
         if(e.target.classList.contains('commentInput') && e.key === 'Enter'){
+            // return console.log(commentInput)
+
             e.preventDefault()
-            // return console.log('entered actual post comment !', commentDiv)
 
             if(!commentInput.classList.contains('editingMode')){
                 if(!commentInput.dataset.commentId){
@@ -27,18 +42,19 @@ window.addEventListener('DOMContentLoaded', (e)=>{
         const commentText = form.querySelector('.commentInput').value
         const postDiv = event.target.closest(`.posts[data-post-id="${postId}"]`)
         const commentCountElement = postDiv.querySelector('.commentCount')
-         console.log(commentCountElement)
+         
         let method = 'post';
         let url = `/api/post/${postId}/comment`
-
         // sending comment to the server
         const res = await axios[method](url,{comment : commentText})
-           if(res.status === 200){
+
+           if(res.status === 200 && res.data.success){
                 const allNewComments = res.data.postComments
                 const currentUser = res.data.currentUser
+
                 // return console.log(allNewComments)
                 const lastComment = allNewComments[allNewComments.length - 1]
-                updateCommentUI(postId,lastComment,currentUser)
+                updateCommentUI(postId,lastComment)
                 commentCountElement.textContent = allNewComments.length;
                 form.reset()
            }
@@ -46,11 +62,9 @@ window.addEventListener('DOMContentLoaded', (e)=>{
     }
 })
 
-
-
-
 // UPDATE COMMENTS UI
-const updateCommentUI = (postId,newComment,currentUser)=>{
+const updateCommentUI = (postId,newComment)=>{
+    // return console.log(newComment)
     
     const postDiv = 
             postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
@@ -67,25 +81,18 @@ const updateCommentUI = (postId,newComment,currentUser)=>{
             const commentHTML = 
             `
                 <div class="comment" data-comment-id="${newComment.id}">
-                    <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">   
-                     ${newComment.user_id !== currentUser.id?`
-                <strong id="author"><a class="user-link" href="/userProfile/${newComment.userstoken}/${newComment.user_id}">${newComment.author_name}</a></strong>
-                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${newComment.userstoken}">You</a></strong>`}
-                     <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
-                        <p id="text">${newComment.comment}</p>
-                        <div id="comment-gear" class="comment-gear" data-comment-id ="${newComment.id}">⋮</div>
-                     </div>
-                     <div class="comment-delete-edit" >
-                        <span class="closep">❌</span>
-                        <form id="edit-comment-form">
-                            <button class="edit-comment-button" data-comment-id = "${newComment.id}">Edit</button>
-                        </form>
-                        <form id="delete-comment-button">
-                            <button class="commentDeleteBtn" data-comment-id = "${newComment.id}">Delete</button>
-                        </form>
-                    </div>
-                    <small id="date" class="date">${newCommentDate}</small>
-                        
+                <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">
+                ${!newComment.is_owner?`
+                <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${newComment.usertoken}/${newComment.user_id}">${newComment.author_name}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${newComment.usertoken}">You</a></strong>`}
+                <div class="text-commentGear">
+                     <p id="text">${newComment.comment}</p>
+                     ${newComment.is_owner?`
+                     <div id="comment-gear" data-comment-id = "${newComment.id}" class="comment-gear">⋮</div>
+                     `:''}
+                </div>
+                <small id="date" class="date">${newCommentDate}</small>
+                
                 </div>
             `
             commentsContainer.insertAdjacentHTML('afterbegin', commentHTML)

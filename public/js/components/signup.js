@@ -10,11 +10,31 @@ signupForm.addEventListener('submit', async(e)=>{
             'Content-type' : 'multipart/form-data' 
         }
     });
-    console.log(response.data)
+    
     if(response.data.isLoggedIn){
-        sessionStorage.setItem('loggedIn_profile', response.data.newUser.profilepicture)
-        sessionStorage.setItem('loggedIn_name', response.data.newUser.firstname)
+        const {newUser} = response.data
+        // return console.log(newUser)
+        window.loadActiveUserStoredInfoOnSignup(
+            newUser.id,
+            newUser.firstname,
+            newUser.profilepicture,
+            newUser.usertoken
+        )
+
         window.location.href="/"
+    }else{
+        const checkNewUserEl = document.getElementById('newUserCheck')
+            console.log(checkNewUserEl)
+
+        // if(checkNewUserEl.style.display === 'none') {
+            checkNewUserEl.style.display = "block"
+            checkNewUserEl.textContent = response.data.message
+
+            setTimeout(() => {
+                checkNewUserEl.style.display = 'none'
+            }, 3000);
+        // }
+        
     }
 
     }catch(err){
@@ -22,3 +42,10 @@ signupForm.addEventListener('submit', async(e)=>{
     }
 
 })
+
+window.loadActiveUserStoredInfoOnSignup = (id,name,profilePicture,token)=>{
+    sessionStorage.setItem('loggedIn_userId', id)
+    sessionStorage.setItem('loggedIn_name', name)
+    sessionStorage.setItem('loggedIn_profile', profilePicture)
+    sessionStorage.setItem('loggedIn_userToken', token)     
+}

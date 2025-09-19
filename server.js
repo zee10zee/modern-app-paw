@@ -2,10 +2,11 @@
 import express from "express"
 import {Server} from "socket.io"
 import http from "http"
-import ejs from "ejs"
+import { readFile } from 'fs/promises';
 import session from "express-session"
 import pkg from "pg"
 import path from "path"
+import { join } from "path";
 import { fileURLToPath } from "url"
 import multer, { diskStorage } from "multer"
 import nodemailer from "nodemailer"
@@ -15,10 +16,12 @@ import bcrypt from "bcrypt"
 import connectPgSimple from "connect-pg-simple"
 import sharedsession from "express-socket.io-session"
 import fs from "fs"
-import { error } from "console"
-import { title } from "process"
-import { json } from "stream/consumers"
+import cors from "cors"
+import admin from "firebase-admin"
+import { profile } from "console";
 
+
+let notifLoginUser;
 
 dotenv.config()
 const __filename = fileURLToPath(import.meta.url)
@@ -26,11 +29,25 @@ const __dirname = path.dirname(__filename)
 console.log(__dirname)// giving me the absolute path from the the root folder of my pc till the file i am in. D:\webDev\node js\memoryDomWithChat\server.js
 const app = express()
 
+// Load service account with correct path
+const serviceAccount = JSON.parse(
+  await readFile(join(__dirname, 'serviceAccountKey.json'))
+);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 const server = http.createServer(app)
-const io = new Server(server)
+const io = new Server(server, {
+cors: { origin: "http://localhost:3000" },
+pingInterval: 10000, // send ping every 10s
+pingTimeout: 5000,   // disconnect if no pong after 5s
+})
+;
 
 const {Pool} = pkg;
-// since in  thes string case pool needs an object we should do like : 
+// postid in  thes string case pool needs an object we should do like : 
 
  console.log('DB connection string:', process.env.DB);
 const pool = new Pool({
@@ -55,12 +72,17 @@ const sessionMiddleware = session({
     }
 });
 
+
+let activeUsers = new Map()
+let userUnseenPosts = new Map()
+
+
 app.use(sessionMiddleware)
 // share the session with the socket to access the login users
 io.use(sharedsession(sessionMiddleware, {
     autoSave : true
 }))
-let activeUsers = new Map()
+
 io.on('connection', async(socket)=>{
   const session = socket.handshake.session
   if(!session) {
@@ -72,12 +94,14 @@ io.on('connection', async(socket)=>{
   if(user.rowCount === 0){
      return console.log('user not found')
   }
+
   const loggedInUser = user.rows[0]
-  activeUsers.set(loggedInUser.id, socket.id)
-  console.log(activeUsers)
+    socket.userId = loggedInUser.id
+  socket.join(`user-${loggedInUser.id}`)
 
+   activeUsers.set(loggedInUser.id, socket.id)
 
-  socket.emit('user-joined', `${loggedInUser.firstname} joined!`);
+  socket.emit('user-joined',{loggedInUser: loggedInUser.firstname, loggedInUserId: loggedInUser.id});
 
 //   typing event
     socket.on('user-typing', (uId)=>{
@@ -85,10 +109,16 @@ io.on('connection', async(socket)=>{
         socket.to(receiver).emit('user-typing', loggedInUser.firstname)
     })
 
+    // reseting new posts count for banner alert
+    //  socket.on('reset_new_posts_count', ()=>{
+    //     userUnseenPosts.set(socket.userId,0)
+    //  })
+
     // received message listener
     socket.on('newMessage-send', async(data)=>{
+
         const receiver = activeUsers.get(data.userId)
-        // return console.log(data, loggedInUser.id)
+        // return console.log(data)
         const messageDetails = {
             sender_id : loggedInUser.id,
             receiver_id : data.userId,
@@ -104,13 +134,48 @@ io.on('connection', async(socket)=>{
         }
 
     console.log('successfully saved on db' ,newMessage.rows)
-     socket.to(receiver).emit('received-message', newMessage.rows[0])
+
+    const receiverName = await pool.query(`SELECT firstname FROM users WHERE id = $1`, [messageDetails.receiver_id])
+
+    if(receiverName.rowCount === 0) return res.json({error : 'no receiver found'});
+
+    // // the first emit
+     socket.to(receiver).emit('received-message', {
+        newMsg : newMessage.rows[0],
+        sender_name : loggedInUser.firstname, 
+        receiver_name : receiverName.rows[0].firstname,
+        target : 'receiver'
     })
 
+
+    //  to self u(ser)
+    const loginUserId = loggedInUser.id;
+    const selfUserId = activeUsers.get(loginUserId)
+
+        socket.to(selfUserId).emit('received-message', {
+            newMsg : newMessage.rows[0],
+            sender_name : loggedInUser.firstname, 
+            receiver_name : receiverName.rows[0].firstname,
+            target : 'sender'
+        })
+    })
+
+  
+
     socket.on('disconnect', ()=>{
-        console.log(socket.id, ' disconnected')
+        console.log(socket.id, 'disconnected');
+        // Remove user from activeUsers map
+        activeUsers.forEach((socket,userid)=> {
+            if (socket === socket.id) {
+            activeUsers.delete(socket);
+            }
+  });
     })
 })
+
+
+
+
 
 // multer setup
 const storage = diskStorage({
@@ -155,49 +220,119 @@ app.get('/api/login', (req,res)=>{
 })
 
 app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
-    const credentials = {
-        fname : req.body.fname.trim(),
-        email : req.body.email.trim(),
-        password : req.body.password.trim(),
-    }
+    let newUser;
+  
+       let newUserData = {
+        fname : req.body.fname.trim().toLowerCase(),
+        email : req.body.email.trim().toLowerCase(),
+        password : req.body.password.trim().toLowerCase()
+      }
 
-    // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
-    const userToken = crypto.randomBytes(32).toString('hex')
-    console.log(userToken, 'token')
+      const userExist = await pool.query(`SELECT * FROM users WHERE email = $1 `,[newUserData.email]);
 
+      if(userExist.rowCount > 0) return res.json({message :"email is already registered please log in"})
 
-    const profile = req.file? path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : null
+      const profile = req.file? path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : null
 
-    const checkduplicate = await pool.query('SELECT * FROM users WHERE  email = $1', [credentials.email])
+      // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
+        const userToken = crypto.randomBytes(32).toString('hex')
+        console.log(userToken, 'token')
 
-    if(checkduplicate.rows.length >0){
-        console.log('this credential already registered , please log in')
-        return res.send('this credential already registered , please log in')
-    }
+        const tokenExists = await pool.query(`SELECT * FROM users WHERE userToken = $1`, [userToken])
 
-     const tokenExists = await pool.query(`SELECT * FROM users WHERE userToken = $1`, [userToken])
+        if(tokenExists.rowCount > 0) return console.log('token is invalid')
+        
+            // hashing the password into for saving into db
+        const hashedPassword = await bcrypt.hash(newUserData.password,10)
 
-    if(tokenExists.rowCount > 0) return console.log('token is invalid')
+        const newUserQuery = `INSERT INTO users(firstname, email, password, profilepicture, usertoken) VALUES
+        ($1,$2,$3,$4, $5) RETURNING *`
 
-    const hashedPassword = await bcrypt.hash(credentials.password,10)
+         newUser = await pool.query(newUserQuery, [newUserData.fname, newUserData.email,hashedPassword,profile, userToken])
 
-    const newUserQuery = `INSERT INTO users(firstname, email, password, profilepicture, usertoken) VALUES
-    ($1,$2,$3,$4, $5) RETURNING *`
-    const newUser = await pool.query(newUserQuery, [credentials.fname, credentials.email,hashedPassword,profile, userToken])
 
     if(newUser.rows.length === 0){
         console.log('user did not save !')
         return res.send('user did not save !')
     }
 
+    console.log('user info ', newUser.rows[0].id)
     console.log('welcome to memorydom ', newUser.rows[0].firstname)
     req.session.userId = newUser.rows[0].id
+   
     res.json({
         newUser : newUser.rows[0],
         isLoggedIn : true,
         userId : req.session.userId
     })
 })
+
+// google login route
+
+app.post('/api/auth/google', async(req,res)=>{
+    const {tokenId, authType} = req.body
+    let newUserData;
+    let newUser;
+
+    if(authType === 'firebase'){
+         if(!tokenId) return console.log('token not found')
+
+        // to decode and verify the token id sent from client
+      const decodedToken = await admin.auth().verifyIdToken(tokenId)
+      const userData = (await admin.auth().getUser(decodedToken.uid)).providerData[0]
+
+      newUserData = {
+        fname : decodedToken.name ,
+        email : decodedToken.email ,
+        profile : userData.photoURL,
+        token : tokenId,
+        password : null
+      }
+
+       const userExist = await pool.query(`SELECT * FROM users WHERE email = $1`,[newUserData.email]);
+
+      if(userExist.rowCount > 0){
+        req.session.userId = userExist.rows[0].id
+        // UPDATE AND RETURN THE THE GOOGLE INFO OF THE LOGIN USER
+        return res.status(200).json({
+        messasge : 'user already exists and data updated as preferred successfully !',
+        isLoggedIn : true,
+        existingUser : await updateUserInfo(newUserData.fname,newUserData.profile,userExist.rows[0].id),
+        existed : true
+      })
+    }
+
+      const newUserQuery = `INSERT INTO users(firstname, email, password, profilepicture, usertoken) VALUES
+        ($1,$2,$3,$4,$5) RETURNING *`
+
+       newUser = await pool.query(newUserQuery, [newUserData.fname, newUserData.email,newUserData.password,newUserData.profile, newUserData.token])
+
+       if(newUser.rows.length === 0){
+        console.log('user did not save !')
+        return res.send('user did not save !')
+    }
+
+    console.log('user info ', newUser.rows[0].id)
+    console.log('welcome to memorydom ', newUser.rows[0].firstname)
+    req.session.userId = newUser.rows[0].id
+   
+    res.json({
+        newUser : newUser.rows[0] || newUserData,
+        isLoggedIn : true,
+        userId : req.session.userId
+    })
+    }
+})
+
+// update userAuth info
+async function updateUserInfo(fname,profilePic,userId){
+  const updatedInfo = await pool.query(`UPDATE users 
+    SET firstname = $1, profilepicture = $2
+    WHERE id = $3 RETURNING * `, [fname,profilePic,userId])
+
+    if(updatedInfo.rowCount === 0) return console.log('failure updating user info')
+    return updatedInfo.rows[0]
+}
 
 // check login route
 app.get('/checklogin',(req,res)=>{
@@ -222,9 +357,13 @@ app.post('/api/login', async(req,res)=>{
         const checkQuery = `SELECT * FROM users WHERE email = $1`
         const ExistingUser = await pool.query(checkQuery, [credentials.email])
 
+        
 // return console.log(credentials.password, ExistingUser.rows[0].password)
     if(ExistingUser.rows.length > 0){
         const user = ExistingUser.rows[0]
+
+         // handle the null password users who has already signed up via google 
+            if(ExistingUser.rows[0].password === null) return res.json({message : 'You have signed up via google!'}) 
 
             const confirmedPassword = await bcrypt.compare(credentials.password, user.password)
             console.log(credentials.password, user.password)
@@ -232,11 +371,14 @@ app.post('/api/login', async(req,res)=>{
                 console.log('wrong password')
                 return res.json({message : 'wrong passweord used'})
             }
+           
+
 
             console.log('welcome back ', ExistingUser.rows[0].firstname)
             req.session.userId = ExistingUser.rows[0].id
+            const result = ExistingUser.rows[0]
         res.json({
-            loggedInUser : ExistingUser.rows[0],
+            loggedInUser : await updateUserInfo(result.firstname,result.profilepicture,result.id),
             isLoggedIn : true,
             message : 'welcome back user ' + ExistingUser.rows[0].firstname
   })
@@ -252,31 +394,23 @@ app.post('/api/login', async(req,res)=>{
     }
 })
 
-// to get the username for goodbye alert
-app.get('/userGoodBye',validateLogin, async(req,res)=>{
-    const user = await pool.query('SELECT firstname FROM users WHERE id = $1', [req.session.userId])
-    console.log(user.rows)
-    if(user.rows.length > 0){
-        res.json({
-            isLoggedIn : true,
-            username : user.rows[0].firstname
-        })
-    }
-})
-
-app.post('/api/logout', validateLogin,(req,res)=>{
+let username = ''
+app.post('/api/logout', validateLogin, async(req,res)=>{
    
+    const user = await pool.query('SELECT firstname FROM users WHERE id = $1', [req.session.userId])
+    if(!user) return console.log('user not found')
+    
+        username = user.rows[0].firstname 
+
+    
     req.session.destroy(err =>{
         if(err){
             console.log(err)
             return res.send(err)
         }
 
-        console.log('see you later')
-        res.json({
-            isLoggedIn : true,
-            message : 'see you again!'
-        })
+        res.clearCookie('connect.sid'); // clear session cookie
+        res.json({  success : true, username : username})
     })
 })
 // node mailer config
@@ -403,174 +537,195 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 })
 
 
-app.get('/loginUserProfile/:token',validateLogin,async(req,res)=>{
+app.get('/userProfile/:token/:id',validateLogin,async(req,res)=>{
     const token = req.params.token
+    const {id} = req.params
+
    res.sendFile(basedir + 'loginUserProfile.html')
 });
 
 
-app.get('/api/loginUserProfile/:token',validateLogin,async(req,res)=>{
+app.get('/api/userProfile/:token/:userId',validateLogin,async(req,res)=>{
     const token = req.params.token;
-    const userId = req.session.userId;
+    const userId = parseInt(req.params.userId);
+      console.log(token, typeof(userId))
+    try{
+        const userWithPosts = await pool.query(`SELECT 
+        users.*,
+        COALESCE(json_agg(posts.*) FILTER(WHERE posts.id IS NOT NULL),'[]') as posts, 
+        (users.id = $1) AS is_owner 
+        FROM users 
+        LEFT JOIN posts ON posts.user_id = users.id
+        WHERE users.id = $2 
+        AND users.usertoken = $3
+        GROUP BY users.id`,[req.session.userId, userId,token])
 
-    const userExists = await pool.query(`SELECT * FROM users WHERE id = $1 AND usertoken = $2`,[userId, token])
-
-    if(userExists.rowCount === 0){
+    if(userWithPosts.rowCount === 0){
+        
         return res.json({error : 'USER NOT FOUND'})
     }
-
-
-    const activeUserPosts = await pool.query(`
-        SELECT * FROM posts 
-        WHERE posts.user_id = $1
-        `, [userId]);
-
-        if(activeUserPosts.rowCount === 0){
-            return res.json({error : 'users posts not found'})
-        }
-
-    console.log(userExists, activeUserPosts)
-
-        // return console.log(userExists.rows[0])
+ console.log(userWithPosts.rows[0])
 
     res.json({
-        user : userExists.rows[0],
-        posts : activeUserPosts.rows,
-        success : true
+        user : userWithPosts.rows[0],
+        success : true,
     })
-})
-
-// user profile
-app.get('/userProfile/:token/:id', validateLogin, async(req,res)=>{
-    const token = req.params.token;
-    const userId = parseInt(req.params.id)
-    res.sendFile(basedir + 'userProfile.html')
-})
-
-app.get('/api/userProfile/:token/:id', validateLogin, async(req,res)=>{
-    const userToken = req.params.token
-    const userId = parseInt(req.params.id)
-
-    const userExist = await pool.query(`SELECT * FROM users WHERE usertoken = $1`, [userToken])
-    if(userExist.rowCount === 0){
-        return res.status(404).json({msg : 'token not found'})
+    }catch(err){
+        return console.log(err)
     }
-
-    console.log(userExist)
-    const userPosts = await pool.query(`SELECT * FROM posts WHERE user_id = $1`, [userId])
-
-        if(userPosts.rowCount === 0){
-            console.log('no posts found or no posts uploaded by this user')
-        }
-
-    res.json({
-        user : userExist.rows[0],
-        posts : userPosts.rows
-    })
 })
 
+// fetch latest posts
+app.get('/api/latestPosts', validateLogin, async(req,res)=>{
+    const {postid} = req.query
+    console.log(typeof(postid), 'last date of post on server')
 
-// posts
+     if (!postid) {
+    return res.status(400).json({ success: false, message: "Missing postid param" });
+  }
+ 
+    // // get all meta data of the recent posts
+    const latestPosts = await pool.query(`SELECT 
+        posts.*,
+        posts.id as post_id,
+        users.id as user_id,
+        users.firstname AS user_firstname,
+        users.profilepicture user_profilepicture,
+        users.usertoken as user_token,
+        (SELECT COUNT(*) FROM likes WHERE likes.postid = posts.id) AS likes_count,
+        (SELECT COUNT(*)  FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+      
+        (SELECT COUNT (*) FROM posts p2 WHERE p2.parent_share_id = posts.id) AS total_shares,
+        (SELECT COUNT (*) FROM posts p3 WHERE p3.parent_share_id = posts.id) AS direct_shares,
+        (posts.user_id = $1) AS is_owner,
+        COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', comments.id,
+                    'text', comments.comment,
+                    'created_at', comments.created_at,
+                    'is_owner', comments.user_id = $1,
+                    'author', JSON_BUILD_OBJECT(
+                        'id', users.id,
+                        'firstname', users.firstname,
+                        'profile_picture', users.profilepicture,
+                        'user_token', users.usertoken
+                    )
+            )
+          ) FILTER(where comments.id IS NOT NULL),
+           '[]' ::JSON
+        )AS comments 
+        FROM posts 
+        LEFT JOIN comments ON comments.post_id = posts.id
+        LEFT JOIN users ON posts.user_id = users.id
+        WHERE posts.id > $2
+        GROUP BY posts.id,users.id, comments.id
+           `,[req.session.userId,postid])
+
+        if(latestPosts.rowCount === 0) return console.log('post info not found')
+        
+        userUnseenPosts.set(req.session.userId,0)
+
+        res.json({
+            newPosts : latestPosts.rows,
+            success : true
+        })
+})
 
 app.get('/api/posts',validateLogin, async(req,res)=>{
-
     // Original posts query
-const actualPosts = `SELECT
-  users.id as user_id,
-  users.usertoken, 
-  users.firstname AS author_firstname, 
-  users.profilepicture AS author_profilepicture,
-  posts.id as post_id,
-  posts.title,
-  posts.description,
-  posts.mediafile,
-  posts.created_at,
-  posts.user_id = $1 AS is_owner,
-  FALSE AS is_shared,  
-  NULL AS share_data, 
-  COUNT(likes.id) AS likes_count,
-  COUNT(comments.id) AS comments_count,
-  (SELECT COUNT (*) FROM shares WHERE shares.post_id  = posts.id) AS shares_count
-FROM posts
-LEFT JOIN users ON users.id = posts.user_id 
-LEFT JOIN likes ON likes.postid = posts.id 
-LEFT JOIN comments ON comments.post_id = posts.id
-GROUP BY 
-  users.id,
-  posts.id
-ORDER BY posts.created_at DESC`;
 
-// parent share id and root post id was add in table share we could use them to tranck the shares count of share post and the all shares of the first post
-// Shared posts query
-const sharePosts = `SELECT
-  shares.id as share_id,
-  shares.user_id as user_id,
-  shares.user_token as sharer_token,
-  users.firstname AS author_firstname,
-  users.profilepicture AS author_profilepicture,
-  shares.id as post_id,  
-  NULL AS title,  
-  shares.sharer_message AS description,
-  NULL AS mediafile,  
-  shares.shared_at AS created_at,
-  shares.user_id = $1 AS is_owner,
-  shares.root_post_id,
-  shares.parent_share_id,
-  TRUE AS is_shared,
-  JSON_BUILD_OBJECT(
-    'original_post_id', original_post.id,
-    'original_title', original_post.title,
-    'original_description', original_post.description,
-    'original_media', original_post.mediafile,
-    'original_created_at', original_post.created_at,
-    'original_author', JSON_BUILD_OBJECT(
-      'id', original_author.id,
-      'name', original_author.firstname,
-      'profile', original_author.profilepicture,
-      'token', original_author.usertoken,
-      'is_owner', original_author.id = $1
-    )
-  ) AS share_data,
-  COUNT(DISTINCT share_likes.id) AS likes_count,
-  COUNT(DISTINCT share_comments.id) AS comments_count,
-  (SELECT COUNT(*) FROM shares WHERE shares.post_id = original_post.id)
-FROM shares
-LEFT JOIN users ON users.id = shares.user_id
-LEFT JOIN posts AS original_post ON original_post.id = shares.post_id
-LEFT JOIN users AS original_author ON original_author.id = original_post.user_id
-LEFT JOIN likes AS share_likes ON share_likes.share_id = shares.id
-LEFT JOIN comments AS share_comments ON share_comments.share_id = shares.id
-GROUP BY
- shares.id, 
-  users.id,
-  original_post.id,
-  original_author.id
-ORDER BY shares.shared_at DESC`;
+    notifLoginUser = req.session.userId
+    
+    const original_posts = `
+        SELECT posts.*,
+        posts.id AS post_id,
+        poster.id as poster_id,
+        poster.usertoken AS poster_token,
+        poster.firstname AS poster_name,
+        poster.profilepicture AS poster_profile,
 
-const [originalPosts, sharedPosts] = await Promise.all([
-  pool.query(actualPosts, [req.session.userId]),
-  pool.query(sharePosts, [req.session.userId])
-]);
+        (SELECT COUNT(*) FROM likes WHERE likes.postid = posts.id) AS likes_count,
+        (SELECT COUNT(*)  FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+      
+      (SELECT COUNT (*) FROM posts p2 WHERE p2.root_post_id = posts.id) AS total_shares,
 
+        (posts.user_id = $1) AS is_owner
+        FROM posts 
+          LEFT JOIN users AS poster ON poster.id = posts.user_id 
+        WHERE parent_share_id IS NULL 
+
+        GROUP BY 
+        posts.id,
+        poster.id
+         
+        
+        `
+
+    const shared_posts = `
+        SELECT
+        posts.*,
+        posts.id AS post_id,
+        posts.parent_share_id,
+        posts.root_post_id,
+    
+        sharer.id AS sharer_id,
+        sharer.firstname AS sharer_name,
+        sharer.profilepicture AS sharer_profile,
+        sharer.usertoken AS sharer_token,
+
+        -- Original post data as JSON
+        (SELECT json_build_object(
+            'id', op.id,
+            'title', op.title,
+            'description', op.description,
+            'mediafile', op.mediafile,
+            'created_at', op.created_at,
+            'owner', json_build_object(
+                'id', ou.id,
+                'usertoken', ou.usertoken,
+                'firstname', ou.firstname,
+                'profilepicture', ou.profilepicture,
+                'is_owner', ou.id = $1
+            )
+        ) FROM posts op
+        JOIN users ou ON ou.id = op.user_id
+        WHERE op.id = posts.root_post_id) AS original_post,
+
+        (SELECT COUNT(*) FROM likes WHERE likes.postid = posts.id) AS likes_count,
+        (SELECT COUNT(*)  FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+      
+        (SELECT COUNT (*) FROM posts p2 WHERE p2.parent_share_id = posts.id) AS total_shares,
+        (SELECT COUNT (*) FROM posts p3 WHERE p3.parent_share_id = posts.id) AS direct_shares,
+
+        (posts.user_id = $1) AS is_share_post_owner
+
+        FROM posts
+        LEFT JOIN users AS sharer ON sharer.id = posts.user_id 
+        WHERE posts.parent_share_id  IS NOT NULL AND posts.root_post_id IS NOT NULL
+
+        ORDER BY posts.id DESC 
+        
+        `
+
+         const originalQuery = await pool.query(original_posts, [req.session.userId])
+         const sharedQuery = await pool.query(shared_posts, [req.session.userId])
+        const [originals,shares] = await Promise.all([originalQuery, sharedQuery])
 // Combine results
-const allPosts = [
-  ...originalPosts.rows,
-  ...sharedPosts.rows.map(share => ({
-    ...share,
-  }))
-].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
+const allPosts = [...originals.rows, ...shares.rows].sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
    if(allPosts.length === 0){
     console.log('no posts or shrae posts')
      return res.json({
-        posts  : []
+        posts  : [],
+        isEmpty : true
      })
    }   
 
    
     // getting all the comments of the posts
-    const postsIds = allPosts.filter(post =>!post.is_shared).map(post => post.post_id)
-    const shareIds = allPosts.filter(post =>post.is_shared).map(post => post.share_id)
+    const postsIds = allPosts.map(post => post.post_id)
+
+    // const shareIds = allPosts.filter(post =>post.is_shared).map(post => post.share_id)
 
     const actualPostComments = `
     SELECT comments.post_id,
@@ -587,50 +742,22 @@ const allPosts = [
        'profile_picture', users.profilepicture,
        'user_token' , users.usertoken
         )
-      ) ORDER BY comments.created_at
+      ) ORDER BY comments.created_at DESC
     ) AS comments 
      FROM comments JOIN users ON users.id = comments.user_id
      WHERE comments.post_id = ANY($2)
      GROUP BY comments.post_id
     `
-    const sharePostComments = `
-     SELECT comments.share_id,
-     JSON_AGG(
-     JSON_BUILD_OBJECT(
-       'id',comments.id,
-       'text', comments.comment,
-       'created_at', comments.created_at,
-       'is_owner', (comments.user_id = $1),
-       'author', JSON_BUILD_OBJECT(
-        'user_id', users.id,
-        'firstname', users.firstname,
-        'profile_picture', users.profilepicture,
-        'user_token', users.usertoken
-       )
-     )ORDER BY comments.created_at
-     ) AS comments 
-     FROM comments 
-     JOIN users ON users.id = comments.user_id
-     WHERE comments.share_id = ANY($2)
-     GROUP BY comments.share_id
-    `
 
-    const [originalPostComments,sharedPostComments] = await Promise.all([
-        pool.query(actualPostComments,[req.session.userId,postsIds]),
-        pool.query(sharePostComments, [req.session.userId, shareIds])
-    ])
-
-    // const allPostComments = [...postComments,...sharePostComments]
+    const postComments= await pool.query(actualPostComments,[req.session.userId,postsIds])
 
     const postsWithComments = allPosts.map(post => {
-  const comments = post.is_shared
-    ? sharedPostComments.rows.find(c => c.share_id === post.share_id)?.comments || []
-    : originalPostComments.rows.find(c => c.post_id === post.post_id)?.comments || [];
+  const comments = postComments.rows.find(c => c.post_id === post.post_id)?.comments || [];
     
   return { ...post, comments };
 });
 
- console.log("posts with comments ",postsWithComments)
+//    return console.log("posts and comment ",postsWithComments)
 
     res.json({
         posts : postsWithComments
@@ -639,64 +766,110 @@ const allPosts = [
 });
 
 
-app.get('/api/newPost', validateLogin, (req,res)=>{
-    res.sendFile(basedir + 'newpost.html')
-});
 
+// add new memory
 app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,res)=>{
-    const {ptitle,pdesc} = req.body;
-    const currentUser = await pool.query('SELECT * FROM users WHERE id = $1', [req.session.userId]);
+    const lastPostId = (await createNewPost(req.body,req))?.id || null
+     console.log(lastPostId)
 
-     let mediaPost = req.file.mimetype.startsWith('video/')? 
-     path.join('uploads/videos', req.file.filename) 
-     : path.join('uploads', req.file.filename)
-
-     const newPostQuery = (`INSERT INTO posts (title, description, mediafile, user_id)
-      VALUES($1, $2,$3, $4) RETURNING *`)
-      const newPost = await pool.query(newPostQuery, [ptitle,pdesc,mediaPost,currentUser.rows[0].id])
-
-      if(newPost.rowCount === 0){
-         console.log('no post saved to db')
-         return res.status(200).json({message : 'failure saving the media file'})
-      }
-      console.log('new post saved !')
-
-      const commentsOfNewPost = await pool.query(`
-           SELECT posts.*,
-           COUNT(comments.id) AS commentCounts,
-           JSON_AGG(
+    // getting new post and its whole meta data
+      const lastestPosts = await pool.query(`SELECT 
+        posts.*,
+        posts.id as post_id,
+        users.id as user_id,
+        users.firstname AS user_firstname,
+        users.profilepicture user_profilepicture,
+        users.usertoken as user_token,
+        (SELECT COUNT(*) FROM likes WHERE likes.postid = posts.id) AS likes_count,
+        (SELECT COUNT(*)  FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+      
+        (SELECT COUNT (*) FROM posts p2 WHERE p2.parent_share_id = posts.id) AS total_shares,
+        (SELECT COUNT (*) FROM posts p3 WHERE p3.parent_share_id = posts.id) AS direct_shares,
+        (posts.user_id = $1) AS is_owner,
+        COALESCE(
+          JSON_AGG(
             JSON_BUILD_OBJECT(
-            'id' , comments.id,
-            'text' , comments.comment,
-            'created_at', comments.created_at,
-            'is_owner', comments.user_id = $1,
-            'author', JSON_BUILD_OBJECT(
-              'id', users.id,
-              'name', users.firstname,
-              'profilePicture', users.profilepicture,
-              'user_token', users.usertoken
+              'id', comments.id,
+                    'text', comments.comment,
+                    'created_at', comments.created_at,
+                    'is_owner', comments.user_id = $1,
+                    'author', JSON_BUILD_OBJECT(
+                        'id', users.id,
+                        'firstname', users.firstname,
+                        'profile_picture', users.profilepicture,
+                        'user_token', users.usertoken
+                    )
             )
-           )
-           )AS comments
-            FROM posts 
-            LEFT JOIN comments ON comments.post_id = posts.id
-            LEFT JOIN users ON users.id = posts.user_id
-             WHERE comments.post_id  = $2
-             GROUP BY posts.id
-        `, [req.session.userId,newPost.rows[0].id])
+          ) FILTER(where comments.id IS NOT NULL),
+           '[]' ::JSON
+        )AS comments 
+        FROM posts 
+        LEFT JOIN comments ON comments.post_id = posts.id
+        LEFT JOIN users ON posts.user_id = users.id
+        WHERE posts.user_id = $1 AND posts.id = $2
+        GROUP BY posts.id,users.id, comments.id
+           `, [req.session.userId,lastPostId])
 
-      console.log('new post saved and comment...', commentsOfNewPost.rows[0])
-      res.status(201).json({
+           if(lastestPosts.rowCount === 0) return console.log('post info not found')
+
+            await getPostCounts(req.session.userId,lastPostId)
+        
+       console.log(typeof(lastestPosts.rows[0].user_id))
+
+      res.json({
         message : 'New post submitted successfully !',
-        newPost : newPost.rows[0],
-        commentsOfPost : commentsOfNewPost.rows[0]? comments : []
+        newPostData : lastestPosts.rows[0],
+        success : true
       })
-
-
 })
 
-const findSpecificTableContent = async(table, tableId)=>{
-    const foundData = await pool.query(`SELECT * FROM ${table} WHERE id = $1`,[tableId])
+ async function createNewPost(body,request){
+
+       const media = request.file.mimetype.startsWith('video/')? 
+     path.join('uploads/videos', request.file.filename) 
+     : path.join('uploads', request.file.filename)
+
+        const newPostQuery = (`INSERT INTO posts (title, description, mediafile, user_id)
+      VALUES($1, $2,$3, $4) RETURNING *`)
+      const newPost = await pool.query(newPostQuery, [body.ptitle,body.pdesc,media,request.session.userId])
+
+      if(newPost.rowCount === 0){
+         return console.log('no post saved to db')
+      }
+
+        return newPost.rows[0]
+    }
+
+    // get newPostCount and lastPost id of each use and emit to client
+    async function getPostCounts(userId,lastpostId){
+    //   get all connected sockets
+       const allSockets = await io.fetchSockets()
+
+        console.log(allSockets)
+    //    getting and emitting new post count and last postId
+       allSockets.forEach((socket) =>{
+        // skip the loggin user
+        if(socket.userId === userId) return
+
+        // get the current count of new posts like maybe 3 new posts
+        const currentData = userUnseenPosts.get(socket.userId) ||{postCount : 0, lastPostId : null} //if 0 
+
+        const newData = {
+            postCount : currentData.postCount + 1,
+            lastPostId : lastpostId
+        }
+
+        // add the newly incremented count of post in the map
+        userUnseenPosts.set(socket.userId,newData)
+
+        // emit to each room of conneced users
+         return io.to(`user-${socket.userId}`).emit('new_posts_alert',
+        {newData})
+    })
+    }
+
+const findSpecificTableContent = async(table, columnId)=>{
+    const foundData = await pool.query(`SELECT * FROM ${table} WHERE id = $1`,[columnId])
     if(foundData.rowCount === 0){
         console.log('table not found')
         res.send('table not found')
@@ -798,10 +971,11 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
     SELECT users.*, posts.*,
     (SELECT COUNT(*) FROM likes WHERE "postid" = $1) AS likecounts,
     (SELECT COUNT(*) FROM comments WHERE "post_id" = $1) AS commentcounts,
+    (SELECT COUNT(*) FROM posts AS sharedPost WHERE sharedPost.parent_share_id = $1) AS shares_count,
      (
       SELECT json_agg(
         json_build_object(
-        'id',comments.id,
+        'id', comments.id,
         'text',comments.comment,
         'created_at',comments.created_at,
         'is_owner',comments.user_id = $2,
@@ -811,7 +985,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
         'profile_picture',users.profilepicture,
         'user_token', users.usertoken
         )
-        )ORDER BY comments.created_at
+        )ORDER BY comments.created_at DESC
         ) FROM comments 
         JOIN users ON users.id = comments.user_id
         WHERE comments.post_id = $1
@@ -826,7 +1000,7 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
     if(updatedPostWithData.rowCount === 0){
         return res.json({message : 'failed to updated the post'})
     }
-       return console.log(updatedPostWithData.rows[0])
+       console.log(updatedPostWithData.rows[0])
 
     res.json({
         message : 'memory updated successfully !',
@@ -840,6 +1014,7 @@ app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
     const postId = parseInt(req.params.id)
 
    try{
+
      const likes = await pool.query(`DELETE FROM likes WHERE postid = $1 RETURNING *;`,[postId])
 
     const comments = await pool.query(`DELETE FROM comments WHERE post_id = $1 RETURNING *`, [postId])
@@ -851,24 +1026,27 @@ app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
     }
 
      const deletingPost = post.rows[0]
-    //  return console.log(path.join(__dirname,'public',deletingPost.mediafile))
-    const filePath = deletingPost.mediafile.startsWith('video/') ?  
-    path.join(__dirname,'public', deletingPost.mediafile) : 
-    path.join(__dirname,'public', deletingPost.mediafile)
-    if(deletingPost.mediafile){
-      fs.unlink(filePath, err =>{
-        if(err){
-            console.log(err)
+     if(deletingPost.mediafile){
+         const filePath = deletingPost.mediafile.startsWith('video/') ?  
+        path.join(__dirname,'public', deletingPost.mediafile) : 
+        path.join(__dirname,'public', deletingPost.mediafile)
+        if(deletingPost.mediafile){
+        fs.unlink(filePath, err =>{
+            if(err){
+                console.log(err)
+            }else{
+                console.log('post media was deleted from the uploads')
+            }
+        })
         }else{
-            console.log('post media was deleted from the uploads')
+            console.log(deletingPost.mediafile)
+            console.log('unknown file')
         }
-      })
-    }else{
-        console.log(deletingPost.mediafile)
-        console.log('unknown file')
-    }
+     }
+   
 
     console.log('post deleted success')
+    
     res.json({
         message : 'post deleted successfully !',
         deletedPost : deletingPost,
@@ -876,13 +1054,22 @@ app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
     })
    }catch(error){
       if(error.code){
-        return res.status(400).json({error : error.detail})
+        return res.status(400).json({error : error})
       }
 
       console.error(error)
       res.status(500).json({error : error.detail})
    }
 })
+async function FetchNotificationsCount(loginUserId){
+     // counts notifications latest update
+
+        const allUserNotifications = await pool.query(`SELECT * FROM notifications where receiver_id = $1`, [loginUserId])
+
+        if(allUserNotifications.rowCount === 0) { console.log('0 length now.')
+        }
+        return allUserNotifications.rows
+}
 
 
 // likes 
@@ -891,7 +1078,10 @@ app.post('/api/post/:id/like', validateLogin, async(req,res)=>{
     const id = parseInt(req.params.id)
     const loggedInUserId = req.session.userId;
 
-    console.log('the params postiD', id)
+    const loginUser = await pool.query('SELECT firstname FROM users WHERE id=  $1', [loggedInUserId])
+
+    if(!loginUser.rowCount === 0) return res.status(404).json({error : 'no active user'})
+
     const postExists = await pool.query('SELECT * FROM posts WHERE id = $1', [id])
     if(postExists.rowCount === 0){
         return res.send('post not found')
@@ -924,17 +1114,59 @@ app.post('/api/post/:id/like', validateLogin, async(req,res)=>{
         return res.json({message : 'failure saving likes on db'})
       }
 
-      const countPostLikes = await pool.query('SELECT COUNT (*) AS like_counts FROM likes WHERE postid = $1', [id])
+    //   send notification
+
+    const postOwner = await pool.query(`SELECT * FROM posts WHERE id = $1 `, [id])
+
+    if(postOwner.rowCount === 0) return res.json({error : 'postOwner not found'})
+         console.log(postOwner.rows[0])
+        const receiverId = postOwner.rows[0].user_id
+        const receiverName = postOwner.rows[0].firstname;
+      const notif_receiver = activeUsers.get(receiverId)
+
+      if(!notif_receiver) console.log('user if offline now though')
+      
+        const notifMessage = `${loginUser.rows[0].firstname} has Liked Your Post !`
+        const postId = postOwner.rows[0].id
+
+      
+        //   saving the notification into the db
+        const newNotif = await pool.query(`INSERT INTO notifications 
+        (type,message,from_userid,receiver_id,post_id)
+        VALUES($1,$2,$3,$4,$5) RETURNING *; `, ['like',notifMessage,loggedInUserId,receiverId,postId])
+
+        if(newNotif.rowCount === 0) return res.status(404).json({error : 'failure saving notification !'})
+        
+            //   counting likes and sending it to client for display
+      const countPostLikes = await pool.query('SELECT COUNT (id) AS like_counts FROM likes WHERE postid = $1', [id])
 
       if(countPostLikes.rowCount === 0){
         return console.log('failure getting the likes count of the post')
       }
+        if(receiverId !== loggedInUserId){
 
-      console.log('post has successfully been liked')
+         const countNewNotifs = await FetchNotificationsCount(receiverId)
+
+
+              //   sending real time to client !
+            io.to(notif_receiver).emit('like_notif', {
+                message : newNotif.rows[0].message,
+                timestamp : newNotif.rows[0].timestamp,
+                post_id : newNotif.rows[0].post_id,
+                receiverId : receiverId,
+                likesCount : countPostLikes.rows[0].like_counts,
+                notifsCount : countNewNotifs.length
+            })
+
+        }else{
+        console.log('no notify self user!');
+      }
+
+        console.log('post has successfully been liked')
       res.json({
         message : 'you have liked the post',
         postLikes : countPostLikes.rows[0].like_counts
-      })
+      })  
 })
 
 
@@ -957,30 +1189,71 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
 
    if(currentUser.rowCount === 0) return res.json({error : 'login user not found'})
 
+    // postOwner
+    const post = await pool.query(`SELECT * FROM posts WHERE id = $1`, [postId])
 
-//    after posting new comment we gotta get ALL COMMENTS of that exact post
+   console.log('post id', post.rows[0],'user id',req.session.userId)
+
+    if(post.rowCount === 0) return console.log(post.rows, ' something is wrong getting the post id of the comment notfication')
+
+    //    after posting new comment we gotta get ALL COMMENTS of that exact post
    const allComments = await pool.query(`SELECT 
     users.firstname AS author_name,
     users.profilepicture AS user_profile_picture,
     users.usertoken as usersToken,
-    comments.*
+    comments.*,
+   (comments.user_id = $2) AS is_owner
     FROM comments 
     JOIN users ON comments.user_id = users.id
     WHERE comments.post_id = $1
-    ORDER BY comments.created_at`, [postId])
+    ORDER BY comments.created_at`, [postId,req.session.userId])
 
-    if(allComments.rowCount === 0){
-        return console.log('no COMMENTS found !')
+    if(allComments.rowCount === 0) return console.log('no COMMENTS found !')
+
+
+    const receiverId =  post.rows[0].user_id
+
+    // saving into notification
+      const notif_receiver = activeUsers.get(receiverId)
+  
+
+      if(!notif_receiver) console.log('no receiver found')
         
-    }
+        const notifMessage = `${currentUser.rows[0].firstname} has Commented on Your Post !`
 
-    console.log(allComments.rows)
+      if(receiverId !== req.session.userId){
+        //   saving the notification into the db
+        const newNotif = await pool.query(`INSERT INTO notifications 
+        (type,message,from_userid,receiver_id,post_id)
+        VALUES($1,$2,$3,$4,$5) RETURNING *; `, ['Comment',notifMessage,currentUser.rows[0].id,receiverId,postId])
+
+        if(newNotif.rowCount === 0) return res.status(404).json({error : 'failure saving notification !'})
+
+        const countNewNotifs = await FetchNotificationsCount(receiverId)
+
+        console.log('notification count after comment ', countNewNotifs.length)
+
+         //   sending real time to client !
+            io.to(notif_receiver).emit('comment_notif', {
+                message : newNotif.rows[0].message,
+                timestamp : newNotif.rows[0].timestamp,
+                post_id : newNotif.rows[0].post_id,
+                receiverId : receiverId,
+                comments : allComments.rows,
+                commentor : currentUser.rows[0],
+                notifsCount : countNewNotifs.length
+            })
+
+      }else{
+        console.log('no notify self user!');
+      }
 
    console.log('successfully commented')
    res.json({
     message : 'comment successfully made !',
     postComments : allComments.rows,
-    currentUser : currentUser.rows[0]
+    currentUser : currentUser.rows[0],
+    success: true
    });
 })
 
@@ -1046,10 +1319,10 @@ app.delete('/api/comment/:post_id/:comment_id/delete', validateLogin, async(req,
         return res.status(404).json({success : false,message : 'You aint authorized to delete this !'})
     }
 
-    const allComments = await pool.query(`SELECT * FROM comments WHERE post_id = $1 OR share_id = $1 `, [postId])
+    const allComments = await pool.query(`SELECT * FROM comments WHERE post_id = $1`, [postId])
 
     if(allComments.rowCount === 0){
-        return console.log('no comment for now !')
+        console.log('no comment for now !')
     }
 
     console.log('comment deleted !', deletedComment.rows[0])
@@ -1068,19 +1341,26 @@ app.delete('/api/comment/:post_id/:comment_id/delete', validateLogin, async(req,
 app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
     const postId = parseInt(req.params.id)
     const sharePost = await pool.query(`SELECT
-        users.id as user_id,
-        users.firstname AS author_firstname, 
-        users.profilepicture AS author_profilepicture, 
-        users.usertoken AS user_token,
         posts.id as post_id,
         posts.user_id AS post_user_id,
         posts.title,
         posts.description,
         posts.mediafile,
-        posts.created_at
+        posts.parent_share_id,
+        posts.root_post_id,
+        posts.created_at,
+        users.id as user_id,
+        users.firstname AS author_firstname, 
+        users.profilepicture AS author_profilepicture, 
+        users.usertoken AS user_token,
+        original_post.description as originalPostDesc,
+        original_post.mediafile as originalPostFile,
+        original_post.title as originalPostTitle
+
         FROM posts
-        LEFT JOIN users ON posts.user_id = users.id 
-        WHERE posts.id = $1
+        LEFT JOIN users ON posts.user_id = users.id
+        LEFT JOIN posts as original_post ON original_post.id = posts.id 
+        where posts.id = $1
        `, [postId]);
 
        if(sharePost.rowCount === 0){
@@ -1095,13 +1375,20 @@ app.get('/api/share/post/:id', validateLogin, async(req,res)=>{
 })
 
 app.post('/api/sharePost', validateLogin, async(req,res)=>{
-    const shareId = parseInt(req.params.shareId)
-    const { platform,postId,sharer_message} = req.body;
-    // return console.log(req.session.userId, 'user id when share')
+    const { platform,parent_share_id, root_postId,sharer_message} = req.body;
+    const userId = req.session.userId;
+
+    
      const user = await pool.query(`SELECT * FROM users WHERE id = $1`, [req.session.userId])
 
      if(user.rowCount === 0) return res.json({error : 'user not found'})
-        console.log(user.rows[0].usertoken, 'user token')
+
+        const newPostAsShare = await pool.query(`INSERT INTO posts(title,description,mediafile,user_id,is_shared,parent_share_id, root_post_id)
+        VALUES($1,NULL,NULL,$2,true,$3,$4) RETURNING *`, [sharer_message,userId,parent_share_id, root_postId])
+
+        if(newPostAsShare.rowCount === 0) {
+            return res.status(404).json({error : 'failure while saving the sharePost on db'})
+        }
 
         const newShare = await pool.query(`INSERT INTO shares (
         post_id, 
@@ -1111,75 +1398,181 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
         user_token
         )
         VALUES($1, $2, $3,$4, $5) RETURNING *
-        `, [postId,req.session.userId,platform, sharer_message,user.rows[0].usertoken]);
+        `, [parent_share_id,req.session.userId,platform, sharer_message,user.rows[0].usertoken]);
 
         if(newShare.rowCount === 0){
             return res.status(404).json({error : 'failure saving the shared file', success: false})
         }
 
-           console.log('file saved successfully !', newShare.rows[0])
+        //post owner id
+         const root_post_owner_id = await pool.query(`SELECT user_id FROM posts WHERE id = $1`, [parseInt(root_postId)])
 
+        //  post parent owner id
+        const parent_post_owner_id = await pool.query(`SELECT user_id FROM posts WHERE id = $1`, [parseInt(parent_share_id)])
 
-
+        const root_ownerId = parseInt(root_post_owner_id.rows[0].user_id)
+        const parent_ownerId = parseInt(parent_post_owner_id.rows[0].user_id)
+        // const originalUserId = newPostAsShare.rows[0].user_id
+          
         const sharedPostAndSharer = await pool.query(`
-            SELECT shares.sharer_message,
-            shares.id,
-            shares.post_id,
-            shares.user_id,
-            shares.on_platform,
-            shares.shared_at,
-            (shares.user_id = $1) AS postOwner,
-            posts.id AS post_id,
-            posts.title,
-            posts.description,
-            posts.created_at,
-            posts.mediafile,
-            original_author.id as original_author_id,
-            original_author.firstname as original_author_name,
-            original_author.profilepicture as original_author_Profile,
-            original_author.usertoken as original_user_token,
-            sharer.id as sharer_id,
-            sharer.firstname as sharer_name,
-            sharer.profilepicture as sharer_profile,
-            sharer.usertoken as sharer_user_token,
-            (SELECT COUNT(*) FROM likes WHERE post_id = shares.id AND share_id = shares.id) AS likes_count, 
-            (SELECT COUNT(*) FROM comments WHERE post_id = shares.id) AS comments_count
-            FROM shares
-            LEFT JOIN posts ON shares.post_id = posts.id 
-            LEFT JOIN users AS original_author ON posts.user_id = original_author.id
-            LEFT JOIN users AS sharer ON shares.user_id = sharer.id
-            WHERE shares.id = $2
-            GROUP BY 
-            shares.id,
-            posts.id,
-            original_author.id,
-            sharer.id
-            ORDER BY shares.shared_at`, [req.session.userId,newShare.rows[0].id])
+        SELECT
+        posts.*,
+        posts.id AS post_id,
+        posts.parent_share_id,
+        posts.root_post_id,
+        (posts.root_post_id IS NULL AND posts.parent_share_id IS NULL) as isNot_shared,
+    
+        sharer.id AS sharer_id,
+        sharer.firstname AS sharer_name,
+        sharer.profilepicture AS sharer_profile,
+        sharer.usertoken As sharer_token,
 
-            if(sharedPostAndSharer.rowCount === 0){
-                console.log('no shared file yet !')
-            }
+        -- Original post data as JSON
+        (SELECT json_build_object(
+            'id', op.id,
+            'title', op.title,
+            'description', op.description,
+            'mediafile', op.mediafile,
+            'created_at', op.created_at,
+            'owner', json_build_object(
+                'id', ou.id,
+                'usertoken', ou.usertoken,
+                'firstname', ou.firstname,
+                'profilepicture', ou.profilepicture,
+                'is_owner' , op.user_id = $1
+            )
+        ) FROM posts op
+        JOIN users ou ON ou.id = op.user_id
+        WHERE op.id = posts.root_post_id) AS original_post,
 
-            const mainPost = await pool.query(`SELECT
-                posts.id, 
-            (SELECT COUNT(*) FROM shares WHERE shares.post_id = posts.id) AS shares_count
-            FROM posts WHERE id = $1`, [postId])
+        (SELECT COUNT(*) FROM likes WHERE likes.postid = posts.id) AS likes_count,
+        (SELECT COUNT(*)  FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+        (SELECT COUNT(*)  FROM posts p1 WHERE p1.root_post_id = posts.id) AS total_shares,
+        (posts.user_id = $1) AS is_share_post_owner
 
-            if(mainPost.rowCount === 0) return console.log('no main post')
+        FROM posts
+        LEFT JOIN users AS sharer ON sharer.id = posts.user_id 
+        WHERE posts.parent_share_id  IS NOT NULL AND posts.root_post_id IS NOT NULL
+
+        ORDER BY posts.id DESC 
+        `, [req.session.userId])
+
+        if(sharedPostAndSharer.rowCount === 0){
+            console.log('no shared file yet !')
+        }
+
+         const postOwnerSocket = activeUsers.get(root_ownerId)
+         const parentOwnerSocket = activeUsers.get(parent_ownerId)
+         const sharedPost =  sharedPostAndSharer.rows[0]
+            
+            const parentOwner_notif_message = `${user.rows[0].firstname} has shared you post`
+            
+            const root_notif_message = `${user.rows[0].firstname} has shared you post`
+            const postId = newPostAsShare.rows[0].id
+         
+    try{
+       if(root_ownerId === req.session.userId){
+            console.log('login user !')
+        }else{
+            console.log('different user ')
+            createNotification(postOwnerSocket,sharedPost, root_notif_message, userId, root_ownerId, postId)
+        }
+
+    }catch(error){
+        console.log('some error while saving notification and sending them ... ', error)
+    }
+            
+
+      const sharesCounts = await pool.query(`
+    SELECT 
+        p1.id as current_post_id,
+        p1.parent_share_id as immediate_parent_id,
+          -- Count of shares for the immediate parent (if exists)
+        (SELECT COUNT(*) FROM posts p2 WHERE p2.parent_share_id = p1.parent_share_id) as parent_shares_count,
+      
+        -- Get the root post ID using a subquery
+        (WITH RECURSIVE find_root AS (
+            SELECT id, parent_share_id
+            FROM posts WHERE id = $1
+            UNION ALL
+            SELECT p.id, p.parent_share_id
+            FROM posts p
+            JOIN find_root fr ON p.id = fr.parent_share_id
+        )
+        
+        SELECT id FROM find_root WHERE parent_share_id IS NULL
+        ) as root_post_id,
+
+         -- Count of shares for the root post
+        (SELECT COUNT(*) FROM posts p3 
+         WHERE p3.root_post_id = (
+             WITH RECURSIVE find_root2 AS (
+                 SELECT id, parent_share_id
+                 FROM posts WHERE id = $1
+                 UNION ALL
+                 SELECT p.id, p.parent_share_id
+                 FROM posts p
+                 JOIN find_root2 fr ON p.id = fr.parent_share_id
+             )
+             SELECT id FROM find_root2 WHERE parent_share_id IS NULL
+         )
+        ) as root_shares_count
+        
+         
+    FROM posts p1
+    WHERE p1.id = $1
+`, [newPostAsShare.rows[0].id]);
+
+        if(sharesCounts.rowCount === 0) console.log('no root id found')
+
+          console.log(sharesCounts.rows)
+         
         res.json({
-            mainPost : mainPost.rows[0],
             sharedPost : sharedPostAndSharer.rows[0],
             message : 'file shared successfully !',
-            success : true
+            success : true,
+            root_parent_sharesCount : sharesCounts.rows[0]
         })
 })
 
+// CREATE NOTIFICATION FUNCTION 
+
+async function createNotification(receiver,sharedPost,message,userId,ownerId,postId) {
+  // This waits for completion
+  const newNotification = await pool.query(`INSERT INTO notifications 
+        (type,message,from_userid,receiver_id,post_id)
+        VALUES($1,$2,$3,$4,$5) RETURNING *; `, ['Share',message,userId,ownerId,postId])
+
+     // Get updated count AFTER insertion
+  const countResult = await pool.query(
+    `SELECT COUNT(*) FROM notifications WHERE receiver_id = $1 AND is_seen = $2`,
+    [ownerId,false]
+  );
+  
+    const notificationData = newNotification.rows[0]
+  const unreadCount = parseInt(countResult.rows[0].count);
+
+  
+  // This fires and continues immediately (non-blocking)
+  io.to(receiver).emit('share_root_notify', {
+    shareMessage :  notificationData.message,
+    shareTime : notificationData.timestamp,
+    sharePostId : notificationData.post_id,
+    sharedPost,
+    notifsCount: unreadCount 
+  });
+
+  // Return whatever you need for your application logic
+
+  return notificationData
+         
+}
 
 // edit post sharer
-app.get('/api/editPost/:share_id', validateLogin, async(req,res)=>{
-    const shareId = parseInt(req.params.share_id)
+app.get('/api/editPost/:post_id', validateLogin, async(req,res)=>{
+    const postId = parseInt(req.params.post_id)
  
-    const post = await pool.query(`SELECT * FROM shares WHERE id = $1`, [shareId])
+    const post = await pool.query(`SELECT * FROM posts WHERE id = $1`, [postId])
     if(post.rowCount === 0) return res.status(404).json({message : 'not found post'})
      console.log(post.rows[0])
      res.json({
@@ -1189,219 +1582,107 @@ app.get('/api/editPost/:share_id', validateLogin, async(req,res)=>{
  })
 
 
-app.patch('/api/update/message/:shareId', validateLogin, async(req,res)=>{
-    const shareId = req.params.shareId;
-    const {post_id, sharer_message} = req.body;
+app.patch('/api/update/message/:postId', validateLogin, async(req,res)=>{
+    const postId = parseInt(req.params.postId);
+    const {sharer_message} = req.body;
     // const userId = req.session.userId;
-    const findSharePost = await pool.query('SELECT * FROM shares WHERE id = $1;',[shareId])
+    const findSharePost = await pool.query('SELECT * FROM posts WHERE id = $1;',[postId])
 
-    if(findSharePost.rowCount === 0) return res.status(404).json({error : 'share message not found'})
-        const updatedMessage = await pool.query(`UPDATE shares SET sharer_message = $1 WHERE id = $2 RETURNING *;`, [sharer_message, shareId])
+        const updatedPostTitle = await pool.query(`UPDATE posts SET title = $1 WHERE id = $2 RETURNING *;`, [sharer_message,postId])
 
-            if(updatedMessage.rowCount === 0){
-                return res.json(403).json({error : 'updating the share message failed !'})
-            }
+         if(updatedPostTitle.rowCount === 0) return res.status(404).json({error : 'update data not found'})
 
             res.json({
-                updated_message : updatedMessage.rows[0],
+                updated_message : updatedPostTitle.rows[0],
                 message : 'post successfully updated !',
-                success : true
+                success : 'true'
             })
 })
 
+// notifications
 
-app.delete('/api/deleteSharerPost/:id', validateLogin, async(req,res)=>{
-    const shareId = parseInt(req.params.id);
+app.get('/api/allNotifications', validateLogin, async(req,res)=>{
 
-    const postsExists = await pool.query('SELECT * FROM shares WHERE id = $1', [shareId])
-
-    if(postsExists.rowCount === 0) return res.status(403).json({error: 'No share post found'})
-
-        const deletedPost = await pool.query(`DELETE FROM shares WHERE id = $1`, [shareId])
-
-        if(deletedPost.rowCount === 0) return res.status(401).json({error : 'share post did not deleted from the post'})
-
-            const targetPostShares = await pool.query(`SELECT posts.*,
-                shares.*
-                FROM shares 
-                JOIN posts ON shares.post_id = posts.id
-               `)
-
-            if(targetPostShares.rowCount === 0) return console.log('empty')
-
-                // return console.log('SHARE COUNTS ',targetPostShares.rows.shared_data.original_post.auto)
-
-            
-            res.json({
-                shareCounts : targetPostShares.rows,
-                message : 'post successfully deleted!',
-                deletedPost : deletedPost.rows[0],
-                success : true
-            })
-
-})
-
-app.post('/api/likeSharePost/:shareId', validateLogin, async(req,res)=>{
-    const shareId = parseInt(req.params.shareId)
-    // const {postId,userId} = req.body;
-    const userId = req.session.userId;
-
-    const postExists = await pool.query(`select * from shares where id = $1`, [shareId])
-    if(postExists.rowCount === 0) return res.status(404).json({error : 'post not found'})
+    const myNotifications = await pool.query(`SELECT * FROM notifications 
+        WHERE receiver_id =  $1`, [req.session.userId])
     
-    // check if the like has been by login user
-    const checkLike = await pool.query(`SELECT * FROM likes WHERE share_id = $1 AND userid = $2`, [shareId, userId])
+    if(myNotifications.rowCount > 0){
 
-    if(checkLike.rowCount > 0){
-       console.log(checkLike.rowCount)
-       const deletedLike = await pool.query(`DELETE FROM likes WHERE share_id = $1 RETURNING *;`, [checkLike.rows[0].share_id])
+        const unSeenNotifs = await pool.query(`SELECT COUNT(id) FROM notifications WHERE is_seen  = $1 AND receiver_id = $2`,[false,req.session.userId])
 
-       if(deletedLike.rowCount === 0) return res.json({error : 'like did not deleted from db'})
-        console.log('dislike success')
-      const like = await pool.query(`SELECT COUNT(*) as likescount FROM likes WHERE share_id = $1`, [shareId])
-      return res.json({
-        error : 'you have already liked this post',
-        likesCount : like.rows[0].likescount
-
-      })
+        if(unSeenNotifs.rowCount === 0) {
+            console.log({message : 'no notifications yet '})
+        }
+         return res.json({
+            notifications : myNotifications.rows,
+            success : true,
+            notSeen_notifs : unSeenNotifs.rows[0]
+         })
     }
 
-    const newLike = await pool.query(`INSERT INTO likes (userid, share_id) VALUES($1,$2) RETURNING *`, [req.session.userId, shareId])
-
-    if(newLike.rowCount === 0) return res.json({error : 'like didnt save in db'})
-
-    const likecount = await pool.query(`SELECT COUNT(*) AS likes FROM likes WHERE share_id = $1`, [shareId])
-
-    if(likecount.rowCount > 0){
-        res.json({
-        success : true,
-        likesCount : likecount.rows[0].likes
-    })
-    }
-})
-
-// adding comment of share post
-app.post('/api/sharePost/:shareId/comment',validateLogin,async(req,res)=>{
-    const {comment} = req.body;
-    const shareId = req.params.shareId;
-
-    const newComment = await pool.query(`INSERT INTO comments (comment,user_id,share_id) 
-        VALUES($1,$2,$3) RETURNING *`, [comment, req.session.userId,shareId])
-
-    if(newComment.rowCount === 0) return res.json({error : 'comment did not save in db'})
-
-
-    const commentsAndAuthors = await pool.query(`SELECT 
-        users.firstname AS author_name,
-        users.profilepicture AS user_profile_picture,
-        users.usertoken as userstoken,
-        comments.*,
-        (comments.user_id = $2) as is_owner
-        FROM comments 
-        JOIN users ON comments.user_id = users.id
-        WHERE comments.share_id = $1
-        ORDER BY comments.created_at DESC`, [shareId,req.session.userId])
-
-        if(commentsAndAuthors.rowCount === 0) return res.json({error : 'no comments found'})
-            console.log(commentsAndAuthors.rows[0], 'comment and author')
-        res.json({
-            newComment : newComment.rows[0],
-            comments : commentsAndAuthors.rows,
-            message : 'comment successfully added',
-            success : true
-        })          
-})
-
-// edit share post comment
-app.patch('/api/sharePost/comment/:id/edit', validateLogin, async(req,res)=>{
-    const commentId = parseInt(req.params.id)
-    const {comment} = req.body
-
-    const commentExist = await pool.query(`SELECT * FROM comments WHERE id = $1`, [commentId])
-
-    if(commentExist.rowCount === 0){
-        res.status(404).json({error :'Comment not found'})
-    }
-
-    const updatedComment = await pool.query(`UPDATE comments SET comment = $1 WHERE id = $2 RETURNING *`, [comment, commentId])
-
-    if(updatedComment.rowCount === 0) return res.status(404).json({error : 'comment not found'})
-
-     console.log('update comment succes', updatedComment.rows[0])
-    res.json({
-        success: true,
-        updatedComment : updatedComment.rows[0]
-    })
+    res.json({empty_message : 'NO notifications for Now !'})
 })
 
 // chat 
 
-app.get('/api/chatpage/:id', validateLogin, async(req,res)=>{
+app.get('/api/chatpage/:id/:token', validateLogin, async(req,res)=>{
     const receiverId = parseInt(req.params.id)
+    const token = req.params.token
     res.sendFile(basedir + 'chatpage.html')
 })
 
 
 // load all messasges on page start with details
-app.get('/api/allChats/:receiverId', validateLogin, async(req,res)=>{
+app.get('/api/allChats/:receiverId/:token', validateLogin, async(req,res)=>{
     const receiverId = parseInt(req.params.receiverId);
     const senderId = req.session.userId;
+     
+    const senderName = await pool.query(`SELECT firstname FROM users WHERE id = $1`, [receiverId])
+
+    if(senderName.rowCount === 0) return res.json({error : 'receiver not found'})
+
+
+    // const receiverToken = req.params.token;
     const initialChats = await pool.query(`SELECT * FROM chats WHERE (sender_id = $1 AND receiver_id = $2)
         OR
      (sender_id = $2 AND receiver_id = $1)`,[senderId, receiverId])
 
     if(initialChats.rowCount === 0){
         return console.log('no chat yet !')
-        // return res.json({error :'no chat found'})
     }
 
     res.json({
         chats : initialChats.rows,
-        success : true
-    })
-})
-// chat buddy name
-app.get('/api/chat/:id/receiver',validateLogin, async(req,res)=>{
-    const receiverId = parseInt(req.params.id)
-    
-    const checkReceiver = await pool.query(`SELECT * FROM users WHERE id = $1`, [receiverId])
-    if(checkReceiver.rowCount === 0){
-        return res.status(404).json({message : 'no user found'})
-    }
-
-    res.json({
-        receiver : checkReceiver.rows[0],
-        senderId : req.session.userId
+        success : true,
+        sender : senderName.rows[0]
     })
 })
 
 // list all chats of the user
-app.get('/api/loginUserChats', validateLogin, async(req,res)=>{  
-    const userId = req.session.userId;
-    const allChats = await pool.query(`SELECT chats.*, 
-        CASE 
-            WHEN chats.sender_id = $1 THEN 'sender'
-            ELSE 'receiver'
-        END AS chat_role,
-        CASE 
-            WHEN chats.sender_id = $1 THEN chats.receiver_id
-            ELSE chats.sender_id
-        END AS other_user_id,
-        users.firstname AS other_user_name,
-        users.profilepicture AS other_user_profile_picture
+app.get('/api/userChatList', validateLogin, async(req,res)=>{  
+    const loggedInUserId = req.session.userId;
+    //  return console.log(loggedInUserId)
+    const allChats = await pool.query(`SELECT chats.*,
+        sender.id as sender_id, 
+        sender.firstname as sender_name,
+        sender.usertoken as sender_token,
+        receiver.id as receiver_id , 
+        receiver.firstname as receiver_name,
+        receiver.usertoken as receiver_token
         FROM chats 
-        JOIN users ON (users.id = chats.receiver_id OR users.id = chats.sender_id)
-        WHERE chats.sender_id = $1 OR chats.receiver_id = $1
-        ORDER BY chats.created_at DESC`, [userId]);
+        LEFT JOIN users AS sender ON sender.id = chats.sender_id
+        LEFT JOIN users AS receiver ON receiver.id = chats.receiver_id
+         WHERE 
+        (chats.receiver_id = $1) OR (chats.sender_id = $1)
+        ORDER BY chats.created_at DESC`, [loggedInUserId])
 
-    if(allChats.rowCount === 0){
-        return res.json({message : 'no chats found'})
-    }
+        if(allChats.rowCount === 0) return res.json({emptyMessage : 'no chats for this user'})
 
-    res.json({
-        chats : allChats.rows,
-        success : true
-    })
+            // return console.log("chats ",allChats.rows)
+        res.json({
+            chats : allChats.rows,
+            success : true
+        })
 })  
 
 // CHATS 
@@ -1426,10 +1707,13 @@ function validateLogin(req,res,next){
 
 // shares
 
+// pool.query(`SELECT conname
+// FROM pg_constraint
+// WHERE conrelid = 'shares'::regclass;`).then(data => console.log(data)).catch((err)=> console.log(err))
 
 // pool.query(`CREATE TABLE IF NOT EXISTS shares 
 //     (id SERIAL PRIMARY KEY, 
-//      post_id INTEGER REFERENCES posts(id),
+//      post_id INTEGER REFERENCES posts(id) ON CASCADE DELETE,
 //      user_id INTEGER REFERENCES users(id),
 //      on_platform TEXT NOT NULL,
 //       sharer_message TEXT,
@@ -1494,9 +1778,9 @@ function validateLogin(req,res,next){
 //     console.log(err)
 // })
 
-// pool.query(`ALTER TABLE comments 
-//     DROP CONSTRAINT IF EXISTS user_token_fk,
-//   ADD CONSTRAINT user_token_fk FOREIGN KEY (user_token) REFERENCES users(usertoken) ON DELETE CASCADE`).then(()=>{
+// pool.query(`ALTER TABLE notifications
+//     DROP CONSTRAINT IF EXISTS posts_id_fkey,
+//   ADD CONSTRAINT posts_id_fkey FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`).then(()=>{
 //     console.log('constraint ALTERED SUCCESS !')
 
 // }).catch((err)=> console.log(err, ' occrued'))
@@ -1523,16 +1807,33 @@ function validateLogin(req,res,next){
 // thing we will need for production 
 // 1: loading functionality till the data loads
 
+// pool.query(`CREATE TABLE IF NOT EXISTS notifications 
+//     (id  BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+//      type VARCHAR(255),
+//      message TEXT,
+//      timestamp TIMESTAMPTZ DEFAULT now(),
+//      from_userId INTEGER REFERENCES users(id),
+//      receiver_id INTEGER REFERENCES users(id) 
+//     )`).then(data =>{
+//         console.log('table created success')
+//     }).catch((err) =>console.log(err))
 
-
-// pool.query(`ALTER TABLE shares ADD COLUMN IF NOT EXISTS user_token TEXT,
+// pool.query(`ALTER TABLE shares
 //     ADD CONSTRAINT fk_user_token
 //     FOREIGN KEY (user_token) REFERENCES users(usertoken)`
 // ).then(() =>console.log('COSNTRAINT conditionaly set !')).catch(err =>console.log(err))
 
+// pool.query(`ALTER TABLE users ADD COLUMN joined_at 
+//     timestamptz default now()`).then(console.log('new column success')).catch((err)=>{
+//         console.log(err)
+//     })
 
-//    pool.query(`ALTER TABLE posts ALTER COLUMN shared_post_id SET DEFAULT NULL`).then(()=>console.log('is_shared column added')).catch((err)=>console.log(err))
+// pool.query(`ALTER TABLE posts drop column shared_post_id`).then(console.log('post id')).catch(err => {
+//     console.log(err)
+// });
 
+
+//    pool.query(`ALTER TABLE users ALTER COLUMN created_at TYPE timestamptz USING created_at::timestamptz`).then(()=>console.log('is_seen column added')).catch((err)=>console.log(err))
 
 
 const listeningPort=  3000

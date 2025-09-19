@@ -1,28 +1,26 @@
-postContainer.addEventListener('click', (e)=>{
+modal.addEventListener('click', (e)=>{
     if(e.target.classList.contains('commentDeleteBtn')){
-       const commentId = e.target.dataset.commentId
-       const commentDiv = e.target.closest(`.comment`)
-       const postDiv = e.target.closest('.posts')
-
-       const postId = postDiv.dataset.postId || postDiv.dataset.shareId
      
-        deleteComment(e,commentId, commentDiv, postId)
+      // post id comes from the global post id
+       const commentId = e.target.dataset.commentId
+       const postDiv = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
+     
+       const commentDiv = postDiv.querySelector(`.comment[data-comment-id="${commentId}"]`)
+
+         
+        deleteComment(commentId, commentDiv, postId)
     }
 })
 
 
-const deleteComment = async(event,comId, commentDiv, postId)=>{
-     event.preventDefault()
-     
+const deleteComment = async(comId, commentDiv, postId)=>{     
      try{
         const response = await axios.delete(`/api/comment/${parseInt(postId)}/${comId}/delete`)
-
+    console.log(response.data)
         const remainingComments = response.data.allComments;
-        console.log(remainingComments.length)
-        const commentCountElement = event.target.closest('.posts')?.querySelector('.commentCount')
-     if(response.data.success){
+        const commentCountElement = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)?.querySelector('.commentCount')
+     if(response.data.success && response.status === 200){
         commentDiv.remove()
-        
          commentCountElement.textContent = remainingComments.length;
      }
      }catch(err){

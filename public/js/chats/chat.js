@@ -1,52 +1,59 @@
 
 const socket = io()
-const messageContainer = document.querySelector('.chat-container');
+const messageContainer = document.querySelector('.chat-container1');
 const messageInput = document.getElementById('chatInput')
-const receiverId = parseInt(window.location.pathname.split('/').pop())
+const receiverId = parseInt(window.location.pathname.split('/')[3])
+const userToken = window.location.pathname.split('/').pop();
+console.log(receiverId,userToken)
 const typingIndicator = document.querySelector('.typing-event')
 
-   socket.on('user-joined', (message)=>{
-    console.log(message)
-   
+   socket.on('user-joined', (user)=>{
+    console.log(user.loggedInUserName, ' joined the chat')
+    const loggedInUserId = user.loggedInUserId;
+   adoptScreenHeight()
 })
 
 socket.on('user-typing', username =>{
     console.log(username, ' is typing..')
     displayTypingIndicator(username)
+    // adoptScreenHeight()
 })
 
 // listen to receiving message
 socket.on('received-message', (data)=>{
-     console.log(data.message)
-    displayMessage(data.message, formatDate(data.created_at), 'receivingMessage')
+  
+    if(data.target === 'receiver'){
+     console.log('global store chat ', window.storeChats)
+
+    //  return console.log(data.newMsg, data.sender_name)
+     displayMessage(data.newMsg.message, formatDate(data.newMsg.created_at), 'receivingMessage')
+     adoptScreenHeight()
+    }
 })
 
-
-
-const submitBtn = document.querySelector('.chatSubmitBtn').addEventListener('click', (e)=>{
+const submitBtn = document.querySelector('.chatSubmitBtn')
+submitBtn.addEventListener('click', (e)=>{
     let message = messageInput.value
+    const now = new Date().toISOString()
+    const displayTime = new Date().toLocaleTimeString('en-US',{hour : '2-digit', minute: '2-digit', hour12 : true})
+
     const messageData = {
         msg : message, 
-        date : formatDate(),
+        date : now,
         userId : receiverId
     }
+    if(messageInput.value === '') return;
+
     socket.emit('newMessage-send', messageData)
-    displayMessage(message, formatDate(), 'sendingMessage')
+    displayMessage(message, displayTime, 'sendingMessage')
     messageInput.value = ''
-   if(messageContainer.scrollHeight > messageContainer.clientHeight){
-        messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
-    }
+    adoptScreenHeight()
 })
-
-
 // typing event
 
 messageInput.addEventListener('keypress', (e)=>{
     socket.emit('user-typing', receiverId)
 })
-
-
-
 
 function displayMessage(message,date, sendingMessage){
     const messageHTML = document.createElement('div')
@@ -60,11 +67,11 @@ function displayMessage(message,date, sendingMessage){
 }
 
 
-function formatDate(){
-    const date = new Date()
+function formatDate(timestamp){
+    const date = new Date(timestamp)
 const formattedDate  = date.toLocaleDateString('en-US', {month : 'short'}) + 
 '-' + date.toLocaleDateString('en-US',{weekday : 'short'})
-    const timeFormat = date.toLocaleTimeString('en-US', {hour: '2-digit', minute : '2-digit'})
+    const timeFormat = date.toLocaleTimeString('en-US')
     const timeAndDate = timeFormat + '-' + formattedDate
 
     return timeAndDate;
@@ -91,5 +98,12 @@ function removeTypingIndicator(){
     if(existingEl) {
         clearTimeout(existingEl.timeout)
         existingEl.remove()
+    }
+}
+
+
+function adoptScreenHeight(){
+     if(messageContainer.scrollHeight > messageContainer.clientHeight){
+        messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
     }
 }

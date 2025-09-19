@@ -10,6 +10,16 @@
 <body>
     <div class="container">
         
+        <div id="newUserCheck"></div>
+
+         <!-- login via google btn  -->
+         <button id="googleLoginBtn">Sign In By Google !</button>
+
+       
+            <h3 style="text-align: center; margin-bottom: 20px;">
+                -----------------------------OR----------------------------
+            </h3>
+
         <h1>SIGN UP</h1>
         <form id = "signUpForm" action="/api/signup" method="post" enctype="multipart/form-data">
             <input type="text" id="fname" name="fname" placeholder="type your first name">
@@ -29,5 +39,6 @@
 
     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script defer src="/js/components/signup.js"></script>
+    <script defer type="module" src="/js/components/googleAuth.js"></script>
 </body>
 </html>

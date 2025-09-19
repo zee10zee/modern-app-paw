@@ -37,7 +37,7 @@ loading.classList.remove('hidden')
     userPost = posts.map(post =>{ return post.mediafile})
      console.log(userPost)
      profilePic = user
-    renderMedia(userPost, 'post', user);
+    loadUploadedImages()
 
   } catch (err) {
     console.error('Failed to load user media:', err);
@@ -48,8 +48,20 @@ loading.classList.remove('hidden')
 // Event listeners for buttons
 postBtn.addEventListener('click', () => {
   clearMedia();
-  renderMedia(userPost, 'post', profilePic);
+  loadUploadedImages()
 });
+
+function loadUploadedImages(){
+    const uploadedPhtos = userPost.map(post =>{
+    
+      const imgTypes = ['.png' , '.gif' , '.webp' ,'.bmp' , '.tiff','.tif' ,'.heic' , '.avif']
+      return imgTypes.some(ext => post.toLowerCase().includes(ext))
+  })
+
+  if(!uploadedPhtos || uploadedPhtos.length === 0) return mediaList.innerHTML = "<h2>No uploaded phtos yet </h2>"
+  renderMedia(userPost, 'post', profilePic);
+  }
+
 
 profileBtn.addEventListener('click', () => {
   clearMedia();

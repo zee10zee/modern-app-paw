@@ -1,4 +1,4 @@
-
+window.loadActiveUserStoredInfo = () => {}
 const loginForm = document.getElementById('loginForm')
 const email = document.getElementById('email')
 const password = document.getElementById('password')
@@ -26,17 +26,20 @@ loginForm.addEventListener('submit', async(e)=>{
         password : password.value
     });
 
-        // return console.log(response.data.loggedInUser.firstname)
+    if(response.data.isLoggedIn){
+        const {loggedInUser} = response.data       
+    // calling the globalfunction
+        window.loadActiveUserStoredInfo(
+            loggedInUser.id,
+            loggedInUser.firstname,
+            loggedInUser.profilepicture,
+            loggedInUser.usertoken
+        )
 
-
-    if(response.data.isLoggedIn){       
-        sessionStorage.setItem('loggedIn_profile', response.data.loggedInUser.profilepicture)
-        sessionStorage.setItem('loggedIn_name', response.data.loggedInUser.firstname)
-        sessionStorage.setItem('loggedIn_userToken', response.data.loggedInUser.usertoken)
         window.location.href="/"
     }else{
         console.log('please sign up first')
-        sessionStorage.setItem('signUpMsg', 'Wrong Email or Password!')
+        sessionStorage.setItem('signUpMsg', response.data.message || 'Wrong Email or Password!')
         window.location.href='/api/login'
     }
 })
@@ -47,4 +50,11 @@ if(signupAlert && alertTag){
     setTimeout(() => {
      alertTag.style.display = "none"
     }, 3000);
+}
+
+window.loadActiveUserStoredInfo = (id,name,profilePicture,token)=>{
+    sessionStorage.setItem('loggedIn_userId', id)
+    sessionStorage.setItem('loggedIn_name', name)
+    sessionStorage.setItem('loggedIn_profile', profilePicture)
+    sessionStorage.setItem('loggedIn_userToken', token)     
 }

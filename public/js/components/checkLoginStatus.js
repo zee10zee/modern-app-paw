@@ -6,9 +6,6 @@ window.addEventListener('DOMContentLoaded',async(e)=>{
 
    if(response.data.isLoggedIn){
      console.log('logged in user is active')
-          loggedinLink.style.display = "none"       
-   }else{
-        signupLink.style.display = "none"
-        loggedinLink.style.display = "none"
+          window.location.href="/"       
    }
 })

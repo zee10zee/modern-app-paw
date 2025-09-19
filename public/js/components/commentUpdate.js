@@ -1,23 +1,31 @@
 window.addEventListener('DOMContentLoaded', ()=>{
    postsContainer.addEventListener('click', (e)=>{
-    const editBtn = e.target.classList.contains('edit-comment-button')
+  
     const commentGear = e.target.classList.contains('comment-gear')
     const commId = e.target.dataset.commentId
-    // const comment = e.target.closest(`.comment[data-comment-id = "${commId}"]`);
-    const comment = e.target.closest(`.comment`);
-         const closeCommentModal = e.target.classList.contains('close')
-
+    const closeCommentModal = e.target.classList.contains('close')
+    const postDiv = e.target.closest('.posts')
+    const commentDiv = postDiv.querySelector(`.comment[data-comment-id="${commId}"]`)
+    const postId = postDiv.dataset.postId;
     if(commentGear || closeCommentModal){
-        // one container should be opened at a time
-         const commentEditDeleteContainer = comment.querySelector('.comment-delete-edit')
-         openActiveContainer(commentEditDeleteContainer)
-    }else if(editBtn){
-        const commentId = e.target.dataset.commentId
-       const postDiv = e.target.closest('.posts')
-       const commentDiv = e.target.closest(`.comment[data-comment-id = "${commentId}"]`);
-       console.log('comment edit button ', commentDiv)
-       handleEditButton(postDiv, commentDiv, commentId)
+         e.preventDefault()
+          modal.dataset.postId = '';
+          modal.dataset.commentId = commId
+          showModalAt(e.pageX,e.pageY)
+          e.stopPropagation()
+         modal.innerHTML = ''
+         modal.innerHTML = loadSpecificPostModal(commId)
     }
+
+    modal.addEventListener('click', (e)=>{
+        e.preventDefault()
+    const editBtn = e.target.classList.contains('commentEditBtn')
+      if(editBtn) {
+        const commentId = modal.dataset.commentId        
+       handleEditButton(postDiv, commentDiv, commentId);
+      }
+    }) 
+    
     
 })
 })
@@ -75,7 +83,6 @@ const postDiv = inputComment.closest('.posts')
            inputComment.classList.remove('editingMode');
             inputComment.removeAttribute('data-editing-comment-id');
             inputComment.value = '';
-            // as the new edit buttons lose their orgianal effect we need to re handle the clicking of edit button 
     }
 }
 
@@ -91,16 +98,4 @@ function handleEditButton(postDiv, commentDiv, commentId){
         commentInput.value = commentText
         commentInput.focus()
         commentInput.select()
-
 }
-
-
-function openActiveContainer(container){
-    if(container.style.display === "block") {
-          container.style.display = "none"
-          currentOpenModal = null
-    } else {
-         container.style.display = "block"
-         currentOpenModal = container
-    }  
-   }

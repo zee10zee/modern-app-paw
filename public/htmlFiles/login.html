@@ -8,23 +8,32 @@
 </head>
 <body>
       <div class="container">
-        <h2 id="validateAlert" style="color: red;"></h2>
+         <h2 id="validateAlert" style="color: red;"></h2>
         <h2 id="goodByeAlert" style="color: green;"></h2>
-        <h2>Login</h2>
+        <h1> Please Log in !</h1>
+        <!-- login via google btn  -->
+         <button id="googleLoginBtn">Sign In By Google !</button>
+
+       
+            <h3 style="text-align: center; margin-bottom: 20px;">
+                -----------------------------OR----------------------------
+            </h3>
+        
         <form id="loginForm" action="/api/login" method="post">
             <input type="email" id="email" name="email" placeholder="type your email">
             <input type="password" name="password" id="password">
             <button>Login</button>
         </form>
 
-        <div class="passForget-signup" style="display: flex;">
+        <div class="passForget-signup" style="display: flex; justify-content: space-between;">
             <a href="/api/signup">Not registered?</a>
             <a href="/api/passwordForgot">password forgotten ?</a>
         </div>
     </div>
 
-     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script defer src="/js/components/login.js"></script>
-    <script defer src="/js/components/logout.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script type="module" src="/js/components/login.js"></script>
+    <script type="module" src="/js/components/logout.js"></script>
+    <script type="module" src="/js/components/googleAuth.js"></script>
 </body>
 </html>

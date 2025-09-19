@@ -1,21 +1,34 @@
 
-postsContainer.addEventListener('click', async(e)=>{
-        let baseUrl = 'http://localhost:3000'
+socket.on('share_root_notify', data =>{
+ const shareContainer1 = document.getElementById('share-container')
+        console.log(data.sharedPost)
+        const sharedPost = data.sharedPost
+        const originalPost = sharedPost.original_post;
+        const original_postOwner = originalPost.owner;
+   updateSharedpostOnUI(sharedPost,originalPost)
+  if(shareContainer1.style.display === 'block') shareContainer1.style.display = "none"
+})
 
-    const shareContainer = postsContainer.querySelector('.share-container')
+ document.body.addEventListener('click', async(e)=>{
+        let baseUrl = 'http://localhost:3000'
+   const shareContainer = document.getElementById('share-container')
     if(e.target.classList.contains('shareBtn')){
-        loadShareFormModal(e, shareContainer)
-        // closing modal form
+    const targetPostDiv = e.target.closest('.posts')
+    const originalPost = targetPostDiv.querySelector('.shared_post')
+    
+    const originalPostId = targetPostDiv.contains(originalPost) ?  parseInt(originalPost.dataset.postId) : parseInt(targetPostDiv.dataset.postId);
+    
+     shareContainer.dataset.rootId = originalPostId;
+
+    const parent_share_Id = parseInt(targetPostDiv.dataset.postId)
+
+       shareContainer.classList.remove('hidden')
+       shareContainer.classList.add('flex')
+      loadShareFormModal(e,shareContainer,originalPostId, parent_share_Id)
+
     }else if(e.target.classList.contains('closeShareModal')){
         closeShareModal(shareContainer)
         // to facebook link share
-    }else if(e.target.classList.contains('facebook')){
-        const linktag = e.target.href;
-        const url =  linktag
-        const fbLink = `https://www.facebook.com/sharer/sharer.php?u=${url}`
-        // sharePostOn(platformLink,parseConnectionUrl, newTab)
-        window.open(fbLink, '_blank')
-        // copy button
     }else if(e.target.textContent.includes('Copy')){
         console.log('copy button')
         const copyElement = e.target.href;
@@ -24,62 +37,145 @@ postsContainer.addEventListener('click', async(e)=>{
          const copiedText = await navigator.clipboard.writeText(copyLink).then(copiedText => alert('text copied ', copiedText)).catch(err => alert('failure copying the text with : ', err));
         //  share on app button
     }else if(e.target.classList.contains('shareOnApp')){
+        e.preventDefault()
          const shareDiv = e.target.closest('.shareForm')
          const platform = e.target.textContent;
-         const postId = e.target.dataset.postId;
-        const messageInput = shareDiv.querySelector('#sharer_message_input')
+
+         const messageInput = shareDiv.querySelector('#sharer_message_input')
         const message = messageInput.value
-          shareOnTheApp(postId,messageInput,platform)
+        const targetPostDiv = e.target.closest('.posts')
+
+          const parent_share_id = e.target.dataset.postId;
+          const rootId = shareContainer.dataset.rootId;
+
+          shareOnTheApp(parent_share_id,messageInput,platform, rootId)
     }
 })
 
 // function shareOnApp
-async function shareOnTheApp(postId,messageInput,platform){
-    // const platform = platform
+async function shareOnTheApp(parent_share_id,messageInput,platform,rootPostId){
+// return console.log(postId, 'postid')
     const res = await axios.post(`/api/sharePost`,
        {
-         postId: postId,
          platform : platform,
+         parent_share_id: parent_share_id,
+         root_postId : rootPostId,
          sharer_message : messageInput.value
        })
+        // return console.log(res.data)
+       if(res.data.success && res.status === 200){
         
-       if(res.data.success){
-        console.log(res.data)
-        const sharedPost = res.data.sharedPost;
-        console.log('count shares ', res.data.mainPost.shares_count)
-        let mainPostShareCounts = res.data.mainPost.shares_count;
 
-         updateSharedpostOnUI(sharedPost, postId);
-          
-         // count shares of a post 
-         const actualPostofShared = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
-         const shareCountElement = actualPostofShared.querySelector('.sharesCount')         
-         shareCountElement.textContent = mainPostShareCounts
+        const shareContainer1 = document.getElementById('share-container')
+        shareContainer1.classList.remove('flex')
+          shareContainer1.classList.add('hidden')
 
-        //  close share modal 
-         const shareContainer = postsContainer.querySelector('.share-container')
-         shareContainer.style.display = "none"
+        const sharedPost = res.data.sharedPost
+        const originalPost = sharedPost.original_post;
+        const original_postOwner = originalPost.owner;
+        const sharesCounts = res.data.root_parent_sharesCount;
+
+          // parent post update counts
+          let parentPost = document.getElementById(sharesCounts.immediate_parent_id);
+            const parentPost_counts = sharesCounts.parent_shares_count
+            const parentPost_share_count_El = parentPost.querySelector('.sharesCount')
+
+            parentPost_share_count_El.textContent = sharesCounts.parent_shares_count
+            console.log(parentPost,parentPost_share_count_El, parentPost_counts)
+
+        // root post update shares
+        const rootOfCurrentPost = postsContainer.querySelector(`.posts[data-post-id="${sharesCounts.root_post_id}"]`)
+        const root_shares_count = sharesCounts.root_shares_count
+        const countRootPost_sharesEl = rootOfCurrentPost.querySelector('.sharesCount')
+        // return console.log(sharedPost, 'SHARED POST')
+        countRootPost_sharesEl.textContent = sharedPost.isnot_shared ? parentPost_counts : root_shares_count;
+        
+         updateSharedpostOnUI(sharedPost,originalPost);
          messageInput.value = ''
        }
 
 }
 
-function updateShareCount(postId, sharesCount){
-      const actualPostHTML = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`);
-      const shareCountHTML = actualPostHTML.querySelector('.share')?.querySelector('p')
-      shareCountHTML.textContent = ''
-      shareCountHTML.textContent = sharesCount
+async function loadShareFormModal(event, container, rootId,parent_share_id){
 
+    event.preventDefault()
+  
+    const response = await axios.get(`/api/share/post/${rootId}`) 
+     
+    const sharingPost = response.data.sharedPost
+    const sharingPostId = sharingPost.id
+
+    if(response.status === 200){ 
+     console.log(sharingPost, 'all the shred post information')
+
+         const mediaFile = isVideo(sharingPost.mediafile) ? 'video' : 'img'
+             const mediaTag = document.createElement(mediaFile)
+             mediaTag.classList.add('mediaTag')
+             mediaTag.src = sharingPost.mediafile
+             mediaTag.dataset.postFile = sharingPost.mediafile 
+             if(mediaFile === 'video'){
+                mediaTag.controls = true
+             }
+           const formHtml = `<div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-y-auto max-h-[90vh] relative p-6">
+   <!-- Close button -->
+<span class="closeShareModal absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl cursor-pointer">❌</span>
+
+<!-- Share Form -->
+<form id="shareForm" class="shareForm space-y-4" data-user-token="${sharingPost.user_token}" data-user-id="${sharingPost.post_user_id}">
+  
+  <!-- Textarea -->
+  <textarea name="sharer_message_input" id="sharer_message_input"
+    class="sharerMessage_input w-full p-3 border rounded-lg focus:ring focus:ring-blue-300 resize-none"
+    placeholder="your message"></textarea>
+
+  <!-- Media preview -->
+  <div class="mediaContainer rounded-lg overflow-hidden">
+    ${mediaTag.outerHTML}
+  </div>
+
+  <!-- Post title -->
+  <h2 name="sharingTitle" id="sharingTitle" class="sharingTitle text-lg font-semibold text-gray-800">
+    ${sharingPost.title}
+  </h2>
+
+  <!-- Post description -->
+  <p name="sharingDesc" id="sharingDesc" class="sharingDesc text-gray-600">
+    ${sharingPost.description.substring(0,100)}
+  </p>
+
+  <!-- Share button -->
+  <button data-post-id="${parent_share_id}" class="shareOnApp w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition" id="shareBtn">
+    Share on the app!
+  </button>
+</form>
+
+<!-- Social / external links -->
+<div class="links flex flex-wrap gap-2 justify-center mt-4">
+  <a class="link facebook bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600" id="${sharingPostId}">facebook</a>
+  <a class="link whatsapp bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600" href="">whatsApp</a>
+  <a class="link twitter bg-sky-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-sky-600" href="">twitter</a>
+  <a class="link telegram bg-blue-400 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-500" href="">telegram</a>
+  <a class="link linkedin bg-blue-700 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-800" href="">linkedIn</a>
+  <a class="link copyLink bg-gray-700 text-white px-3 py-1 rounded-lg text-sm hover:bg-gray-800" href="/api/showPost/${sharingPostId}">Copy Link</a>
+</div>
+  </div>
+`
+       container.innerHTML = formHtml
+    }else{
+      const error = res.data.error
+      console.log(error) 
+    }
 }
 
-function updateSharedpostOnUI(sharedPost,postId){
-    //a postDiv like container
+function updateSharedpostOnUI(sharedPost,originalPost){
+  // return console.log(sharedPost)
     const shareDiv = document.createElement('div')
-    shareDiv.dataset.shareId = sharedPost.id
-    shareDiv.classList.add('posts')
-    let sharerHeader = ''
-   let sharer_comment_part = ''
-     let prevousPost = '';
+    shareDiv.dataset.postId = sharedPost.id
+    shareDiv.setAttribute('id', sharedPost.id)
+
+    shareDiv.classList.add('posts', 'sharer-post')
+    let sharePostBody = ''
+   
 
      const mediaFile = isVideo(sharedPost.mediafile) ? 'video' : 'img'
         if(!mediaFile) return console.log('no media image')
@@ -90,148 +186,73 @@ function updateSharedpostOnUI(sharedPost,postId){
           mediaTag.controls = true
         }
 
-    sharerHeader+= `
-            <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
-             ${!sharedPost.postowner?`
-              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li class="ownerProfile" data-token-id="${sharedPost.sharer_user_token}" data-user-id="${sharedPost.sharer_id}">
-                        <a  href="/api/authorProfile/${sharedPost.sharer_user_token}">${sharedPost.sharer_name}'s Profile</a>
-                    </li>
-                    <li class="userProfile" data-user-id="${sharedPost.sharer_id}">
-                        <a  class="userChatLink" href="/api/chatpage/${sharedPost.sharer_id}">Chat with user</a>
-                    </li>
-              </ul>
-              `:''}
-                 <div class="title-date-burger"> 
-                     <span id="date" class="date">${new Date(sharedPost.shared_at). toLocaleDateString()}</span>
-                      ${sharedPost.postowner ?`
-                    <div id="gear" class="gear">⋮</div>
-                  `:''}                                    
-               </div>
-                  <p class="sharer_message">${sharedPost.sharer_message}</p>
+    sharePostBody+= `
+                <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
+           
+               <div class="title-date-burger"> 
+                   <span id="date" class="date">${new Date(sharedPost.created_at). toLocaleDateString()}</span>
+                    ${sharedPost.is_share_post_owner ?`
+                  <div id="gear" class="gear">⋮</div>
+                `:''}                                    
+             </div>
+                <p class="sharer_message">${sharedPost.title}</p>
 
+              <div class="shared_post" data-post-id="${originalPost.id}">
+                   
 
-               <div class="edit-delete">
-                
-                   <span class="closep">❌</span>
-                  <form id="editForm" >
-                    <button data-share-id="${sharedPost.id}" class="postSharerEditBtn">Edit</button>
-                  </form>
-                  <form id="deleteForm" >
-                    <button data-share-id="${sharedPost.id}" class="postSharerDeleteBtn">Delete</button>
-                 </form>
-                </div>
-
-    `
-  prevousPost+= `
-    <div class="shared_post" data-post-id="${postId}">
-       <img class="ownerPhoto" src="${sharedPost.original_author_profile}" alt="Profile picture">
-
-              ${sharedPost.original_author_id !== sharedPost.sharer_id?
+                  ${parseInt(sharedPost.sharer_id) !== parseInt(originalPost.owner.id) ?
                 `
-              <ul id="userProfile-chat-modal" class="userProfile-chat-modal">
-                    <li class="ownerProfile" data-token-id="${sharedPost.original_user_token}" data-user-id="${sharedPost.original_author_id}">
-                        <a  href="/api/authorProfile/${sharedPost.original_user_token}">${sharedPost.original_author_name}'s Profile</a>
-                    </li>
-                    <li class="userProfile" data-user-id="${sharedPost.original_author_id}">
-                        <a  class="userChatLink" href="/api/chatpage/${sharedPost.original_author_id}">Chat with user</a>
-                    </li>
-              </ul>
+                 <img class="ownerPhoto" src="${originalPost.owner.profilepicture}" alt="Profile picture">
               `
               :''}
 
-               <div class="title-date-burger"> 
-                 <h2 class="title"> ${sharedPost.title}
-                   <span id="date" class="date">${new Date(sharedPost.created_at).toLocaleDateString()}</span>
-                 </h2>
-               </div>
-               <p class="description">${sharedPost.description.substring(0,100)} 
-                  <a class="showMoreLink" href="/api/showOnePost/${postId}">Read more...</a>
-               </p>
+                <div class="title-date-burger"> 
+                  <h2 class="title"> ${originalPost.title}
+                    <span id="date" class="date">${new Date(originalPost.created_at).toLocaleDateString()}</span>
+                  </h2>
+                </div>
+                  <p class="description">${originalPost.description.substring(0,100)}</p>
+                  
+                    <a class="showMoreLink" title="${originalPost.description}" href="/api/showOnePost/${originalPost.id}">Read more...</a>s
+
                   <div class="mediaContainer">
-                    ${mediaTag.outerHTML}
+                    ${renderMedia(originalPost.mediafile)}
                   </div>
-        </div>
-    `
-    sharer_comment_part += `
-                   <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
+                
+                </div>
+                `
+
+                 const comments_area = `<div class="likes-comments-share" style="display:flex; justify-content : space-between;">
                   <div class="like">
                      <form class="likeForm" action="/api/post/${sharedPost.id}/like" method="post">
-                      <button class="sharePostLikeBtn" data-share-id="${sharedPost.id}">❤️</button>
+                      <button class="likeBtn" data-post-id="${sharedPost.id}">❤️</button>
                       </form>
                       <p id="likesCount" class="likesCount">${sharedPost.likes_count}</p>
                   </div>
                   <div class="commentsCount">
-                    <button id="commentButton" class="sharePostCommentBtn" data-share-id="${sharedPost.id}">💬</button>
+                    <button id="commentButton" class="CommentBtn" data-post-id="${sharedPost.id}">💬</button>
                     <p class="commentCount">${sharedPost.comments_count}</p>
                   </div>
 
                   <div class="share">
                     <form action="/api/share/id">
-                      <button class="sharePostShareBtn">↗️</button>
+                      <button class="shareBtn" data-post-id="${sharedPost.id}">↗️</button>
                     </form>
-                    <p>12 shares</p>
+
+                      <p class="sharesCount">${sharedPost.total_shares}</p>
                   </div>
                  
                 </div>
 
                  <form  id="commentForm">
-                      <input type="hidden" name="share_id" value="${sharedPost.id}"> 
-                      <input type="text" name="comment" id="comment" class="shareCommentInput" placeholder="type your comment">
+                      <input type="hidden" name="post_id" value="${sharedPost.id}"> 
+                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
                  </form>
                   <div class="commentsContainer"></div>
-                 <div class="container commentEditContainer" id="commentEditContainer"></div>
-    `
-    shareDiv.innerHTML = sharerHeader + prevousPost + sharer_comment_part
+                 <div class="container commentEditContainer" id="commentEditContainer"></div>`
+    // container.style.display = "none"
+    shareDiv.innerHTML = sharePostBody + comments_area
        postsContainer.prepend(shareDiv)
-}
-
-
-
-
-async function loadShareFormModal(event, container){
-    event.preventDefault()
-    container.style.display = "flex"
-     container.style.padding = '30px'
-    const postId = parseInt(event.target.dataset.postId)
-    const response = await axios.get(`/api/share/post/${postId}`) 
-
-    const sharingPost = response.data.sharedPost
-    const sharingPostId = sharingPost.post_id;
-
-    if(response.status === 200){ 
-         const mediaFile = isVideo(sharingPost.mediafile) ? 'video' : 'img'
-             const mediaTag = document.createElement(mediaFile)
-             mediaTag.classList.add('mediaTag')
-             mediaTag.src = sharingPost.mediafile
-             mediaTag.dataset.postFile = sharingPost.mediafile
-            
-             if(mediaFile === 'video'){
-                mediaTag.controls = true
-             }
-           const formHtml = `
-           <span class="closeShareModal">❌</span>
-              
-
-            <form id="shareForm" class="shareForm" data-user-token="${sharingPost.user_token}" data-user-id="${sharingPost.post_user_id}">
-             <textarea name="sharer_message_input" id="sharer_message_input" class="sharerMessage_input" placeholder="your message"></textarea>
-                ${mediaTag.outerHTML}
-                <h2 name="sharingTitle" id="sharingTitle" class="sharingTitle">${sharingPost.title}</h2>
-                <p name="sharingDesc" id="sharingDesc" class="sharingDesc">${sharingPost.description}</p>
-                <button data-post-id="${sharingPostId}" class="shareOnApp" id="shareBtn">Share on the app!</button>
-            </form>
-
-            <div class="links" style="display: flex; gap : 10px;">
-                <a class="link facebook" href="/api/showPost/${sharingPostId}">facebook</a>
-                <a class="link whatsapp"  href="">whatsApp</a>
-                <a class="link twitter"  href="">twitter</a>
-                <a class="link telegram"  href="">telegram</a>
-                <a class="link linkedin"  href="">linkedIn</a>
-                <a class="link copyLink"  href="/api/showPost/${sharingPostId}">Copy Link</a>
-            </div>
-    `
-       container.innerHTML = formHtml
-    }
 }
 
 function closeShareModal(container){
