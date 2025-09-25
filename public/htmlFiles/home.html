@@ -8,49 +8,44 @@
     <meta  class="fbdescription" property="og:description" content="A compelling description of what this feature does and why users should try it." />
     <meta  class="fbimg" property="og:image" content="https://yourapp.com/images/og-image-for-cool-feature.jpg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <link rel="stylesheet" href="/styles/style.css"> -->
-    <script defer src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles/style.css">
+    <!-- <script defer src="https://cdn.tailwindcss.com"></script> -->
 
     <title>Home</title>
 </head>
 <body>
-
-  <!-- Single notification dropdown -->
-<ul id="notifDropdown" 
-     class="absolute w-64 max-h-64 bg-white rounded shadow-lg overflow-y-auto z-50 opacity-0 transition ease-out duration-200 divide-y divide-gray-200">
-    <!-- Notifications will be dynamically appended here -->
-     <li>notific 3</li>
-</ul>
-
-<!-- Top Nav -->
+ <ul id="notifDropdown" style="display: none;"></ul>
 <!-- Unified Top Nav -->
-<nav class="w-full bg-gray-100 px-4 py-2 flex flex-row justify-between items-center fixed top-0 left-0 right-0 z-50">
+<nav class="top-nav">
   <!-- Logo -->
-  <a href="/" id="memoryDom" class="text-2xl font-bold text-gray-800">MemoryDom</a>
+  <a href="/" id="memoryDom" class="logo">MemoryDom</a>
 
   <!-- Search Bar -->
-  <input type="search" name="search-all" id="search-all" 
-         placeholder="Search for users, posts ..." 
-         class="px-3 py-1 border border-gray-300 rounded w-3/4 sm:w-64">
+  <input type="search" name="search-all" id="search-all" class="search-bar" placeholder="Search for users, posts ...">
 
   <!-- Icons Section (desktop only) -->
-  <ul class="hidden md:flex items-center space-x-4">
+  <ul id="NavRightIcons" class="nav-icons">
     <!-- Notification -->
-    <li class="relative flex flex-col items-center">
-      <button id="notifBtn" class="text-white text-2xl p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors relative">
+    <li>
+      <button id="notifBtn" class="notif-btn">
         🔔
-        <span id="notCount" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">4</span>
+        <span id="notCount" class="notif-count">4</span>
       </button>
     </li>
 
     <!-- Active User -->
-    <li class="flex flex-col items-center profilePicContain"></li>
+    <li class="profilePicContain"></li>
 
     <!-- Logout -->
-    <li class="flex flex-col items-center">
+    <li>
       <form action="/api/logout" method="post" id="logoutForm">
-        <button type="submit" class="p-2 rounded-full hover:bg-gray-700 transition-colors bg-gray-800 text-white">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14" height="24" width="24"> <g> <path fill="#8fbffa" d="M2.5 0.351a40.476 40.476 0 0 1 5.74 0c1.136 0.081 2.072 0.874 2.264 1.932a2.248 2.248 0 0 0 -2.108 2.28h-3.642a2.25 2.25 0 1 0 0 4.5h3.642a2.25 2.25 0 0 0 2.145 2.281l-0.004 0.086c-0.06 1.199 -1.06 2.131 -2.296 2.22a40.491 40.491 0 0 1 -5.742 0C1.263 13.56 0.263 12.628 0.203 11.43A89.318 89.318 0 0 1 0.095 7c0 -1.52 0.037 -3.001 0.108 -4.429C0.263 1.372 1.263 0.439 2.5 0.351Z"></path> <path fill="#2859c5" d="M9.66 4.701a1 1 0 0 1 1.433 -1.067c1.107 0.554 2.178 1.624 2.731 2.731a1 1 0 0 1 0 0.895c-0.553 1.107 -1.624 2.178 -2.731 2.731A1 1 0 0 1 9.66 8.924l0.195 -1.111h-5.102a1 1 0 0 1 0 -2h5.102L9.661 4.7Z"></path> </g> </svg>
+        <button type="submit" class="logout-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14" height="24" width="24">
+            <g>
+              <path fill="#8fbffa" d="M2.5 0.351a40.476 40.476 0 0 1 5.74 0c1.136 0.081 2.072 0.874 2.264 1.932a2.248 2.248 0 0 0 -2.108 2.28h-3.642a2.25 2.25 0 1 0 0 4.5h3.642a2.25 2.25 0 0 0 2.145 2.281l-0.004 0.086c-0.06 1.199 -1.06 2.131 -2.296 2.22a40.491 40.491 0 0 1 -5.742 0C1.263 13.56 0.263 12.628 0.203 11.43A89.318 89.318 0 0 1 0.095 7c0 -1.52 0.037 -3.001 0.108 -4.429C0.263 1.372 1.263 0.439 2.5 0.351Z"></path>
+              <path fill="#2859c5" d="M9.66 4.701a1 1 0 0 1 1.433 -1.067c1.107 0.554 2.178 1.624 2.731 2.731a1 1 0 0 1 0 0.895c-0.553 1.107 -1.624 2.178 -2.731 2.731A1 1 0 0 1 9.66 8.924l0.195 -1.111h-5.102a1 1 0 0 1 0 -2h5.102L9.661 4.7Z"></path>
+            </g>
+          </svg>
         </button>
       </form>
     </li>
@@ -58,99 +53,97 @@
 </nav>
 
 <!-- Bottom Nav Icons (mobile only) -->
-<nav class="fixed bottom-0 left-0 right-0 bg-gray-800 flex justify-around items-center py-2 md:hidden">
-  <button id="notifBtnMobile" class="text-white text-2xl relative">🔔
-    <span id="notCount" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">4</span>
+<nav class="bottom-nav">
+  <button id="notifBtnMobile" class="notif-btn">
+    🔔
+    <span id="notCount" class="notif-count">4</span>
   </button>
-  <button class="text-white text-2xl">💬</button>
-  <button class="text-white text-2xl">👥</button>
-  <li class="flex flex-col items-center profilePicContain"></li>
+  <button class="nav-btn">💬</button>
+  <button class="nav-btn">👥</button>
+  <li class="profilePicContain"></li>
   <form action="/api/logout" method="post" id="logoutFormMobile">
-    <button class="text-white text-2xl">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14" height="24" width="24"> <g> <path fill="#8fbffa" d="M2.5 0.351a40.476 40.476 0 0 1 5.74 0c1.136 0.081 2.072 0.874 2.264 1.932a2.248 2.248 0 0 0 -2.108 2.28h-3.642a2.25 2.25 0 1 0 0 4.5h3.642a2.25 2.25 0 0 0 2.145 2.281l-0.004 0.086c-0.06 1.199 -1.06 2.131 -2.296 2.22a40.491 40.491 0 0 1 -5.742 0C1.263 13.56 0.263 12.628 0.203 11.43A89.318 89.318 0 0 1 0.095 7c0 -1.52 0.037 -3.001 0.108 -4.429C0.263 1.372 1.263 0.439 2.5 0.351Z"></path> <path fill="#2859c5" d="M9.66 4.701a1 1 0 0 1 1.433 -1.067c1.107 0.554 2.178 1.624 2.731 2.731a1 1 0 0 1 0 0.895c-0.553 1.107 -1.624 2.178 -2.731 2.731A1 1 0 0 1 9.66 8.924l0.195 -1.111h-5.102a1 1 0 0 1 0 -2h5.102L9.661 4.7Z"></path> </g> </svg>
+    <button class="logout-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14" height="24" width="24">
+        <g>
+          <path fill="#8fbffa" d="M2.5 0.351a40.476 40.476 0 0 1 5.74 0c1.136 0.081 2.072 0.874 2.264 1.932a2.248 2.248 0 0 0 -2.108 2.28h-3.642a2.25 2.25 0 1 0 0 4.5h3.642a2.25 2.25 0 0 0 2.145 2.281l-0.004 0.086c-0.06 1.199 -1.06 2.131 -2.296 2.22a40.491 40.491 0 0 1 -5.742 0C1.263 13.56 0.263 12.628 0.203 11.43A89.318 89.318 0 0 1 0.095 7c0 -1.52 0.037 -3.001 0.108 -4.429C0.263 1.372 1.263 0.439 2.5 0.351Z"></path>
+          <path fill="#2859c5" d="M9.66 4.701a1 1 0 0 1 1.433 -1.067c1.107 0.554 2.178 1.624 2.731 2.731a1 1 0 0 1 0 0.895c-0.553 1.107 -1.624 2.178 -2.731 2.731A1 1 0 0 1 9.66 8.924l0.195 -1.111h-5.102a1 1 0 0 1 0 -2h5.102L9.661 4.7Z"></path>
+        </g>
+      </svg>
     </button>
   </form>
 </nav>
 
 <!-- Spacer for top nav on mobile -->
-<div class="h-16 md:hidden"></div>
-
-
+<div class="nav-spacer"></div>
 
 <!-- Add New Post Button -->
-<div class="container addNewPost px-5 my-4">
-  <button class="addNewPostBtn bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+<div class="addNewPostBtn">
+  <button class="add-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
     Add Memory
   </button>
 </div>
 
 <!-- Main Container -->
-<div class="chats-posts-users flex flex-col md:flex-row gap-4 px-5 mt-4">
-
+<div class="chats-posts-users">
   <!-- Left Container (Chats) -->
-  <div class="container chat-list-container leftContainer hidden md:flex md:w-1/4 flex-col bg-gray-50 p-3 rounded shadow">
-    <h2 class="myChat font-semibold text-lg mb-2">My Chats</h2>
-    <div class="chat-container space-y-2">
-      <!-- chats go here -->
-    </div>
+  <div class="chat-list-container leftContainer">
+    <h2 class="myChat">My Chats</h2>
+    <div class="chat-container"></div>
   </div>
 
   <div class="banner"></div>
+
   <!-- Posts Container -->
-  <div class="container flex-1" id="postsContainer">
-    <!-- posts go here -->
-  </div>
+  <div id="postsContainer" class="posts-container"></div>
 
   <!-- Right Container (Online Users) -->
-  <div class="container rightContainer hidden md:flex md:w-1/4 flex-col bg-gray-50 p-3 rounded shadow">
-    <h2 class="font-semibold text-lg mb-2">Online Users</h2>
-    <div class="chatsPreview space-y-1">
+  <div class="rightContainer">
+    <h2>Online Users</h2>
+    <div class="chatsPreview">
       <li>users 1</li>
       <li>users 2</li>
       <li>users 3</li>
       <li>users 4</li>
     </div>
   </div>
-
 </div>
 
 <!-- New Memory Form -->
-<div class="container newMemoryContainer px-5 my-4 hidden">
-  <h1 id="update-title" class="text-xl font-bold mb-2">Add New Memory</h1>
-  <form id="postForm" action="/api/newPost" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
-    <input type="text" name="ptitle" id="ptitle" placeholder="enter the memory title" class="border p-2 rounded">
-    <textarea name="pdesc" id="pdesc" class="border p-2 rounded"></textarea>
-    <input class="newImage border p-2 rounded" type="file" name="mediaFile" id="mediaFile" accept="video/*, image/*">
-    <div class="flex gap-2">
-      <button type="submit" class="savePostBtn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save</button>
-      <button type="button" class="newPostCancel bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel</button>
-    </div>
-  </form>
+<div class="newMemoryContainer" style="display: none;">
+  <div class="modal">
+    <button class="closeModalBtn">❌</button>
+    <h1 id="update-title" class="modal-title">Add New Memory</h1>
+    <form id="postForm" action="/api/newPost" method="POST" enctype="multipart/form-data" class="post-form">
+      <input type="text" name="ptitle" id="ptitle" placeholder="enter the memory title" class="input">
+      <textarea name="pdesc" id="pdesc" class="textarea"></textarea>
+      <input class="newImage input" type="file" name="mediaFile" id="mediaFile" accept="video/*, image/*">
+      <div class="form-actions">
+        <button type="submit" class="savePostBtn btn-save">Save</button>
+        <button type="button" class="newPostCancel btn-cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Share Modal -->
-<div id="share-container" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-50">
-  
-</div>
+<div id="share-container" class="share-modal" style="display: none;"></div>
 
 <!-- General Modal -->
-<div class="general_modal hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-yellow-100 p-4 rounded shadow z-50">
-  General modal
-</div>
+<div class="general_modal" style="display: none;">General modal</div>
 
 <!-- Share Post Modal (for editing shared content) -->
-<div class="editShareContentModal hidden fixed inset-0 items-center justify-center bg-black/50 z-50">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-y-auto max-h-[90vh] relative p-6">
-    <!-- Content injected via JS -->
-  </div>
+<div class="editShareContentModal" style="display: none;">
+  <div class="modal"></div>
 </div>
 
 <!-- Update Form Container -->
-<div id="updateFormContainer" class="hidden fixed inset-0 items-center justify-center bg-black/50 z-50">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-y-auto max-h-[90vh] relative p-6">
-    <!-- Update form content injected via JS -->
-  </div>
+<div id="updateFormContainer" style="display: none;">
+  <div class="modal"></div>
 </div>
+
 
 </body>
     <script src="/socket.io/socket.io.js"></script>    

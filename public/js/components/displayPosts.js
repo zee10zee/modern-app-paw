@@ -18,13 +18,9 @@ const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
     function appendUserProfileOnNav(){
       profilePicContain.forEach(container =>{
             const profile = document.createElement('img')
-        profile.classList.add('profilePic','w-8', 'h-8', 'rounded-full', 'object-cover')
+        profile.classList.add('profilePic')
         const profileLink = document.createElement('a')
-        profileLink.classList.add(
-          'flex', 'items-center', 'justify-center',
-          'w-8', 'h-8', 'rounded-full', 'overflow-hidden',
-          'hover:ring-2', 'hover:ring-blue-400', 'transition'
-        )
+        profileLink.classList.add('profileImageLink')
 
         profileLink.href = `/userProfile/${userToken}/${loggedInUserId}`
         profile.src = photo
@@ -33,6 +29,7 @@ const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
         })
     }
     let Allposts = []
+    let AllComments = []
 // to get the posts.comments array we need to transform the join table to map like objects 
 
   function isVideo(filename){
@@ -58,7 +55,7 @@ const renderPosts = (posts)=>{
         posts.forEach((post)=>{
           // return console.log(post.id)
              const postDIV = document.createElement('div')
-             postDIV.classList.add('posts')
+             postDIV.classList.add('posts', post.is_shared && 'shared')
              postDIV.dataset.postId = post.id
              postDIV.setAttribute('id', post.id)
 
@@ -71,120 +68,113 @@ const renderPosts = (posts)=>{
              let commentsHTML = ''
                            
              if(post.comments.length > 0){
+
+              AllComments = post.comments
+              // return console.log(AllComments[0])
                 post.comments.forEach(comment =>{
                 commentsHTML += loadComments(comment)
                })
               } 
          
-              let postHeader = `
-  <div class="bg-white rounded-lg shadow p-4 mb-6">
-    <!-- Post Header -->
-    ${!post.is_shared ? `
-      <div class="flex items-start gap-3">
-        <img class="ownerPhoto w-12 h-12 rounded-full object-cover" src="${post.poster_profile}" alt="Profile picture">
+              let postHeader = `${!post.is_shared ? `
+    
+      <img class="ownerPhoto" src="${post.poster_profile}" alt="Profile picture">
 
-        <div class="flex-1">
-          <div class="flex justify-between items-start">
-            <span id="date" class="date text-xs text-gray-500">${new Date(post.created_at).toLocaleDateString()}</span>
-            ${post.is_owner ? `
-              <div id="gear" class="gear cursor-pointer text-gray-600">⋮</div>
-            ` : ''}
-          </div>
+      <div class="postHeaderContent">
+        <div class="postHeaderTop">
+            <span class="posterName">${post.poster_name}</span>
+            ${post.is_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
+        </div>
+        <span class="postDate">${new Date(post.created_at).toLocaleDateString()}</span>
+      </div>
 
-          <h2 class="title text-lg font-semibold text-gray-800 mt-1">${post.title}</h2>
-          <p class="description text-gray-700 mt-2">${post.description.substring(0,100)}</p>
-          ${post.description.length > 100 ? `
-            <a class="showMoreLink text-blue-600 text-sm" title="${post.description}" href="/api/showOnePost/${post.id}">Read more...</a>
-          ` : ''}
+    <h2 class="title">${post.title}</h2>
+    <p class="description">${post.description.substring(0,100)}</p>
+    ${post.description.length > 100 ? `
+      <a class="showMoreLink" title="${post.description}" href="/api/showOnePost/${post.id}">Read more...</a>
+    ` : ''}
 
-          <div class="mediaContainer mt-3">
-            ${media}
+    <div class="mediaContainer">
+      ${media}
+    </div>
+  </div>
+` : `
+  <!-- Shared Post -->
+    <img class="ownerPhoto" src="${post.sharer_profile}" alt="Profile picture">
+
+    <div class="sharedPostContent">
+      <div class="sharedPostTop">
+        <span id="date">${new Date(post.created_at).toLocaleDateString()}</span>
+        ${post.is_share_post_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
+      </div>
+
+      <p class="sharer_message">${post.title}</p>
+
+      <div class="shared_post" data-post-id="${originalPost.id}">
+        <div class="sharedPostOwner">
+          <img class="ownerPhoto" src="${originalPost.owner.profilepicture}" alt="Profile picture">
+          <div>
+            <a href="/userProfile/${originalPost.owner.usertoken}/${originalPost.owner.id}" class="userProfileLink">${originalPost.owner.firstname}</a>
+            <p class="postDate">${new Date(originalPost.created_at).toLocaleDateString()}</p>
           </div>
         </div>
-      </div>
-    ` : `
-      <!-- Shared Post -->
-      <div class="flex items-start gap-3">
-        <img class="ownerPhoto w-12 h-12 rounded-full object-cover" src="${post.sharer_profile}" alt="Profile picture">
 
-        <div class="flex-1">
-          <div class="flex justify-between items-start">
-            <span id="date" class="date text-xs text-gray-500">${new Date(post.created_at).toLocaleDateString()}</span>
-            ${post.is_share_post_owner ? `
-              <div id="gear" class="gear cursor-pointer text-gray-600">⋮</div>
-            ` : ''}
-          </div>
+        <h2 class="title">${originalPost.title}</h2>
+        <p class="description">${originalPost.description.substring(0,100)}</p>
+        ${originalPost.description.length > 100 ? `
+          <a class="showMoreLink" title="${originalPost.description}" href="/api/showOnePost/${originalPost.id}">Read more...</a>
+        ` : ''}
 
-          <p class="sharer_message text-sm text-gray-600 italic">${post.title}</p>
-
-          <div class="shared_post border rounded-md p-3 mt-2 bg-gray-50" data-post-id="${originalPost.id}">
-            <div class="flex items-center gap-2 mb-2">
-              <img class="ownerPhoto w-10 h-10 rounded-full object-cover" src="${originalPost.owner.profilepicture}" alt="Profile picture">
-              <div>
-                <a href="/userProfile/${originalPost.owner.usertoken}/${originalPost.owner.id}" class="userProfileLink text-sm font-medium text-gray-800">${originalPost.owner.firstname}</a>
-                <p class="text-xs text-gray-500">${new Date(originalPost.created_at).toLocaleDateString()}</p>
-              </div>
-            </div>
-
-            <h2 class="title text-base font-semibold text-gray-800">${originalPost.title}</h2>
-            <p class="description text-gray-700 mt-1">${originalPost.description.substring(0,100)}</p>
-            ${originalPost.description.length > 100 ? `
-              <a class="showMoreLink text-blue-600 text-sm" title="${originalPost.description}" href="/api/showOnePost/${originalPost.id}">Read more...</a>
-            ` : ''}
-
-            <div class="mediaContainer mt-3">
-              ${renderMedia(originalPost.mediafile)}
-            </div>
-          </div>
+        <div class="mediaContainer">
+          ${renderMedia(originalPost.mediafile)}
         </div>
       </div>
-    `}
-  </div>
-`
-
-              // comments info section
-      const comments_area = `
-  <div class="flex justify-between items-center text-gray-600 mt-3">
-    <!-- Like -->
-    <div class="flex items-center gap-2">
-      <form class="likeForm" action="/api/post/${post.id}/like" method="post">
-        <button class="likeBtn text-xl" data-post-id="${post.id}">❤️</button>
-      </form>
-      <p id="likesCount" class="likesCount text-sm">${post.likes_count}</p>
     </div>
+`}`
 
-    <!-- Comments -->
-    <div class="flex items-center gap-2">
-      <button id="commentButton" class="CommentBtn text-xl" data-post-id="${post.id}">💬</button>
-      <p class="commentCount text-sm">${post.comments_count}</p>
-    </div>
-
-    <!-- Share -->
-    <div class="flex items-center gap-2">
-      <form action="/api/share/id">
-        <button class="shareBtn text-xl" data-post-id="${post.id}">↗️</button>
-      </form>
-      <p class="sharesCount text-sm">${post.total_shares}</p>
-    </div>
+// <!-- comments info section -->
+const comments_area = `
+<div class="commentsArea">
+  <!-- Like -->
+  <div class="likeSection">
+    <form class="likeForm" action="/api/post/${post.id}/like" method="post">
+      <button class="likeBtn" data-post-id="${post.id}">❤️</button>
+    </form>
+    <p id="likesCount" class="likesCount">${post.likes_count}</p>
   </div>
 
-  <!-- Comment Input -->
-  <form id="commentForm" class="mt-3 flex gap-2">
-    <input type="hidden" name="post_id" value="${post.id}">
-    <input type="text" name="comment" id="comment" class="commentInput flex-1 border border-gray-300 rounded px-3 py-1 text-sm" placeholder="Type your comment">
-  </form>
-
-  <!-- Comments List -->
-  <div class="commentsContainer mt-3 space-y-3">
-    ${commentsHTML}
+  <!-- Comments -->
+  <div class="commentSection">
+    <button id="commentButton" class="CommentBtn" data-post-id="${post.id}">💬</button>
+    <p class="commentCount">${post.comments_count}</p>
   </div>
 
-  <div class="container commentEditContainer" id="commentEditContainer"></div>
-`
+  <!-- Share -->
+  <div class="shareSection">
+    <form action="/api/share/id">
+      <button class="shareBtn" data-post-id="${post.id}">↗️</button>
+    </form>
+    <p class="sharesCount">${post.total_shares}</p>
+  </div>
+</div>
 
-              postDIV.innerHTML = postHeader + comments_area
-              postsContainer.appendChild(postDIV)
-        })
+<!-- Comment Input -->
+<form id="commentForm" class="commentInputForm">
+  <input type="hidden" name="post_id" value="${post.id}">
+  <input type="text" name="comment" id="comment" class="commentInput" placeholder="Type your comment">
+</form>
+
+<!-- Comments List -->
+<div class="commentsContainer">
+  ${commentsHTML}
+</div>
+
+<div class="commentEditContainer" id="commentEditContainer"></div>
+`;
+
+postDIV.innerHTML = postHeader + comments_area
+postsContainer.appendChild(postDIV)
+  })
 }
 
 function loadComments(comment){
@@ -197,25 +187,21 @@ function loadComments(comment){
     year : 'numeric'
   });
 
-  return `
-    <div class="comment flex items-start gap-2 p-2 bg-gray-50 rounded" data-comment-id="${comment.id}">
-      <img class="user-profile w-8 h-8 rounded-full object-cover" src="${commentorProfile}" alt="user-profile">
-      <div class="flex-1">
-        ${!comment.is_owner ? `
-          <strong id="author"><a class="user-link userProfileLink text-sm font-semibold text-gray-800" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
-        ` : `
-          <strong id="author"><a class="user-link text-sm font-semibold text-gray-800" href="/userProfile/${comment.author.user_token}">You</a></strong>
-        `}
-        <div class="text-commentGear flex justify-between items-start">
-          <p id="text" class="text-sm text-gray-700">${text}</p>
-          ${comment.is_owner ? `
-            <div id="comment-gear" data-comment-id="${comment.id}" class="comment-gear cursor-pointer text-gray-500 ml-2">⋮</div>
-          ` : ''}
-        </div>
-        <small id="date" class="date text-xs text-gray-400">${commentDate}</small>
-      </div>
-    </div>
-  `
+  return `<div class="comment" data-comment-id="${comment.id}">
+                <img class="user-profile ownerPhoto" src="${commentorProfile}" alt="user-profile">
+                ${!comment.is_owner?`
+                <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${comment.author.user_token}">You</a></strong>`}
+                <div class="text-commentGear">
+                     <p id="text">${text}</p>
+                     ${comment.is_owner?`
+                     <div id="gear" data-comment-id = "${comment.id}" class="gear">⋮</div>
+                     `:''}
+                </div>
+                <small id="date" class="date">${commentDate}</small>
+                
+                </div>`
+ 
 }
 
 const clickHandler = (e, container,parentContainer) => {
@@ -230,165 +216,445 @@ const clickHandler = (e, container,parentContainer) => {
       let modal = document.querySelector('.general_modal')
 
 
+      // const mediaModal = document.createElement('div')
+
 const setupEventListener = ()=>{
    postsContainer.addEventListener('click', async(e)=>{
-     const editBtn = e.target.classList.contains('postEditBtn')
-     const deleteBtn = e.target.classList.contains('postDeleteBtn')
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
-     let userProfile_userChatModal = e.target.classList.contains('userProfile-chat-modal')
      const ownerPhoto = e.target.classList.contains('ownerPhoto');
-    
-     const userProfileUserData = e.target.closest('.userProfile')
-     const postEditDeleteModal = e.target.classList.contains('closep')
-     const commentorNameLink = e.target.classList.contains('user-link');
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
-      const mediaTag = postDiv.querySelector('.mediaFile')
+      // const mediaTag = postDiv.querySelector('.mediaFile')
      const imgOrVideo = e.target.classList.contains('mediaFile')
      postId = postDiv ? postDiv.dataset.postId : null; 
       //  return console.log(gear)
-    if(gear || postEditDeleteModal){
-          e.preventDefault()
-          console.log(modal)
-          modal.dataset.commentId = ''
-          modal.dataset.postId = postId
-          
-          modal.classList.add(
-            postDiv.contains(postDiv.querySelector('.shared_post')) 
-            ? 
-            "is_shared_post" : 'actual')
+    if(gear){
+      e.preventDefault()
+      const gearBtn = e.target
 
-          // showModalAt(e.pageX,e.pageY)
-          e.stopPropagation()
-         modal.innerHTML = ''
-         modal.innerHTML = loadSpecificPostModal(postId)
-         modal.classList.remove('hidden')
-         modal.classList.add('flex')
+      const {contentId} = await checkPostAuthorAndCommentAuthor(e)
+
+      console.log(contentId)
+      checkMainPostSharePost(e,postDiv)
+
+      modal.innerHTML = loadSpecificPostModal(contentId)
+      openModal(gearBtn)
 
     }else if(showMoreLink){
-      // expand the description
-      
       toggleDescriptionExpand(postDiv,e)
+    }
+    else if(ownerPhoto){
+      const photoBtn = e.target
+     let finalpostId = null;
      
-    }else if(ownerPhoto){
+       // Handle post click
+    const sharedPost = photoBtn.closest('.shared_post')
+    
+     console.log(sharedPost, 'shared post variable 304')
+
+
+    if(sharedPost) {
+       finalpostId = sharedPost.dataset.postId
+    }else{
+      finalpostId = postId
+    }
+      const {content} = await checkPostAuthorAndCommentAuthor(e,finalpostId)
+       const targetContent = content
+
+       console.log(targetContent)
+        if(!targetContent) return console.log('no target post found') 
+
+const commentElement = e.target.closest('.comment');
+
+if (!commentElement) {
+  console.log('no comment author click')
+    getPostAuthorModal(targetContent, e);
+
+}  else {
+    getCommentAuthorModal(targetContent, e);
+    console.log('Clicked on something else');
+}
+  openModal(photoBtn)
+
+}
+
+    else if(imgOrVideo){
+      toggleFullscreen(e)
+    }
+})
+}
+
+
+// USING CLASSES FOR CACHING
+//********************* */
+
+class PostsCache {
+  constructor() {
+    this.cache = new Map();
+    this.timestamps = new Map();
+    this.CACHE_DURATION = 30000; // 30 seconds
+  }
+
+  // Immediate cache check (0ms delay)
+  getPost(postId) {
+    const cached = this.cache.get(postId);
+    const timestamp = this.timestamps.get(postId);
+    const now = Date.now();
+    
+    if (cached && (now - timestamp < this.CACHE_DURATION)) {
+      return { data: cached, source: 'memory', timestamp: now - timestamp };
+    }
+    return null;
+  }
+
+  // Set cache with individual post
+  setPost(postId, postData) {
+    this.cache.set(postId, postData);
+    this.timestamps.set(postId, Date.now());
+  }
+
+  // Bulk set cache
+  setAllPosts(posts) {
+    posts.forEach(post => {
+      this.cache.set(post.id.toString(), post);
+      this.timestamps.set(post.id.toString(), Date.now());
+    });
+  }
+}
+
+
+const posts = new PostsCache()
+
+ console.log('posts of postcaches from class ')
+
+async function getCachedPosts(postId){
+  console.log(postId)
+   if(postId){
+       const cachedData = posts.getPost(postId)
+
+       if(cachedData){
+        console.log('post exist , fetching ...')
+       return cachedData.data
+       }
+       
+   }
+
+   const onePost = await fetchOnePost(postId)
+   if(!onePost.id) return console.log('not found one post id')
+   console.log('post does not exist , fetching ...')
+  console.log(onePost, typeof onePost.id, typeof postId)
+   const newData = posts.setPost(onePost.id,onePost)
+   console.log(newData, 'ne data')
+   return newData
+}
+// // getCachedPosts()
+
+// let cachedPosts = null;
+// let CACHE_DURATION = 30000 //30 sec
+// let cache_timestsamp = 0;
+
+// async function getCachedPosts(){
+//      const now  = new Date()
+//     //  if(!cachedPosts){
+//     //    cachedPosts = await getAllposts()
+//     //  }
+
+//     //  if(now - cache_timestsamp > CACHE_DURATION){
+//     //   cachedPosts = await getAllposts()
+//     //   cache_timestsamp = now // stor
+//     //  }
+
+//     // OR
+
+//   if(!cachedPosts || now - cache_timestsamp > CACHE_DURATION){
+//       cachedPosts = await getAllposts()
+//       cache_timestsamp = now // stores the now date()
+//   }
+
+//   return cachedPosts
+// }
+
+
+async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
+  let contentId = null;
+  let content = null;
+  console.log(event.target.closest('.comment'));
+  
+  if (event.target.closest('.comment')) {
+    // Handle comment click
+    const commentId = event.target.closest('.comment')?.dataset.commentId;
+    console.log(commentId)
+    if (!commentId) {
+      console.error('No commentId found');
+      return { contentId: null, content: null };
+    }
+    
+    delete modal.dataset.postId;
+    modal.dataset.commentId = commentId;
+
+    // Find the comment efficiently
+    let comment = null;
+    if(!finalpostId) return console.log('finalpost id is undefined')
+      console.log(typeof finalpostId, 'type of final post id')
+     const post = await getCachedPosts(finalpostId)
+
+    // for (const post of posts) {
+      // return console.log(post.comments)
+      comment = post.comments?.find(comment => comment.id === parseInt(commentId));
+      if (!comment) return console.log('comment not found') // Stop searching once found
+    // }
+    
+    contentId = commentId;
+    content = comment
+
+    console.log('Found comment:', content);
+    
+  } else {
+   
+    const postId = finalpostId || event.target.closest('data-post-id')?.dataset.postId;
+
+    if(!postId) return console.log('no post id found 322')
+
+    delete modal.dataset.commentId;
+    modal.dataset.postId = postId;
+    contentId = postId;
+
+
+    //  const posts = 
+     const post = await getCachedPosts(postId)
+     content = post;
+     
+     contentId = postId
+
+     console.log('Found post:', content, contentId);
+  }
+    return { contentId, content};
+}
       
+function checkMainPostSharePost(event,postDiv){
+   modal.classList.add(
+    postDiv.contains(postDiv.querySelector('.shared_post')) 
+    ? 
+    "is_shared_post" : 'actual')
+
+  event.stopPropagation()
+  modal.innerHTML = ''
+}
+
+document.addEventListener('click', (e)=>{
+  if(e.target.closest('.fullscreenModal')) toggleFullscreen(e)
+})
+
+function toggleFullscreen(event){
+  let existingModal = document.querySelector('.fullscreenModal') 
+  // console.log(existingModal.classList.contains('fullscreenModal'))
+  if(existingModal) { document.body.removeChild(existingModal) }
+
+  else{
+  const mediaModal = document.createElement('div')
+  const clonedMedia = event.target.cloneNode(true)
+  mediaModal.innerHTML = ''
+  mediaModal.append(clonedMedia)
+  document.body.appendChild(mediaModal)
+  mediaModal.classList.add('fullscreenModal')
+  event.stopPropagation()
+
+  }
+}
+
+
+// // open modal
+function openModal(target) {
+   
+  console.log(target)
+  if (!target) return;
+
+  modal.style.display = "flex"
+
+ const targetRect = target.getBoundingClientRect();
+const postdiv = target.closest('.posts');
+const postDivRect = postdiv.getBoundingClientRect();
+
+// Calculate top position (add scrollY to convert to document coordinates)
+const top = targetRect.bottom + window.scrollY;
+
+// Calculate centered left position (viewport coordinates)
+let left = targetRect.left + targetRect.width / 2 - modal.offsetWidth / 2 + scrollX;
+
+// Convert to document coordinates by adding scrollX
+left += window.scrollX;
+
+console.log('Initial left:', left);
+
+// Set boundaries relative to document coordinates
+const minLeft = postDivRect.left + window.scrollX;
+const maxLeft = postDivRect.right + window.scrollX - modal.offsetWidth;
+
+console.log('Min and max lefts:', minLeft, maxLeft);
+
+// Clamp modal's left so it stays inside postDiv
+left = Math.max(minLeft, Math.min(left, maxLeft));
+
+console.log('Final left:', left);
+
+// Apply styles (fixed the syntax error)
+modal.style.left = `${left}px`;
+modal.style.top = `${top}px`;
+  // Close modal when clicking outside
+  document.addEventListener('click', function handler(e) {
+    if (!modal.contains(e.target) || e.target.classList.contains('closep')) {
+      modal.style.display = 'none';
+      document.removeEventListener('click', handler);
+    }
+
+       
+       if(e.target.classList.contains('.mediaFile') || e.target.classList.contains('collapseFullScreen')){
+          const mediaModal = document.createElement('div')
+          const clone = e.target.cloneNode(true)
+          console.log(clone, 'clone of media file')
+          mediaModal.appendChild(clone)
+         mediaFullScreen.classList.add('fullscreenMedia')
+       }else{
+         mediaFile.style.display = "none"
+       }
+  });
+}
+
+  
+// pop of modal on clicking user profile
+function popUserProfileAndChat(post){
+  return `
+  ${!post.is_owner 
+    ? `
+      <div class="action-item">
+        <a href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link">
+          ${post.username}'s profile
+        </a>
+      </div>
+      <div class="action-item">
+        <a href="/api/chatpage/${post.user_id}/${post.user_token}" class="user-chat-link">
+          Chat with ${post.username}
+        </a>
+      </div>
+    ` 
+    : `
+      <div class="action-item">
+        <a href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link">
+          Your profile
+        </a>
+      </div> 
+    </div`}
+`
+};
+
+
+function getCommentAuthorModal(targetComment,e){
+  const newOrEditedComment = e.target.classList.contains('new') || e.target.classList.contains('edited')
+  let displayComment = null
+
+  console.log(newOrEditedComment)
+  if(!newOrEditedComment) {
+      displayComment = {
+       id : targetComment.id,
+       user_id : targetComment.author.user_id,
+       user_token : targetComment.author.user_token,
+       username : targetComment.author.firstname,
+       is_owner : targetComment.author.is_owner
+     }
+  }else{
+     displayComment = {
+       id : targetComment.id,
+       user_id : targetComment.user_id,
+       user_token : targetComment.usertoken,
+       username : targetComment.author_name,
+       is_owner : targetComment.is_owner
+     }
+  }
+  
+  appendToModal(displayComment,e)
+}
+
+
+// display user profile and chat modal
+function getPostAuthorModal(targetPost,e){
       let displayPost = null
+        
+        if(targetPost.is_shared && e.target.closest('.shared_post')){
+           console.log(targetPost, 'original post')
 
-      const targetPost = Allposts.find(post => post.id === parseInt(postId))
-
-      if(targetPost.is_shared && e.target.closest('.shared_post')){
           const originalPost = targetPost.original_post
           displayPost = {
             id : originalPost.id,
             user_id : originalPost.owner.id,
-            usertoken : originalPost.owner.usertoken,
+            user_token : originalPost.owner.usertoken,
             username : originalPost.owner.firstname,
             is_owner : originalPost.owner.is_owner
           }
 
-         console.log('original post closest parent ',e.target.closest('.shared_post'), displayPost)
       }else{
+          console.log('poster,sharer,post')
+
         displayPost = {
           id : targetPost.id,
-          username : targetPost.poster_name || targetPost.sharer_name,
-          usertoken: targetPost.poster_token || targetPost.sharer_token,
-          user_id : targetPost.poster_id || targetPost.sharer_id,
-          is_owner : targetPost.is_owner || targetPost.is_share_post_owner
+          username : targetPost.poster_name || targetPost.sharer_name || targetPost.username,
+          user_token: targetPost.poster_token || targetPost.sharer_token|| targetPost.user_token,
+          user_id : targetPost.poster_id || targetPost.sharer_id || targetPost.user_id,
+          is_owner : targetPost.is_owner || targetPost.is_share_post_owner || targetPost.is_owner
         }
-          console.log('actual post parent ', e.target.closest('.posts'),displayPost)
       }
-      
-      modal.innerHTML = ''
-      modal.innerHTML = popUserProfileAndChat(displayPost)
-      modal.classList.remove('hidden')
-      modal.classList.add('flex')
-      e.stopPropagation()
 
-    }else if(commentorNameLink){
-      const targetHTML = e.target.closest('.comment')?.querySelector('.user-link')
+      appendToModal(displayPost,e)
+     
+      }
 
-      window.location.href = targetHTML.getAttribute('href')
-    }else if(imgOrVideo){
-        e.preventDefault()
-        
-        mediaTag.classList.toggle('fullScreenImage')
-    }
-})
-}
-  
-// pop of modal on clicking user profile
-function popUserProfileAndChat(post){
-  return `<ul class="bg-white rounded-lg shadow-md p-2 text-sm space-y-2 
-           w-full max-w-md sm:max-w-sm md:max-w-md">
-  ${!post.is_owner ?`
-    <li>
-      <a href="/userProfile/${post.usertoken}/${post.user_id}" 
-         class="userProfileLink block px-4 py-3 rounded hover:bg-gray-100 text-gray-700 text-base sm:text-sm">
-         ${post.username}'s profile
-      </a>
-    </li>
-    <li>
-      <a href="/api/chatpage/${post.id}/${post.usertoken}" 
-         class="userChatLink block px-4 py-3 rounded hover:bg-gray-100 text-gray-700 text-base sm:text-sm">
-         chat with ${post.username}
-      </a>
-    </li>
-  `:
-    `<li class="px-4 py-3 text-gray-500 text-base sm:text-sm">
-    <a href="/userProfile/${post.usertoken}/${post.user_id}" 
-         class="userProfileLink block px-4 py-3 rounded hover:bg-gray-100 text-gray-700 text-base sm:text-sm">
-          Your profile</li>
-      </a>
-   `
-  }
-</ul>
-`
+
+function appendToModal(displayPost,e){
+ console.log('comes from appendTomodal, ', displayPost.user_name, displayPost.author)
+  if(displayPost){
+         modal.innerHTML = ''
+        modal.innerHTML = popUserProfileAndChat(displayPost)
+        modal.style.display = "flex"
+        e.stopPropagation()
+      }
 }
 
 
+      // load modal of user delete and edit post modal
 function loadSpecificPostModal(postOrCommentid){        
-    return `<div class="edit-delete bg-white rounded-lg shadow-md p-3 space-y-2">
-  <span class="closep cursor-pointer text-red-500 float-right">❌</span>
+    return `
+  <span class="closep">❌</span>
   ${modal.dataset.postId ? `
     <form id="editForm">
-      <button data-post-id="${postOrCommentid}" class="postEditBtn w-full bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Edit</button>
+      <button data-post-id="${postOrCommentid}" class="postEditBtn">Edit</button>
     </form>
     <form id="deleteForm">
-      <button data-post-id="${postOrCommentid}" class="postDeleteBtn w-full bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600">Delete</button>
+      <button data-post-id="${postOrCommentid}" class="postDeleteBtn">Delete</button>
     </form>
   ` : `
     <form id="edit-comment-form">
-      <button class="commentEditBtn w-full bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600" data-comment-id="${postOrCommentid}">Edit</button>
+      <button class="commentEditBtn" data-comment-id="${postOrCommentid}">Edit</button>
     </form>
     <form id="delete-comment-button">
-      <button class="commentDeleteBtn w-full bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600" data-comment-id="${postOrCommentid}">Delete</button>
+      <button class="commentDeleteBtn" data-comment-id="${postOrCommentid}">Delete</button>
     </form>
   `}
-</div>
+
 `
 }
 
-
-
-function showModalAt(x,y){
-   modal.style.left = `${x - 200}px`;
-          modal.style.top = `${y + 7}px`;
-          modal.style.display = 'block';
-}
-
- document.addEventListener('click', (e)=>{
-    
-      if(!modal.contains(e.target)){
-          modal.classList.add('hidden')
-      }
-    })
-
     modal.addEventListener('click', async(e)=>{
+      console.log(modal)
     const editBtnOfModal = e.target.classList.contains('postEditBtn')
     const DeleteBtnOfModal = e.target.classList.contains('postDeleteBtn')
-     const postOwnerProfileLink = modal.querySelector('.userProfileLink')
-     const userChatLink = modal.querySelector('.userChatLink')
+     const postOwnerProfileLink = e.target.classList.contains('user-profile-link')
+     const commentorLink = e.target.classList.contains('user-link');
+     const userChatLink = e.target.classList.contains('userChatLink')
        const postId = modal.dataset.postId; 
+      let target = e.target
+
+      if(target.href) window.location.href = target.href
+     
+
       if(editBtnOfModal && modal.classList.contains('actual')){
          
           e.preventDefault()
@@ -396,19 +662,11 @@ function showModalAt(x,y){
           await loadEditForm(postId,editPostContainer)
           editPostContainer.style.zIndex = 20000;
          
-      }
-
-      else if(DeleteBtnOfModal){
+      }else if(DeleteBtnOfModal){
         e.preventDefault()
         await deletePost(postId)
-      }else if(userChatLink){
-      console.log(userChatLink.href)
-        window.location.href = userChatLink.href;
-    }else if(postOwnerProfileLink){
-        window.location.href = postOwnerProfileLink.href
-    }
-
-      //  modal.style.display = "none"
+      }
+     
     })
 
    
@@ -535,7 +793,7 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
                 <div class="text-commentGear">
                      <p id="text">${comment.text}</p>
                      ${comment.is_owner?`
-                     <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
+                     <div id="gear" data-comment-id = "${comment.id}" class="gear">⋮</div>
                      `:''}
                 </div>
                 <small id="date" class="date">${commentDate}</small>
@@ -548,16 +806,8 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
     // const deleteForm = postsContainer.deleteForm
 
   document.addEventListener('DOMContentLoaded', async(e)=>{
+ const Allposts = await getAllposts()
 
-    // display the login user profile picture 
-        // appendUserProfileOnNav()
-
-
-  const res = await axios.get('/api/posts')
-  // return console.log(res.data.posts)
-    if(res.status === 200){
-        Allposts = res.data.posts
-         console.log(Allposts)
         if(Allposts && Array.isArray(Allposts)){
           if(Allposts.length === 0 && postsContainer.children.length === 0) return checkEmptyPosts()
 
@@ -566,17 +816,25 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
           setupEventListener()
         }else{
           console.log('posts is not an array here !')
-        }
-    }  
+        } 
 })
 
+const fetchOnePost = async(postId)=>{
 
-//    const lastPostId = postsContainer.children[0].dataset.postId
-//    const lastPost = Allposts.find(post => post.id === Number(lastPostId))
-//           const lastSeen = new Date().toISOString()
+  const allPosts = await getAllposts()
+  const post = allPosts.find(post => post.id === parseInt(postId))
+  return post
+}
 
 
 
+const getAllposts = async()=>{
+  const res = await axios.get('/api/posts')
+  // return console.log(res.data.posts)
+    if(res.status === 200){
+         console.log(Allposts)
+        return Allposts = res.data.posts
+}}
 
 
 function checkEmptyPosts(){
@@ -622,13 +880,3 @@ function closeAnyModal(modalElement,secondContainer){
 }
 
 
-// empty posts / create new post btn
-postsContainer.addEventListener('click', (e)=>{
-   const initialAddPostBtn = e.target.closest('.no-post')?.querySelector('a')
-
-   if(!initialAddPostBtn) return console.log('no such btn found')
-
-   const postModal = document.querySelector('.newMemoryContainer')
-   if(postModal && postModal.style.display === 'none') postModal.style.display = "block"
-
-})

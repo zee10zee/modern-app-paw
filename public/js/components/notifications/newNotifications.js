@@ -1,18 +1,33 @@
-const notif_dropdown = document.querySelector('#notifDropdown')
+// const notifDropdown = document.querySelector('#notifDropdown')
 const notifBtnDesktop = document.getElementById('notifBtn')
 const notifBtnMobile = document.getElementById('notifBtnMobile')
 const notifDropdown = document.getElementById('notifDropdown')
 
 function toggleDropdown(e,button) {
+  
+  hideDropdownButVisible()
+
   const rect = button.getBoundingClientRect()
-  notifDropdown.style.left = `${rect.left + rect.width / 2 - notifDropdown.offsetWidth / 2}}px`
-  notifDropdown.style.top = window.innerWidth >= 768 
-      ? `${rect.bottom + window.scrollY + 5}px`   // desktop: below button
-      : `${rect.top + window.scrollY - notifDropdown.offsetHeight - 5}px` // mobile: above button
-  notifDropdown.classList.toggle('hidden')
-  notifDropdown.classList.toggle('opacity-0')
-  notifDropdown.classList.toggle('opacity-100')
-   showNotifDropdown(e,notif_dropdown)
+  if (window.innerWidth >= 768) {
+  // Desktop → center under the button
+  notifDropdown.style.left = `${rect.left + rect.width / 2 - notifDropdown.offsetWidth / 2}px`
+  notifDropdown.style.top = `${rect.bottom + 5}px`;
+} else {
+  // Mobile → align with screen left edge or button
+//   notifDropdown.classList.add('w-full')
+  notifDropdown.style.left = `10px` // or `${rect.left}px` if you want it to follow button
+  notifDropdown.style.bottom = `50px`
+}
+   showNotifDropdown(e,notifDropdown)
+}
+
+function hideDropdownButVisible(){
+  // Temporarily show it to get width
+  notifDropdown.style.display = "block";
+  notifDropdown.style.visibility = "hidden"; // keep invisible
+  const width = notifDropdown.offsetWidth; 
+  notifDropdown.style.visibility = "visible"; // show properly
+  notifDropdown.style.position = "fixed";
 }
 
 notifBtnDesktop.addEventListener('click', e => toggleDropdown(e,e.currentTarget))
@@ -42,24 +57,21 @@ window.addEventListener('DOMContentLoaded',async(e)=>{
 }
 
 
-if(!hasMatch) notif_dropdown.innerHTML = res.data.empty_message;
+if(!hasMatch) notifDropdown.innerHTML = res.data.empty_message;
 })
 
 
 
 function showNotifDropdown(event,ddcontainer){
-ddcontainer.classList.remove('hidden')    
-ddcontainer.classList.toggle('opacity-100');
-ddcontainer.classList.toggle('visible');
+ddcontainer.style.display = "block"
 event.stopPropagation()
 }
 
 
 // close notificaiotn modal if outside clicked
 window.addEventListener('click', (e)=>{
-    if(!notif_dropdown.contains(e.target)) {
-        notif_dropdown.classList.remove('flex')
-        notif_dropdown.classList.add('hidden')
+    if(!notifDropdown.contains(e.target)) {
+        notifDropdown.style.display = "none"
     }
 })
 
@@ -86,18 +98,17 @@ const notCountEl = document.querySelector('#notCount').textContent = data.notifs
 })
 
 function displayNewNotifications(message,date,postId){
-const notif_dropdown = document.querySelector('#notifDropdown')
-    const notif_item = document.createElement('li')
-    notif_item.classList.add('notif_item','px-3', 'py-2', 'hover:bg-gray-100', 'cursor-pointer')
-    notif_item.innerHTML = `
- 
-    <a href="#${postId}" class="flex flex-col gap-1">
-      <p class="notifText text-gray-800 text-sm font-medium truncate">${message}</p>
-      <small class="notif_date text-gray-500 text-xs">${formatDate(date)}</small>
-    </a>  
-   `
-   
-   notif_dropdown.prepend(notif_item)
+const notifDropdown = document.querySelector('#notifDropdown');
+const notif_item = document.createElement('li');
+notif_item.classList.add('notif_item');
+notif_item.innerHTML = `
+  <a href="#${postId}" class="notif_link">
+    <p class="notifText">${message}</p>
+    <small class="notif_date">${formatDate(date)}</small>
+  </a>  
+`;
+notifDropdown.prepend(notif_item);
+
 
 }
 

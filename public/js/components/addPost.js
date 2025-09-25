@@ -2,6 +2,46 @@ const postForm = document.getElementById('postForm')
 const newPostAlert = document.getElementById('newPostAlert')
 const postAlert = sessionStorage.getItem('newPost')
 const newMemoryContainer = document.querySelector('.newMemoryContainer')
+let newCreatedPost = null;
+const addNewMemoryBtn = document.querySelector('.addNewPostBtn')
+
+// empty posts / initial post create btn
+postsContainer.addEventListener('click', (e)=>{
+   const initialAddPostBtn = e.target.closest('.no-post')?.querySelector('a')
+
+   if(!initialAddPostBtn) return console.log('no such btn found')
+
+   const postModal = document.querySelector('.newMemoryContainer')
+   if(postModal && postModal.style.display === 'none') postModal.style.display = "flex"
+
+})
+
+
+if(!addNewMemoryBtn) console.log('no new btn found')
+
+// clicking the new memory button 
+addNewMemoryBtn.addEventListener('click', (e)=>{
+     console.log('new post clicked',newMemoryContainer)
+    newMemoryContainer.style.display = "flex"
+})
+
+
+const newMemoryModal = newMemoryContainer.querySelector('.modal')
+
+
+// close the modal if no post creation 
+newMemoryModal.addEventListener('click', (e)=>{
+  console.log(e.target,e.target.parentElement)
+  const newPostCancelBtn = e.target.classList.contains('newPostCancel')
+const closeNewPostIcon = e.target.classList.contains('closeModalBtn')
+
+    if(newPostCancelBtn || closeNewPostIcon){
+    e.preventDefault() 
+       newMemoryContainer.style.display = "none"
+    }
+})
+
+
 
 postForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
@@ -9,12 +49,15 @@ postForm.addEventListener('submit', async(e)=>{
     const formData = new FormData(postForm)
 
     const response = await axios.post('/api/newPost', formData, {});
-    // we have access to the new post and comments / so we will work on the spa of it soon ...
 
-     console.log(response.data)
     if(response.status === 200 && response.data.success){
         sessionStorage.setItem('newPost', 'new memory added successfully !')
         const newPost = response.data.newPostData
+        newCreatedPost = newPost
+        
+        // all posts array update
+        Allposts = response.data.allPosts
+        
         // check empty posts
         if(document.querySelector('.no-post')) postsContainer.innerHTML = ''
         updateUIpost(newPost)
@@ -28,76 +71,95 @@ postForm.addEventListener('submit', async(e)=>{
  function updateUIpost(newPost){
   const postDiv = document.createElement('div')
   postDiv.classList.add('posts')
+  
+  const labeledPost = postsContainer.querySelector('[data-is-fresh]')
+  console.log(labeledPost)
+  const labledExist = labeledPost !== null;
+
+  if(labledExist){ 
+    // first way is to remove attribute 
+    labeledPost.removeAttribute('data-is-fresh')
+    // /second to remove a dataset attribute only
+    delete labeledPost.dataset.postDate
+  }
+
+  postDiv.dataset.postDate = Date.now()
+  postDiv.dataset.isFresh = true;
   postDiv.dataset.postId = newPost.id
   postDiv.setAttribute('id', newPost.id)
      let commentDiv = '';
              
-                newPost.comments.forEach(comment =>{
-                   if(!comment) console.log('no comments yet')
-                // commentDiv = 
-               })
-
-    
+              
   postDiv.innerHTML += 
-  `<img class="ownerPhoto" src="${newPost.user_profilepicture}" alt="Profile picture">
-                 <div class="title-date-burger"> 
-                     <span id="date" class="date">${new Date(newPost.created_at). toLocaleDateString()}</span>
-                      ${newPost.is_owner ?`
-                    <div id="gear" class="gear">⋮</div>
-                  `:''}                                    
-               </div>
+  `<!-- Post Header -->
+<div class="postHeader">
+  <img class="ownerPhoto" src="${newPost.user_profilepicture}" alt="Profile picture">
 
-                  <div class="title-date-burger"> 
-                 <h2 class="title"> ${newPost.title}
-                   <span id="date" class="date">${new Date(newPost.created_at).toLocaleDateString()}</span>
-                 </h2>
-               </div>
-               <p class="description">${newPost.description.substring(0,100)} </p>
+  <div class="postHeaderContent">
+    <div class="postHeaderTop">
+      <span class="posterName">${newPost.user_firstname}</span>
+      ${newPost.is_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
+    </div>
+    <span class="postDate">${new Date(newPost.created_at).toLocaleDateString()}</span>
+  </div>
+</div>
 
-               ${newPost.description.length > 100 ?`
-               <a class="showMoreLink" title="${newPost.description}" href="/api/showOnePost/${newPost.id}">Read more...</a>
-               `:""}
+<!-- Post Title & Description -->
+<h2 class="title">${newPost.title}</h2>
+<p class="description">
+  ${newPost.description.substring(0,100)}
+</p>
+${newPost.description.length > 100 ? `
+  <a class="showMoreLink" title="${newPost.description}" href="/api/showOnePost/${newPost.id}">Read more...</a>
+` : ''}
 
-                  <div class="mediaContainer">
-                    ${renderMedia(newPost.mediafile)}
-                  </div>`
+<!-- Media -->
+<div class="mediaContainer">
+  ${renderMedia(newPost.mediafile)}
+</div>
 
-        const newPostInfo = `<div class="likes-comments-share" style="display:flex; justify-content : space-between;">
-                  <div class="like">
-                     <form class="likeForm" action="/api/post/${newPost.id}/like" method="post">
-                      <button class="likeBtn" data-post-id="${newPost.id}">❤️</button>
-                      </form>
-                      <p id="likesCount" class="likesCount">${newPost.likes_count}</p>
-                  </div>
-                  <div class="commentsCount">
-                    <button id="commentButton" class="CommentBtn" data-post-id="${newPost.id}">💬</button>
-                    <p class="commentCount">${newPost.comments_count}</p>
-                  </div>
+<!-- Comments & Likes Area -->
+<div class="commentsArea">
+  <!-- Like -->
+  <div class="likeSection">
+    <form class="likeForm" action="/api/post/${newPost.id}/like" method="post">
+      <button class="likeBtn" data-post-id="${newPost.id}">❤️</button>
+    </form>
+    <p id="likesCount" class="likesCount">${newPost.likes_count}</p>
+  </div>
 
-                  <div class="share">
-                    <form action="/api/share/id">
-                      <button class="shareBtn" data-post-id="${newPost.id}">↗️</button>
-                    </form>
-                  
-                    <p class="sharesCount">${newPost.total_shares}</p>
-                  
-                  </div>
-                 
-                </div>
+  <!-- Comments -->
+  <div class="commentSection">
+    <button id="commentButton" class="CommentBtn" data-post-id="${newPost.id}">💬</button>
+    <p class="commentCount">${newPost.comments_count}</p>
+  </div>
 
-                 <form  id="commentForm">
-                      <input type="hidden" name="post_id" value="${newPost.id}"> 
-                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
-                 </form>
-                  <div class="commentsContainer">
-                  ${commentDiv}
-                  </div>
-                 <div class="container commentEditContainer" id="commentEditContainer"></div>`
+  <!-- Share -->
+  <div class="shareSection">
+    <form action="/api/share/id">
+      <button class="shareBtn" data-post-id="${newPost.id}">↗️</button>
+    </form>
+    <p class="sharesCount">${newPost.total_shares}</p>
+  </div>
+</div>
 
-        //   postDiv.append(newPostInfo)
-        postDiv.innerHTML += newPostInfo
+<!-- Comment Input -->
+<form id="commentForm" class="commentInputForm">
+  <input type="hidden" name="post_id" value="${newPost.id}">
+  <input type="text" name="comment" id="comment" class="commentInput" placeholder="Type your comment">
+</form>
+
+<!-- Comments List -->
+<div class="commentsContainer">
+  ${commentDiv}
+</div>
+
+<!-- Comment Edit Container -->
+<div class="commentEditContainer" id="commentEditContainer"></div>
+`
         postsContainer.prepend(postDiv)
 }
+
 
 // allert success post creation
 if(newPostAlert && postAlert){
@@ -109,16 +171,5 @@ if(newPostAlert && postAlert){
     sessionStorage.removeItem('newPost'); // ✅ clear it after use
 }
 
-const addNewMemoryLink = document.querySelector('.addNewPostBtn')
-// clicking the new memory button 
-addNewMemoryLink.addEventListener('click', (e)=>{
-    const newMemoryModal = document.querySelector('.newMemoryContainer')
-    newMemoryModal.style.display = 'block'
-})
 
-// close the modal if no post creation 
-document.querySelector('.newPostCancel').addEventListener('click', (e)=>{
-    e.preventDefault()
-    console.log('closed')
-    newMemoryContainer.style.display = "none"
-})
+

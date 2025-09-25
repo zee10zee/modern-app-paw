@@ -5,6 +5,39 @@ const container = document.querySelector('.userProfileContainer')
 const baseUrl = 'http://localhost:3000/';
 const mediaList = document.querySelector('.media-list');
 
+
+
+function toggleFullscreen(event){
+  let existingModal = document.querySelector('.fullscreenModal') 
+  // console.log(existingModal.classList.contains('fullscreenModal'))
+  if(existingModal) { document.body.removeChild(existingModal) }
+
+  else{
+  const mediaModal = document.createElement('div')
+  const clonedMedia = event.target.cloneNode(true)
+  mediaModal.innerHTML = ''
+  mediaModal.append(clonedMedia)
+  document.body.appendChild(mediaModal)
+  mediaModal.classList.add('fullscreenModal')
+  event.stopPropagation()
+
+  }
+}
+
+document.addEventListener('click', (e)=>{
+  if(e.target.closest('.fullscreenModal')) toggleFullscreen(e)
+})
+
+mediaList.addEventListener('click', (e)=>{
+  console.log('media list ,',e.target.tagName)
+  if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO'){
+     console.log('yes its an iamg or vid')
+     toggleFullscreen(e)
+  }
+})
+
+
+
 // Buttons directly
 const postBtn = document.querySelector('.postedPics');
 const profileBtn = document.querySelector('.profiePics');
@@ -21,7 +54,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await axios.get(`/api/userProfile/${token}/${userId}`);
     if (res.status !== 200) throw new Error('Server error');
-      //  return console.log(res)
 
     const { user } = res.data;
     

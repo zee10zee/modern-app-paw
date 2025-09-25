@@ -1,8 +1,14 @@
+
+
 const deletePost = async(postId)=>{
+
    if(!postId) return console.log('post id undefined')
+
     const confirmDelete = prompt('are you sure deleting the post ?')
+    
   if(!confirmDelete || !confirmDelete.toLowerCase().includes('yes')) return console.log('delete canceled .')
     console.log('proceed deleting ...')
+
   try{
     const res = await axios.delete(`/api/post/delete/${postId}`, {})
 
@@ -11,7 +17,6 @@ const deletePost = async(postId)=>{
         const targetPost = postsContainer.querySelector(`.posts[data-post-id="${postId}"]`)
         targetPost.remove()
         
-        console.log(Allposts.length)
         // load empty state
         const postsLength = postsContainer.children.length
         console.log(postsLength,postsContainer.children)

@@ -1,21 +1,11 @@
 window.addEventListener('DOMContentLoaded', ()=>{
    postsContainer.addEventListener('click', (e)=>{
   
-    const commentGear = e.target.classList.contains('comment-gear')
     const commId = e.target.dataset.commentId
-    const closeCommentModal = e.target.classList.contains('close')
     const postDiv = e.target.closest('.posts')
     const commentDiv = postDiv.querySelector(`.comment[data-comment-id="${commId}"]`)
     const postId = postDiv.dataset.postId;
-    if(commentGear || closeCommentModal){
-         e.preventDefault()
-          modal.dataset.postId = '';
-          modal.dataset.commentId = commId
-          showModalAt(e.pageX,e.pageY)
-          e.stopPropagation()
-         modal.innerHTML = ''
-         modal.innerHTML = loadSpecificPostModal(commId)
-    }
+  
 
     modal.addEventListener('click', (e)=>{
         e.preventDefault()
@@ -43,14 +33,25 @@ async function handleUpdateComment(e, inputComment){
     const commentId = inputComment.dataset.editingCommentId
      if(!commentId) return console.log('no comment id found in editing mode')
     const commentContent = inputComment.value
+
+    //  check for any comment having class "edited"
+
+    const comments = postsContainer.children[0]
+     console.log('comments children ', comments)
+
+    const prevousLebeledComment = postsContainer.querySelector('.edited')
+    if(prevousLebeledComment) postsContainer.classList.remove('edited')
+
 const postDiv = inputComment.closest('.posts')
     const commentDiv = postDiv.querySelector(`.comment[data-comment-id="${commentId}"]`);
     if(!commentDiv){
         return console.log('specific comment not found')
     }
+
     const response = await axios.patch(`/api/comment/${commentId}/update`, {comment : commentContent})
     if(response.status === 200){
        console.log(commentDiv)
+       commentDiv.classList.add('edited')
        const updatedComment = response.data.updatedComment
     //    return console.log(updatedComment)
 
@@ -60,26 +61,20 @@ const postDiv = inputComment.closest('.posts')
                 year : 'numeric'
              });
        commentDiv.innerHTML = `
-             <img class="user-profile" src="${updatedComment.user_profile_picture}" alt="user-profile">   
-              ${!updatedComment.is_owner?`
-                <strong id="author"><a class="user-link" href="/userProfile/${updatedComment.userstoken}/${updatedComment.user_id}">${updatedComment.author_name}</a></strong>
-                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${updatedComment.userstoken}">You</a></strong>`}
-                    <div class="text-commentGear" style="display: flex; justify-content: space-between; align-items : center">
-                        <p id="text">${updatedComment.comment}</p>
-                         <div id="comment-gear" class="comment-gear" data-comment-id = "${updatedComment.id}">⋮</div>
-                    </div>
-                    <div class="comment-delete-edit">
-                        <span class="closep">❌</span>
-                        <form id="edit-comment-form">
-                            <button class="edit-comment-button" data-comment-id = "${updatedComment.id}">Edit</button>
-                        </form>
-                        <form id="delete-comment-button">
-                            <button class="commentDeleteBtn" data-comment-id = "${updatedComment.id}">Delete</button>
-                        </form>
-                    </div>
-                    <small id="date" class="date">${updatedCommentDate}</small>
        
-       `
+                <img class="user-profile ownerPhoto" src="${updatedComment.user_profile_picture}" alt="user-profile">
+                ${!updatedComment.is_owner ?`
+                <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${updatedComment.usertoken}/${updatedComment.user_id}">${updatedComment.author_name}</a></strong>
+                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${updatedComment.usertoken}">You</a></strong>`}
+                <div class="text-commentGear">
+                     <p id="text">${updatedComment.comment}</p>
+                     ${updatedComment.is_owner?`
+                     <div id="gear" data-comment-id = "${updatedComment.id}" class="gear">⋮</div>
+                     `:''}
+                </div>
+                <small id="date" class="date">${updatedCommentDate}</small>
+                
+               `
            inputComment.classList.remove('editingMode');
             inputComment.removeAttribute('data-editing-comment-id');
             inputComment.value = '';

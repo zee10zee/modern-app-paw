@@ -1,1452 +1,1262 @@
-
-
-*{
-    font-size: 20px;
-    padding: 0;
-    margin: 0;
+/* *{border: 1px solid red;} */
+nav{
+    background-color: red;
 }
+/* Shared Styles */
+nav { box-sizing: border-box; }
+ul { list-style: none; margin: 0; padding: 0; }
+button { background: none; border: none; cursor: pointer; }
 
-html{
-    scroll-behavior: smooth;
-}
-
-.hidden{
-    display: block;
-}
-
-a{
-    text-decoration: none;
-}
-
-li{
-    list-style: none;
-}
-button{
-    cursor: pointer;
-    border-bottom: 1px solid #555;
-}
-
-video{
-    width: 100%;
-    max-width: 600px;
-    aspect-ratio: 16 / 9;
-}
-
-#newUserCheck{
-    background: #efefef;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #555;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    color: red;
-    border-radius: 4px;
-    background: #fff;
-    border: 1px solid #000;
-    display: none;
-}
-.no-post{
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    color: #555;
-}
-
-.addNewPost{
-    margin-top: 80px !important;
-}
-
-.ownerPhoto, .profilePic{
-    width: 30px;
-    height: 30px;
-    border-radius: 50px;
-    outline: 2px solid #555;
-}
-
-.mediaFile:hover{
-    cursor: pointer;
-}
-
-.mediaFile.fullScreenImage{
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100vh;
-    overflow: visible;
-    z-index: 300;
-}
-
-img {
+/* ---------- TOP NAV ---------- */
+.top-nav {
   width: 100%;
-  max-width: 600px;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;  
-  border-radius: 5px;
-}
-
-.posts{
-    margin: 0px auto;
-    background-color: #efefef;
-    padding: 10px 40px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-}
-
-/* chats */
-.chat-container{
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 10px;
-    background-color: #f9f9f9;
-}
-.chatItem{
-    color: #333;
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-}
-.chatItem .text-message, .writer{
-    font-size: 14px;
-    font-family: sans-serif;
-}
-
-.smallTime{
-    font-size: 10px;
-    margin-left: auto;
-}
-
-.banner{
-    position: absolute;
-    left: 50%;
-    top: 150px;
-    transform: (translate(-50%,-150px));
-    background-color: orange;
-    padding: 4px 8px;
-    border-radius: 20px;
-}
-
-.banner:hover{
-    cursor: pointer;
-}
-
-.rightContainer, .leftContainer{
-    width: 25% !important;
-    background-color: #efefef;
-    /* height: 100vh; */
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-/* user profile and chat modal */
-
-
-.shared_post{
-    width: 90%;
-    margin-left: 15px;
-    border: 1px solid #a09b9b;
-    padding: 6px;
-}
-
-.posts button{
-    background: none;
-    border: none;
-}
-
-#commentForm .commentInput{
-    border-bottom: 1px solid #a39a9a;
-}
-
-.posts, #showPostContainer{
-    position: relative;
-}
-.edit-delete{
-    padding: 5px 10px;
-    width: 150px;
-    border-radius: 5px;
-    display: flex;
-    gap: 5px;
-    flex-direction: column;
-    
-    height: 100px;
-    text-align: center;
-    line-height: 20px;
-    border-radius: 10px;
-}
-.edit-delete form{
-    width: 100%;
-}
-
-.edit-delete button, .comment-delete-edit button{
-    font-size: 13px ;
-    margin: 2px auto ;
-    font-weight: bold;
-    border: 1px solid rgb(70, 107, 70);
-    border-radius: 5px;
-    padding: 8px;
-    width: 80px;
-}
-
-.likeBtn, .commentBtn, .shareBtn{
-    outline: none;
-    background: none;
-    /* border: none; */
-    border-radius: 5px;
-}
-
-
-.likes-comments-share p{
-    text-align: center;
-}
-
-.likeBtn, .commentBtn, .shareBtn:hover{
-    cursor: pointer;
-}
-
-#commentForm input{
-    width: 100%;
-    height: 50px;
-    border: none;
-}
-
-
-#updateFormContainer{
-    width: 100%;
-    max-width: 600px;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: none;
-    padding: 5px 10px;
-}
-
-.comment{
-    line-height: 1.5px;
-    margin: 10px auto;
-    position: relative;
-}
-
-.comment-delete-edit{
-    position: absolute;
-    right: 15px;
-    top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    background: bisque;
-    padding: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow effect */
-    z-index: 100;
-    width: 150px;
-    border-radius: 4px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    justify-content: center;
-    height: 90px;
-    display: none;
-}
-
-comment-delete-edit form:first-child{
-    margin-top: 20px;
-}
-.comment-delete-edit form{
-    width: 80%;
-}
-.comment-delete-edit button{
-    width: 80%;
-    padding: 8px;
-}
-.comment-gear:hover{
-    cursor: pointer;
-}
-.comment-gear, .gear{
-    background: #efefef;
-    padding: 2px 5px;
-    border-radius: 5px;
-}
-.text-commentGear{
-    display: flex;
-    justify-content: space-between;
-    align-items : center;
-    line-height: normal;
-}
-
-.close{
-    position: absolute;
-    padding: 10px 4px;
-    top: 5px;
-    right: 5px;
-    background: #fff;
-    font-size: 10px;
-    cursor: pointer;
-    border-radius: 30px;
-}
-
-#userProfile-chat-modal{
-    display : none;
-    background: lightblue;
-    padding: 5px;
-    border-radius: 3px;
-    color: #fff;
-    text-decoration: none;
-    margin: 10px 0 auto;
-    width: fit-content;
-}
-#userProfile-chat-modal li a{
-    text-decoration: none;
-    color: rgb(11, 97, 226)
-}
-#userProfile-chat-modal li{
-    margin: 5px auto;
-    border-bottom: 1px solid blue;
-    width: fit-content;
-}
-
- .closep{
-    position: absolute;
-    right: 5px;
-    top: 5px;
-    margin-left: auto;
-    cursor: pointer;
-    background: #fff;
-    border-radius: 30px;
-    font-size: 10px;
-    line-height: 2;
-    text-align: center;
-    padding: 0 5px;
-}
-  
-
-.flex-class{
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-.title-date-burger{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-#date{
-    display: block;
-    font-size: 10px;
-    font-weight: bold;
-  
-}
-
-.description{
-    display: block;
-}
-
-.user-profile{
-    width: 30px;
-    height: 30px;
-    border-radius: 30px;
-    outline: 2px solid #efefef;
-}
-
-#gear:hover{
-   cursor: pointer;
-}
-
-.chats-posts-users{
-    display: flex;
-}
-
-.container{
-    max-width: 600px;
-    width: auto;
-    margin: 20px auto;
-    padding: 0 10px;
-}
-
-/* .nav{
-        display: flex
-;
-    justify-content: space-between;
-    color: #555;
-    z-index: 1000;
-    position: fixed;
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
-    background: orange;
-    padding: 0 30px;
-    align-items: center;
-}
-
-.nav ul{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.nav .left{
-    margin-right: auto;
-} */
-
-.nav {
+  background: #f3f4f6; /* gray-100 */
+  padding: 0.5rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   position: fixed;
-  top: 0;
-  left: 0;
-  margin: 0 auto;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  border-bottom: 1px solid #e5e7eb; /* subtle line */
+}
+
+/* Logo */
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937; /* gray-800 */
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Search bar */
+.search-bar {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
   width: 100%;
-  height: 60px; /* You can adjust */
-  background-color: #fff; /* Or any background */
-  border-bottom: 1px solid #ccc;
-  z-index: 1000;
+  max-width: 16rem;
+  font-size: 0.95rem;
+}
+
+/* Right Icons container */
+.nav-icons {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 30px;
+  gap: 1rem;
+}
+
+/* Hide on small screens */
+@media (max-width: 768px) {
+  .nav-icons {
+    display: none;
+  }
+}
+
+/* Notification Button */
+.notif-btn {
+  position: relative;
+  font-size: 1.5rem; /* makes 🔔 big enough */
+  padding: 0.4rem;
+  border-radius: 9999px;
+  background: #1f2937;
+  color: white;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  transition: background 0.2s ease-in-out;
+}
+.notif-btn:hover {
+  background: #374151;
+}
+
+/* Notification Count Badge */
+.notif-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border-radius: 9999px;
+  padding: 0 5px;
+  line-height: 1.2;
+}
+
+/* Logout Button */
+.logout-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: #1f2937;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease-in-out;
+}
+.logout-btn:hover {
+  background: #374151;
+}
+
+/* Notification dropdown itself */
+#notifDropdown {
+  position: absolute;
+  top: 60px; /* drops below nav */
+  right: 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  max-height: 16rem;
+  overflow-y: auto;
+  width: 18rem;
+  display: none; /* toggled via JS */
+  z-index: 100;
+}
+
+/* Container for profile pic inside nav */
+.profilePicContain {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb; /* light gray fallback */
+}
+
+/* Anchor wrapping profile pic */
+.profileImageLink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+/* Profile image */
+.profilePic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 9999px;
+}
+
+
+
+
+
+
+/* ---------- BOTTOM NAV (mobile only) ---------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #f9fafb; /* light gray */
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.5rem 0;
+  z-index: 50;
+}
+
+/* Floating Add New Post Button */
+.addNewPostBtn {
+  position: fixed;
+  bottom: 80px; /* distance from bottom nav */
+  right: 20px;
+  z-index: 50;
+}
+
+.addNewPostBtn .add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* space between icon and text */
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 9999px; /* fully rounded */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.addNewPostBtn .add-btn:hover {
+  background-color: #2563eb; /* blue-600 on hover */
+  transform: translateY(-1px);
+}
+
+.addNewPostBtn .add-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+
+/* Hide bottom nav on large screens */
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+
+/* Buttons inside bottom nav */
+.bottom-nav button,
+.bottom-nav .profilePicContain {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem; /* keeps emoji/icons consistent */
+  color: #374151; /* gray-700 */
+  transition: background 0.2s;
+}
+
+.bottom-nav button:hover,
+.bottom-nav .profilePicContain:hover {
+  background: #e5e7eb; /* gray-200 hover */
+}
+
+/* Notification badge (reuse same as top nav) */
+.notif-count {
+  position: absolute;
+  top: 2px; 
+  right: 2px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 9999px;
+  padding: 0 0.25rem;
+  line-height: 1rem;
+}
+
+/* SVG logout icon fix */
+.logout-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+
+/* Main container: left (chats) + center (posts) + right (online users) */
+.chats-posts-users {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem; /* spacing between columns */
+  padding: 1rem;
+  margin-top: 70px; /* below fixed top nav */
+}
+
+/* Left Container: Chats */
+.chat-list-container.leftContainer {
+  flex: 1; /* smaller column */
+  min-width: 200px;
+  max-width: 250px;
+  background: #f9fafb; /* light gray */
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Center Container: Posts */
+.posts-container {
+  flex: 2; /* takes more space */
+  background: #ffffff;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  min-width: 300px;
+}
+
+/* Right Container: Online Users */
+.rightContainer {
+  flex: 1; /* same as left */
+  min-width: 200px;
+  max-width: 250px;
+  background: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Headings inside containers */
+.chats-posts-users h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Chat / Online users lists */
+.chat-container, .chatsPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Responsive: hide left and right on small screens */
+@media (max-width: 768px) {
+  .chats-posts-users {
+    flex-direction: column;
+    margin-top: 60px; /* adjust for mobile top nav */
+  }
+
+  .chat-list-container.leftContainer,
+  .rightContainer {
+    display: none; /* hide chats and online users */
+  }
+
+  .posts-container {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    border-radius: 0;
+    padding: 0.5rem;
+    box-shadow: none;
+  }
+}
+
+/* Modal Overlay of new post container */
+.newMemoryContainer {
+  display: none; /* hidden by default */
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  overflow-y: auto; /* allow scrolling if modal taller than viewport */
+  padding: 20px; /* prevent modal from touching screen edges on small screens */
+}
+
+.newMemoryContainer .modal {
+  position: relative;
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 100%; /* take up max height but not exceed viewport */
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Close Button */
+.newMemoryContainer .closeModalBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+.newMemoryContainer .closeModalBtn:hover {
+  color: #111;
+}
+
+/* Modal Title */
+.modal-title {
+  font-size: 1.25rem; /* 20px */
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+/* Form */
+.post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Inputs */
+.input, .textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
   box-sizing: border-box;
 }
 
-.nav .left,
-.nav .right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.textarea {
+  min-height: 80px;
+  resize: vertical;
 }
 
-.nav a {
-  text-decoration: none;
+/* File Input */
+.newImage {
+  padding: 6px 10px;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+/* Buttons */
+.btn-save {
+  background-color: #16a34a; /* green-600 */
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-save:hover {
+  background-color: #15803d; /* green-700 */
+}
+
+.btn-cancel {
+  background-color: #9ca3af; /* gray-400 */
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background-color: #6b7280; /* gray-500 */
+}
+
+
+/* posts section*/
+/* Posts container (center column wrapper) */
+#postsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  padding: 10px;
+  max-width: 600px;   /* nice readable width on desktop */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Individual post card */
+#postsContainer .posts {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Media container */
+#postsContainer .mediaContainer {
+  margin: 12px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Images */
+#postsContainer .mediaContainer img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+}
+
+/* Video */
+#postsContainer .mediaContainer video {
+  max-width: 100%;
+  border-radius: 6px;
+  display: block;
+}
+
+/* Audio */
+#postsContainer .mediaContainer audio {
+  width: 100%;
+  display: block;
+  margin-top: 8px;
+}
+
+/* Profile image */
+#postsContainer .ownerPhoto {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+/* Header sections */
+#postsContainer .postHeaderContent,
+#postsContainer .sharedPostContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#postsContainer .postHeaderTop,
+#postsContainer .sharedPostTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#postsContainer .posterName {
+  font-weight: 600;
   color: #333;
-  font-weight: bold;
 }
 
-.nav ul {
-  list-style: none;
+#postsContainer .postDate,
+#postsContainer #date {
+  font-size: 12px;
+  color: #777;
+}
+
+/* Gear button */
+#postsContainer .gear {
+  cursor: pointer;
+  color: #555;
+  font-size: 18px;
+}
+
+/* Title + description */
+#postsContainer .title {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 12px 0 8px;
+}
+
+#postsContainer .description {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 8px;
+}
+
+#postsContainer .showMoreLink {
+  font-size: 14px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+#postsContainer .showMoreLink:hover {
+  text-decoration: underline;
+}
+
+/* Media */
+#postsContainer .mediaContainer {
+  margin: 12px 0;
+}
+
+/* Shared post */
+#postsContainer .sharedPostContent {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  /* background: #fafafa; */
+}
+
+#postsContainer .sharer_message {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+#postsContainer .shared_post {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fff;
+}
+
+#postsContainer .sharedPostOwner {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin: 0;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#postsContainer .userProfileLink {
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+#postsContainer .userProfileLink:hover {
+  text-decoration: underline;
+}
+
+
+/* Comments Area */
+.commentsArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  color: #4b5563; /* gray-600 */
+  font-size: 14px;
+}
+
+/* Like, Comment, Share Sections */
+.likeSection, .commentSection, .shareSection {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.likeBtn, .CommentBtn, .shareBtn {
+  font-size: 18px;
+  cursor: pointer;
+  background: none;
+  border: none;
   padding: 0;
 }
 
-.nav form {
+.likesCount, .commentCount, .sharesCount {
+  font-size: 12px;
+  color: #6b7280; /* gray-500 */
+}
+
+/* Comment Input Form */
+.commentInputForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.commentInput {
+  flex: 1;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+/* Comments List */
+.commentsContainer {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Comment Edit Container */
+.commentEditContainer {
+  margin-top: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .post {
+    padding-left: 16px;
+  }
+
+  .shared_post {
+    padding: 10px;
+  }
+
+  .ownerPhoto {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sharedPostOwner img.ownerPhoto {
+    width: 36px;
+    height: 36px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .description, .sharer_message {
+    font-size: 13px;
+  }
+}
+
+
+/* Container for likes, comments, shares */
+.commentsArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  color: #4B5563; /* gray-600 */
+  font-size: 14px;
+}
+
+/* Like, comment, share sections */
+.likeSection,
+.commentSection,
+.shareSection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Buttons for like, comment, share */
+.likeBtn,
+.CommentBtn,
+.shareBtn {
+  font-size: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+}
+
+/* Hover effect for buttons */
+.likeBtn:hover,
+.CommentBtn:hover,
+.shareBtn:hover {
+  opacity: 0.7;
+}
+
+/* Counts next to buttons */
+.likesCount,
+.commentCount,
+.sharesCount {
+  font-size: 12px;
+  color: #6B7280; /* gray-500 */
+}
+
+/* Comment input form */
+.commentInputForm {
+  margin-top: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+/* Comment input field */
+.commentInput {
+  flex: 1;
+  border: 1px solid #D1D5DB; /* gray-300 */
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+/* Comments list */
+.commentsContainer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Comment edit container */
+.commentEditContainer {
+  margin-top: 8px;
+}
+ 
+
+/* Comment container */
+.comment {
+  
+  align-items: flex-start; /* aligns avatar and content at top */
+  gap: 8px; /* spacing between avatar and content */
+  padding: 8px; 
+  background-color: #F9FAFB; /* gray-50 */
+  border-radius: 8px;
+}
+
+/* User profile image */
+.user-profile {
+  width: 32px;   /* w-8 */
+  height: 32px;  /* h-8 */
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0; /* ensures image size stays fixed */
+}
+
+/* Comment content wrapper */
+.comment > div {
+  flex: 1;
+  display: flex;
+  justify-content: space-between; /* remove any extra spacing */
+  gap: 2px; /* small gap between author, text, and date */
+}
+
+/* Author name link */
+.user-link {
+  font-size: 14px; /* text-sm */
+  font-weight: 600; /* font-semibold */
+  color: #1F2937; /* gray-800 */
+  text-decoration: none;
+}
+
+/* Author strong wrapper */
+#author {
+  margin: 0; /* remove margin to prevent extra spacing */
+}
+
+/* Text + gear container */
+.text-commentGear {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* aligns gear to top of text */
+  gap: 8px;
+}
+
+/* Comment text */
+#text {
+  font-size: 14px; /* text-sm */
+  color: #374151; /* gray-700 */
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Gear icon for owner */
+.comment-gear {
+  cursor: pointer;
+  color: #6B7280; /* gray-500 */
+  margin-left: 8px;
+  align-self: flex-start; /* aligns with top of text */
+}
+
+/* Comment date */
+.date {
+  font-size: 12px; /* text-xs */
+  color: #9CA3AF; /* gray-400 */
+  margin-top: 2px;
+}
+
+/* Contextual modal container */
+.general_modal {
+  position: absolute;       /* positioned relative to gear */
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  padding: 10px;
+  width: 200px;             /* default width */
+  max-width: 50%;           /* max 50% on large screens */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  font-family: sans-serif;
+  font-size: 14px;
+}
+
+/* Close button */
+.closep {
+  align-self: flex-end;
+  cursor: pointer;
+  color: #EF4444;
+  font-size: 16px;
+}
+
+/* Form buttons */
+.general_modal form {
   margin: 0;
 }
 
-.loggedInUser {
-  margin-left: 10px;
-  font-weight: bold;
+.general_modal button {
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background-color: #F3F4F6; /* light gray */
+  color: #111827;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+}
+
+.general_modal button:hover {
+  background-color: #E5E7EB;
+}
+
+/* Vertical spacing between items inside modal */
+.action-item + .action-item {
+  margin-top: 8px; /* space between items */
+}
+
+/* Links inside modal */
+.action-item a {
+  display: block;           /* full-width clickable */
+  padding: 12px 16px;       /* internal spacing */
+  border-radius: 6px;       /* rounded corners */
+  color: #4a5568;           /* text color */
+  text-decoration: none;    /* remove underline */
+  font-size: 1rem;          /* text size */
+  transition: background-color 0.2s; /* smooth hover effect */
+}
+
+/* Hover effect for links */
+.action-item a:hover {
+  background-color: #f7fafc; /* light gray on hover */
+}
+
+/* Optional responsive font for small screens */
+@media (max-width: 640px) {
+  .action-item a {
+    font-size: 0.875rem; /* smaller text */
+  }
 }
 
 
-.commentsContainer{
-    position: relative;
+/* Fullscreen media overlay */
+.fullscreenModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9); /* dark backdrop */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  cursor: zoom-out; /* hint to click again to close */
 }
 
-
-/* 
-.chat-container{
-    width: 100%;
-    height: 80vh;
-    margin: 50px auto;
-    background: azure;
-    margin: 0;
-    overflow: scroll;
-    padding: 10px;
-    border-radius: 5px;
-}
-.chat-container::-webkit-scrollbar {
-    width: 8px;
-}
-.chat-container p{
-    display: flex;
-    padding: 10px;
-    margin-bottom: 0;
-    padding-bottom: 0;
-
-} */
-/* .message{
-     width: 70%;
-    border-radius: 4px;
-    color: #fff;
-    padding: 0;
-    margin: 0;
-    margin-bottom: 10px;
-} */
-/* .chat-container .sendingMessage{
-    margin-right: auto;
-    background: lightblue;
-} */
-
-/* .chat-container .receivingMessage{
-    margin-left: auto;
-    background: rgb(90, 55, 97);
-} */
-/* .chat-container p.date{
-    width: fit-content;
-    padding: 0;
-    font-size: 12px;
-      margin: 0;
-    text-align: right;
-    margin-left: auto;
-    padding-right: 5px;
-}
-.chatInput{
-    width: 100%;
-    padding: 5px 5px;
-    border: none;
-    outline: 2px solid #efefef;
-}
-.inputAndSentBtn{
-    display: flex;
-    
-}
-.messageGear{
-    margin-left: auto;
-    font-weight: bold;
+/* Image or video inside fullscreen */
+.fullscreenModal img,
+.fullscreenModal video {
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  object-fit: cover;
 }
 
-.chatSubmitBtn{
-    cursor: pointer;
-    border-bottom: 1px solid #555;
-    border: none;
-    border: 2px solid #efefef;
-    padding: 5px;
-    outline: 2px solid #efefef;
-} */
-
-.inputAndSentBtn{
-    display: flex;
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
+/* Fullscreen dark overlay */
+.share-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 9998;
 }
 
-.chatSubmitBtn{
-    width: fit-content;
-}
-.typing-event{
-    padding: 0;
-    margin: 0;
-    font-size: 12px;
-    font-weight: bold;
-    font-family: fangso
-}
- .middle-container{
-    width: 50%;
-    background-color: #efefef;
-    padding: 5px;
-    border-radius: 5px;
-    min-width: 0;
-}
-.media-list{
-    width: 100%;
-    margin: 30px auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(200px ,1fr));
-    /* flex-wrap: wrap; */
-    gap: 10px;
+/* Modal container (share box) */
+.share-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  z-index: 9999;
+  animation: fadeInUp 0.3s ease-out;
 }
 
-.media-list img{
-    display: inline;
-    cursor: pointer;
+/* Modal open animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translate(-50%, -40%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
-.photosWithVideos{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    
-}
-
-.photosWithVideos li{
-    background: #fff;
-    padding: 3px 6px;
-    color: #555;
-    cursor: pointer;
-    border-radius: 30px;
-    padding: 3px 10px;
-}
-.photosWithVideos li:hover{
-    background-color: #555;
-    color: #fff;
-}
-
-main{
-    display: flex;
-    max-width: 1600px;
-    width: 100%;
-    margin: 30px auto;
-    gap: 20px;
-}
-
-.gear-menu{
-    width: fit-content;
-    margin-left: auto;
-    background: #555;
-    padding: 2px 5px;
-    color: #fff;
-    border-radius: 5px;
-    line-height: 1.2;
-    height: 1.2em;
-}
-
-.burger-area, .groups{
-    width: 25%;
-      background-color: #efefef;
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.notification-wrapper{
-        position: relative;
-}
-
-.notif-dropdown{
-    position: absolute;
-    top: 30px;
-    left: -200px;
-    width: 300px;
-    background: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* soft shadow */
-    border: 1px solid #e5e7eb; /* subtle border */
-    transition: all 0.3s ease;
-    color: #555;
-    max-height: 50vh;
-    overflow-y: scroll;
-    display: none;
-}
-
-.highlight {
-  background-color: rgba(255, 255, 0, 0.3);
-  transition: background-color 0.3s ease;
-}
-
-.posts.highlight{
-  background-color: rgba(255, 255, 0, 0.3);
-  transition: background-color 0.3s ease;
-}
-
-.notif-dropdown li{
-    margin-bottom: 13px;
-}
-
-.active{
-    display: block;
-}
-.inactive{
-    display: none;
-}
-.notif-btn{
-    position: fixed;
-    right: 260px;
-    top: 15px;
-    outline: none;
-    background: none;
-    border: none;
-}
-
-#notCount{
-    position: relative;
-    top: -5px;
-    right: 3px;
-    background: #fff;
-    color: #000;
-    padding: 3px 6px;
-    width: 5px;
-    font-size: 11px;
-    width: 11px;
-    height: 11px;
-    border-radius: 30px;
-}
-
-.notif-dropdown a{
-    padding: 10px 10px;
-    display: flex;
-    flex-direction: column;
-     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* soft shadow */
-    transition: all 0.3s ease;
-    border-radius: 14px;
-}
-
-
-.notif-dropdown a .notifText, .notif_date{
-    font-weight: 100;
-    font-family: sans-serif;
-    font-size: 14px;
-    text-align: start;
-    
-}
-
-.notif-dropdown a .notif_date{
-   
-   margin-left: auto;
-   text-align: end;
-}
-
-
-/* shares */
-.share-container, .editShareContentModal{
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    background: #c9c6c6;
-    border-radius: 5px;
-    color: #555;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); 
-    width: 50%;
-    height: 90vh;
-    z-index: 1000;
-    display: none;
-}
-.editShareContentModal{
-    height: 100px;
-}
-.newMemoryContainer{
-    position: fixed;
-    background: #c9c6c6;
-    border-radius: 5px;
-    color: #555;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); 
-    padding: 0;
-    z-index: 1000;
-}
-.newMemoryContainer input:first-child{
-    margin-top: 20px;
-}
-.editShareContentModal{
-    display: none;
-}
-.editShareContentModal .message{
-    color: #000;
-}
-
-.closeShareModal{
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    margin-bottom: 20px;
-    right: 5px;
-    background: #fff;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-/* modal edit post design */
-.editPostContainer,.newMemoryContainer {
-            background-color: white;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 600px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 
-                        0 5px 10px rgba(0, 0, 0, 0.05),
-                        0 0 0 1px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            margin: 20px auto;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            z-index: 1001;
-        }
-
-        .editPostContainer:hover{
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15), 
-                        0 8px 15px rgba(0, 0, 0, 0.08),
-                        0 0 0 1px rgba(0, 0, 0, 0.05);
-        }
-
-        #update-title {
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.5rem;
-            margin: 0;
-        }
-
-        #updateForm {
-            padding: 25px;
-        }
-
-        input, textarea, button {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: #6e8efb;
-            box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.2);
-        }
-
-        textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-
-        .file-input {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .file-input img, .file-input video {
-            max-width: 100px;
-            max-height: 100px;
-            border-radius: 8px;
-            object-fit: cover;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .newImage {
-            background-color: #f1f3f6;
-            border: 1px dashed #a1a9c0;
-            color: #6e8efb;
-            cursor: pointer;
-            font-weight: 500;
-            width: auto;
-            padding: 10px 15px;
-        }
-
-        .newImage:hover {
-            background-color: #e8ecf4;
-        }
-
-        .hiddenFile {
-            display: none;
-        }
-
-        .updateButton,.savePostBtn {
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            color: white;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 14px;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .updateButton:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(110, 142, 251, 0.4);
-        }
-
-        .closeModal,.newPostCancel{
-            background-color: #f1f3f6;
-            color: #6c757d;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .closeModal:hover {
-            background-color: #e2e6ea;
-        }
-
-        @media (max-width: 600px) {
-            .editPostContainer {
-                margin: 10px;
-            }
-            
-            #updateForm {
-                padding: 15px;
-            }
-            
-            .file-input {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-
-
-    /* Navigation bar styling */
-    .nav {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: linear-gradient(135deg, #6e8efb, #a777e3);
-        padding: 0 30px;
-        height: 70px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .left a {
-        color: white;
-        text-decoration: none;
-        font-size: 1.8rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-    }
-
-    .left a:hover {
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-        transform: translateY(-1px);
-    }
-
-    .right {
-        display: flex;
-        align-items: center;
-    }
-
-    .right ul {
-        display: flex;
-        list-style: none;
-        align-items: center;
-        gap: 25px;
-        height: 100%;
-    }
-
-    /* Style for login/signup links (before bell icon) */
-    #login, #signup {
-        margin-right: 15px;
-    }
-
-    #login a, #signup a {
-        color: white;
-        text-decoration: none;
-        font-weight: 500;
-        padding: 8px 15px;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-    }
-
-    #login a:hover, #signup a:hover {
-        background-color: rgba(255, 255, 255, 0.15);
-        transform: translateY(-2px);
-    }
-
-    /* Style for logged in user section (after bell icon) */
-    .loggedInUser {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        margin-left: 15px;
-        padding-left: 15px;
-        position: relative;
-    }
-
-    .loggedInUser::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        height: 30px;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.3);
-    }
-
-    .notification-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .notif-btn {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 1.2rem;
-        transition: all 0.3s ease;
-        color: white;
-    }
-
-    .notif-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px) scale(1.05);
-    }
-
-    .notif-btn:active {
-        transform: scale(0.95);
-    }
-
-    .username {
-        color: white;
-        font-weight: 500;
-    }
-
-    .profilePicContain {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    #logoutForm button {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: white;
-        padding: 8px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    #logoutForm button:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-    }
-
-
-    /* share modal */
-
-    .share_container {
-    position: relative;
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 30px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.closeShareModal {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    z-index: 10;
-}
-
-.closeShareModal:hover {
-    transform: scale(1.2);
-}
-
+/* Share form */
 .shareForm {
-    display: flex;
-    flex-direction: column;
-    /* gap: 10px;
-    margin-bottom: 30px; */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
+/* Textarea */
 .sharerMessage_input {
-    width: 100%;
-    min-height: 50px;
-    padding: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 16px;
-    resize: vertical;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  resize: none;
+  outline: none;
+  font-size: 0.95rem;
 }
-
-.sharerMessage_input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-}
-
 .sharerMessage_input:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.15);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
 }
 
+/* Media preview */
+.mediaContainer {
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 400px;
+}
+.mediaContainer img,
+.mediaContainer video {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+/* Title */
 .sharingTitle {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1.4;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0.25rem 0;
 }
 
+/* Description */
 .sharingDesc {
-    margin: 0;
-    font-size: 16px;
-    line-height: 1.6;
-    opacity: 0.9;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
+/* Share button */
 .shareOnApp {
-    padding: 15px 30px;
-    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
 }
+/* .shareOnApp:hover { */
+  /* background: #1d4ed8; */
+/* } */
 
-.shareOnApp:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(45deg, #ff5252, #ff3838);
-}
-
+/* Links container */
 .links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
 }
 
+
+/* General link styles */
 .link {
-    padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 25px;
-    color: white;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    text-align: center;
-    min-width: 80px;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+svg{
+  width: 30px;
+  height: 30px;
 }
 
-.link:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+/* Social link colors */
+/* .facebook { background: #3b82f6; }
+.facebook:hover { background: #2563eb; }
+
+.whatsapp { background: #22c55e; }
+.whatsapp:hover { background: #16a34a; }
+
+.twitter { background: #0ea5e9; }
+.twitter:hover { background: #0284c7; }
+
+.telegram { background: #38bdf8; }
+.telegram:hover { background: #0ea5e9; }
+
+.linkedin { background: #1d4ed8; }
+.linkedin:hover { background: #1e40af; }
+
+.copyLink { background: #374151; }
+.copyLink:hover { background: #1f2937; } */
+/* Close button */
+.closeShareModal {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: #6b7280;
+  font-size: 1.25rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.closeShareModal:hover {
+  color: #1f2937;
 }
 
-/* Specific platform colors on hover */
-.facebook:hover { background: #3b5998; border-color: #3b5998; }
-.whatsapp:hover { background: #25D366; border-color: #25D366; }
-.twitter:hover { background: #1DA1F2; border-color: #1DA1F2; }
-.telegram:hover { background: #0088cc; border-color: #0088cc; }
-.linkedin:hover { background: #0077B5; border-color: #0077B5; }
-.copyLink:hover { background: #9b59b6; border-color: #9b59b6; }
+/* Responsive fix for very small screens */
+@media (max-width: 480px) {
+  .closeShareModal {
+    font-size: 1rem;     /* slightly smaller */
+    top: 0.5rem;
+    right: 0.5rem;
+  }
 
-/* Responsive design */
-@media (max-width: 600px) {
-    .share_container {
-        margin: 20px;
-        padding: 25px;
-    }
-    
-    .links {
-        flex-direction: column;
-    }
-    
-    .link {
-        width: 100%;
-    }
-}
-
-/* Animation for modal appearance */
-@keyframes modalAppear {
-    from {
-        opacity: 0;
-        transform: scale(0.9) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-.share_container {
-    animation: modalAppear 0.3s ease-out;
+  .share-container {
+    width: 90%;
+    height: 90%;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;    /* full-screen style */
+  }
 }
 
 
-/* chat list home page */
+/* ---------- SHARED POST CARD ---------- */
+#postsContainer .posts.shared {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+}
 
-    .chat-container {
-        width: 100%;
-        max-width: 100%;
-        background: #ffffff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        display: flex;
-        flex-direction: column;
-        max-height: 80vh;
-        margin: 0 auto;
-    }
+/* Sharer info */
+#postsContainer .posts.shared .ownerPhoto {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+}
+#postsContainer .posts.shared .title-date-burger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#postsContainer .posts.shared .date {
+  font-size: 12px; color: #6b7280;
+}
+#postsContainer .posts.shared .gear {
+  cursor: pointer;
+  font-size: 18px;
+  color: #4b5563;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+#postsContainer .posts.shared .gear:hover {
+  background: #f3f4f6;
+}
+#postsContainer .posts.shared .sharer_message {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #111827;
+  line-height: 1.4;
+}
 
-    .chatItem {
-        display: block;
-        padding: 16px 20px;
-        text-decoration: none;
-        color: #2d3748;
-        border-bottom: 1px solid #edf2f7;
-        transition: all 0.25s ease;
-        background: #ffffff;
-        position: relative;
-    }
+/* Embedded original post */
+#postsContainer .posts.shared .shared_post {
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 12px;
+}
+#postsContainer .posts.shared .shared_post .ownerPhoto {
+  width: 32px; height: 32px;
+  margin-right: 6px;
+}
+#postsContainer .posts.shared .shared_post .title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+#postsContainer .posts.shared .shared_post .date {
+  margin-left: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+#postsContainer .posts.shared .shared_post .description {
+  font-size: 14px;
+  color: #374151;
+  margin: 8px 0;
+}
+#postsContainer .posts.shared .shared_post .showMoreLink {
+  font-size: 13px;
+  color: #2563eb;
+  text-decoration: none;
+}
+#postsContainer .posts.shared .shared_post .showMoreLink:hover {
+  text-decoration: underline;
+}
+#postsContainer .posts.shared .shared_post .mediaContainer {
+  margin-top: 8px;
+}
+#postsContainer .posts.shared .shared_post .mediaContainer img,
+#postsContainer .posts.shared .shared_post .mediaContainer video {
+  max-width: 100%;
+  border-radius: 6px;
+  display: block;
+}
+#postsContainer .posts.shared .shared_post .mediaContainer audio {
+  width: 100%;
+  margin-top: 6px;
+}
 
-    .chatItem:hover {
-        background: #f7fafc;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
+/* Likes / comments / share buttons */
+#postsContainer .posts.shared .likes-comments-share {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #4b5563;
+}
+#postsContainer .posts.shared .likes-comments-share .like,
+#postsContainer .posts.shared .likes-comments-share .commentsCount,
+#postsContainer .posts.shared .likes-comments-share .share {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#postsContainer .posts.shared .likeBtn,
+#postsContainer .posts.shared .CommentBtn,
+#postsContainer .posts.shared .shareBtn {
+  font-size: 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+#postsContainer .posts.shared .likeBtn:hover,
+#postsContainer .posts.shared .CommentBtn:hover,
+#postsContainer .posts.shared .shareBtn:hover {
+  transform: scale(1.15);
+}
+#postsContainer .posts.shared .likesCount,
+#postsContainer .posts.shared .commentCount,
+#postsContainer .posts.shared .sharesCount {
+  font-size: 12px;
+  color: #6b7280;
+}
 
-    .chatItem:last-child {
-        border-bottom: none;
-    }
-
-    .writer {
-        font-weight: 600;
-        font-size: 16px;
-        color: #2d3748;
-        margin-bottom: 6px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .text-message {
-        color: #718096;
-        font-size: 14px;
-        line-height: 1.4;
-        margin-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .date.smallTime {
-        font-size: 12px;
-        color: #a0aec0;
-        display: block;
-        text-align: right;
-    }
-
-    /* Responsive design */
-    @media (max-width: 768px) {
-        .chat-container {
-            max-height: 75vh;
-            border-radius: 0;
-            box-shadow: none;
-        }
-
-        .chatItem {
-            padding: 14px 16px;
-        }
-
-        .writer {
-            font-size: 15px;
-        }
-
-        .text-message {
-            font-size: 13px;
-        }
-
-        .date.smallTime {
-            font-size: 11px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .chatItem {
-            padding: 12px 14px;
-        }
-
-        .writer {
-            font-size: 14px;
-        }
-
-        .text-message {
-            font-size: 12px;
-        }
-    }
-
-    /* Scrollbar styling for webkit browsers */
-    .chat-container::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .chat-container::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    .chat-container::-webkit-scrollbar-thumb {
-        background: #cbd5e0;
-        border-radius: 10px;
-    }
-
-    .chat-container::-webkit-scrollbar-thumb:hover {
-        background: #a0aec0;
-    }
-
-    /* load chats */
-    /* Chat container */
-    .chat-container1 {
-        width: 100%;
-        max-width: 800px;
-        margin: 0 auto;
-        margin-top: 80px;
-        /* padding: 20px; */
-        background: #f8f9fa;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        height: 90vh;
-        overflow-y: auto;
-    }
-
-    /* Base message style */
-    .message {
-        max-width: 70%;
-        padding: 12px 16px;
-        border-radius: 18px;
-        margin: 0px 8px 10px 8px;
-        position: relative;
-        animation: fadeIn 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        
-    }
-
-    /* Sending message style (typically on the right) */
-    .sendingMessage {
-        align-self: flex-end;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
-
-    /* Receiving message style (typically on the left) */
-    .receivingMessage {
-        align-self: flex-start;
-        background: white;
-        color: #2d3748;
-        border: 1px solid #e2e8f0;
-        border-bottom-left-radius: 4px;
-    }
-
-    /* Message text */
-    .text {
-        margin: 0 0 8px 0;
-        font-size: 15px;
-        line-height: 1.4;
-        word-wrap: break-word;
-        display: flex;
-        justify-content: space-between;
-    }
-    
-
-    /* Date styling */
-    .date {
-        margin: 0;
-        font-size: 11px;
-        opacity: 0.8;
-        text-align: right;
-    }
-
-    .receivingMessage .date {
-        color: #718096;
-    }
-
-    .sendingMessage .date {
-        color: rgba(255, 255, 255, 0.85);
-    }
-
-    /* Message gear (ellipsis) styling */
-    .messageGear {
-        display: inline-block;
-        cursor: pointer;
-        font-weight: bold;
-        letter-spacing: 1px;
-        margin-left: 4px;
-        transition: opacity 0.2s;
-    }
-
-    .messageGear:hover {
-        opacity: 0.7;
-    }
-
-    /* Animation for new messages */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Scrollbar styling */
-    .chat-container1::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .chat-container1::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    .chat-container1::-webkit-scrollbar-thumb {
-        background: #cbd5e0;
-        border-radius: 10px;
-    }
-
-    .chat-container1::-webkit-scrollbar-thumb:hover {
-        background: #a0aec0;
-    }
-
-    /* Responsive design */
-    @media (max-width: 768px) {
-        .chat-container1 {
-            padding: 16px;
-            max-height: 75vh;
-        }
-        
-        .message {
-            max-width: 85%;
-            padding: 10px 14px;
-        }
-        
-        .text {
-            font-size: 14px;
-        }
-        
-        .date {
-            font-size: 10px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .message {
-            max-width: 90%;
-        }
-    }
+/* Comment input + list */
+#postsContainer .posts.shared .commentInput {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 14px;
+  margin-top: 8px;
+}
+#postsContainer .posts.shared .commentsContainer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#postsContainer .posts.shared .commentEditContainer {
+  margin-top: 8px;
+}

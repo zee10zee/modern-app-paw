@@ -51,8 +51,8 @@ window.addEventListener('DOMContentLoaded', (e)=>{
            if(res.status === 200 && res.data.success){
                 const allNewComments = res.data.postComments
                 const currentUser = res.data.currentUser
-
-                // return console.log(allNewComments)
+                   AllComments = res.data.allRecentComments;
+                    console.log(allNewComments)
                 const lastComment = allNewComments[allNewComments.length - 1]
                 updateCommentUI(postId,lastComment)
                 commentCountElement.textContent = allNewComments.length;
@@ -71,6 +71,9 @@ const updateCommentUI = (postId,newComment)=>{
             if(!postsContainer) return;
             console.log(newComment)
             const commentsContainer = postDiv.querySelector('.commentsContainer')
+            const prevousLebeledComment = commentsContainer.querySelector('.new')
+            if(prevousLebeledComment) commentsContainer.classList.remove('new')
+
 
       const newCommentDate = new Date(newComment.created_at).toLocaleDateString('en-US',{
                 weekday : 'short', 
@@ -80,15 +83,15 @@ const updateCommentUI = (postId,newComment)=>{
       
             const commentHTML = 
             `
-                <div class="comment" data-comment-id="${newComment.id}">
-                <img class="user-profile" src="${newComment.user_profile_picture}" alt="user-profile">
+                <div class="comment new" data-comment-id="${newComment.id}">
+                <img class="user-profile ownerPhoto" src="${newComment.user_profile_picture}" alt="user-profile">
                 ${!newComment.is_owner?`
                 <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${newComment.usertoken}/${newComment.user_id}">${newComment.author_name}</a></strong>
-                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${newComment.usertoken}">You</a></strong>`}
+                `:`<strong id="author"><a class="user-link" href="/userProfile/${newComment.usertoken}">You</a></strong>`}
                 <div class="text-commentGear">
                      <p id="text">${newComment.comment}</p>
                      ${newComment.is_owner?`
-                     <div id="comment-gear" data-comment-id = "${newComment.id}" class="comment-gear">⋮</div>
+                     <div id="gear" data-comment-id = "${newComment.id}" class="gear">⋮</div>
                      `:''}
                 </div>
                 <small id="date" class="date">${newCommentDate}</small>

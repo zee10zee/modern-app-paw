@@ -620,7 +620,7 @@ app.get('/api/latestPosts', validateLogin, async(req,res)=>{
         LEFT JOIN users ON posts.user_id = users.id
         WHERE posts.id > $2
         GROUP BY posts.id,users.id, comments.id
-           `,[req.session.userId,postid])
+           `,[req.session.userId, postid])
 
         if(latestPosts.rowCount === 0) return console.log('post info not found')
         
@@ -813,20 +813,37 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
            if(lastestPosts.rowCount === 0) return console.log('post info not found')
 
             await getPostCounts(req.session.userId,lastPostId)
+
+            // SENDING ALLPOSTS ARRAY TO GET UPDATED WITH IT ON CLIENT / SO WE COULD HADNLE THE MODAL OF USER INFO
+            const allPostsAndUsers = await pool.query(`SELECT 
+                posts.*,
+                users.id AS user_id,
+                users.usertoken as user_token,
+                users.firstname as username,
+                (posts.user_id = $1) AS is_owner
+                
+                FROM posts 
+                LEFT JOIN users ON posts.user_id = users.id
+                `, [req.session.userId])
+
+            if(!allPostsAndUsers.rows) return console.log('no post found for all posts')
+
+            // return console.log(allPostsAndUsers.rows) 
         
-       console.log(typeof(lastestPosts.rows[0].user_id))
 
       res.json({
         message : 'New post submitted successfully !',
         newPostData : lastestPosts.rows[0],
-        success : true
+        allPosts : allPostsAndUsers.rows,
+        success : true,
+        isFresh: true
       })
 })
 
  async function createNewPost(body,request){
 
        const media = request.file.mimetype.startsWith('video/')? 
-     path.join('uploads/videos', request.file.filename) 
+       path.join('uploads/videos', request.file.filename) 
      : path.join('uploads', request.file.filename)
 
         const newPostQuery = (`INSERT INTO posts (title, description, mediafile, user_id)
@@ -836,7 +853,6 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
       if(newPost.rowCount === 0){
          return console.log('no post saved to db')
       }
-
         return newPost.rows[0]
     }
 
@@ -845,7 +861,6 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
     //   get all connected sockets
        const allSockets = await io.fetchSockets()
 
-        console.log(allSockets)
     //    getting and emitting new post count and last postId
        allSockets.forEach((socket) =>{
         // skip the loggin user
@@ -1011,11 +1026,10 @@ app.put('/api/post/update/:id', validateLogin, upload.single('newFile'),async(re
 // delete post
 
 app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
-    const postId = parseInt(req.params.id)
-
+    const postId = req.params.id
    try{
 
-     const likes = await pool.query(`DELETE FROM likes WHERE postid = $1 RETURNING *;`,[postId])
+     const likes = await pool.query(`DELETE FROM likes WHERE postid = $1 RETURNING *`,[postId])
 
     const comments = await pool.query(`DELETE FROM comments WHERE post_id = $1 RETURNING *`, [postId])
 
@@ -1054,11 +1068,9 @@ app.delete('/api/post/delete/:id', validateLogin, async(req,res)=>{
     })
    }catch(error){
       if(error.code){
+        console.log(error)
         return res.status(400).json({error : error})
       }
-
-      console.error(error)
-      res.status(500).json({error : error.detail})
    }
 })
 async function FetchNotificationsCount(loginUserId){
@@ -1200,7 +1212,7 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
    const allComments = await pool.query(`SELECT 
     users.firstname AS author_name,
     users.profilepicture AS user_profile_picture,
-    users.usertoken as usersToken,
+    users.usertoken as userToken,
     comments.*,
    (comments.user_id = $2) AS is_owner
     FROM comments 
@@ -1248,12 +1260,29 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
         console.log('no notify self user!');
       }
 
+
+      const allRecentAllComments = await pool.query(`SELECT 
+        comments.*,
+        users.firstname as username,
+        users.usertoken as usertoken,
+        users.id as user_id,
+        (comments.user_id = $1) as is_owner
+        FROM comments 
+        LEFT JOIN users ON users.id = comments.user_id
+        
+       `, [req.session.userId])
+
+       if(allRecentAllComments.rowCount === 0) console.log('no comments yet !')
+
+
+
    console.log('successfully commented')
    res.json({
     message : 'comment successfully made !',
     postComments : allComments.rows,
     currentUser : currentUser.rows[0],
-    success: true
+    success: true,
+    allRecentComments : allRecentAllComments.rows
    });
 })
 
@@ -1301,7 +1330,7 @@ app.patch('/api/comment/:id/update', validateLogin, async(req,res)=>{
             return res.status(404).json({message : 'getting updated comments with users failed'})
         }
 
-        
+      console.log('update comment', updatedCommentUser.rows[0])
     res.json({
         updatedComment : updatedCommentUser.rows[0]
     })
@@ -1525,13 +1554,27 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
 
         if(sharesCounts.rowCount === 0) console.log('no root id found')
 
-          console.log(sharesCounts.rows)
+        // / SENDING ALLPOSTS ARRAY TO GET UPDATED WITH IT ON CLIENT / SO WE COULD HADNLE THE MODAL OF USER INFO
+            const allPostsAndUsers = await pool.query(`SELECT 
+                posts.*,
+                users.id AS user_id,
+                users.usertoken as user_token,
+                users.firstname as username,
+                (posts.user_id = $1) AS is_owner
+                
+                FROM posts 
+                LEFT JOIN users ON posts.user_id = users.id
+                `, [req.session.userId])
+
+            if(!allPostsAndUsers.rows) return console.log('no post found for all posts')
+
          
         res.json({
             sharedPost : sharedPostAndSharer.rows[0],
             message : 'file shared successfully !',
             success : true,
-            root_parent_sharesCount : sharesCounts.rows[0]
+            root_parent_sharesCount : sharesCounts.rows[0],
+            allPosts  : allPostsAndUsers.rows
         })
 })
 
