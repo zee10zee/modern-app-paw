@@ -117,11 +117,14 @@ io.on('connection', async(socket)=>{
     // received message listener
     socket.on('newMessage-send', async(data)=>{
 
-        const receiver = activeUsers.get(data.userId)
-        // return console.log(data)
+        console.log('come from client ', data)
+        // return console.log(data.userId)
+        const receiverId = parseInt(data.userId)
+        const receiver = activeUsers.get(receiverId)
+          console.log(receiver, 'receiver', activeUsers.values())
         const messageDetails = {
             sender_id : loggedInUser.id,
-            receiver_id : data.userId,
+            receiver_id : receiverId,
             msg : data.msg,
             is_read : 'false'
         }
@@ -135,15 +138,17 @@ io.on('connection', async(socket)=>{
 
     console.log('successfully saved on db' ,newMessage.rows)
 
-    const receiverName = await pool.query(`SELECT firstname FROM users WHERE id = $1`, [messageDetails.receiver_id])
+    const receiverInfo = await pool.query(`SELECT firstname,usertoken FROM users WHERE id = $1`, [messageDetails.receiver_id])
 
-    if(receiverName.rowCount === 0) return res.json({error : 'no receiver found'});
+    if(receiverInfo.rowCount === 0) return console.log({error : 'no receiver found'});
 
     // // the first emit
      socket.to(receiver).emit('received-message', {
         newMsg : newMessage.rows[0],
         sender_name : loggedInUser.firstname, 
-        receiver_name : receiverName.rows[0].firstname,
+        receiver_name : receiverInfo.rows[0].firstname,
+        receiver_token : receiverInfo.rows[0].usertoken,
+        sender_token : loggedInUser.usertoken,
         target : 'receiver'
     })
 
@@ -155,7 +160,7 @@ io.on('connection', async(socket)=>{
         socket.to(selfUserId).emit('received-message', {
             newMsg : newMessage.rows[0],
             sender_name : loggedInUser.firstname, 
-            receiver_name : receiverName.rows[0].firstname,
+            receiver_name : receiverInfo.rows[0].firstname,
             target : 'sender'
         })
     })
@@ -541,7 +546,7 @@ app.get('/userProfile/:token/:id',validateLogin,async(req,res)=>{
     const token = req.params.token
     const {id} = req.params
 
-   res.sendFile(basedir + 'loginUserProfile.html')
+   res.sendFile(basedir + 'userProfile.html')
 });
 
 
@@ -814,27 +819,9 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
 
             await getPostCounts(req.session.userId,lastPostId)
 
-            // SENDING ALLPOSTS ARRAY TO GET UPDATED WITH IT ON CLIENT / SO WE COULD HADNLE THE MODAL OF USER INFO
-            const allPostsAndUsers = await pool.query(`SELECT 
-                posts.*,
-                users.id AS user_id,
-                users.usertoken as user_token,
-                users.firstname as username,
-                (posts.user_id = $1) AS is_owner
-                
-                FROM posts 
-                LEFT JOIN users ON posts.user_id = users.id
-                `, [req.session.userId])
-
-            if(!allPostsAndUsers.rows) return console.log('no post found for all posts')
-
-            // return console.log(allPostsAndUsers.rows) 
-        
-
       res.json({
         message : 'New post submitted successfully !',
         newPostData : lastestPosts.rows[0],
-        allPosts : allPostsAndUsers.rows,
         success : true,
         isFresh: true
       })
@@ -1260,29 +1247,12 @@ app.post('/api/post/:id/comment', validateLogin, async(req,res)=>{
         console.log('no notify self user!');
       }
 
-
-      const allRecentAllComments = await pool.query(`SELECT 
-        comments.*,
-        users.firstname as username,
-        users.usertoken as usertoken,
-        users.id as user_id,
-        (comments.user_id = $1) as is_owner
-        FROM comments 
-        LEFT JOIN users ON users.id = comments.user_id
-        
-       `, [req.session.userId])
-
-       if(allRecentAllComments.rowCount === 0) console.log('no comments yet !')
-
-
-
    console.log('successfully commented')
    res.json({
     message : 'comment successfully made !',
     postComments : allComments.rows,
     currentUser : currentUser.rows[0],
     success: true,
-    allRecentComments : allRecentAllComments.rows
    });
 })
 
@@ -1554,27 +1524,12 @@ app.post('/api/sharePost', validateLogin, async(req,res)=>{
 
         if(sharesCounts.rowCount === 0) console.log('no root id found')
 
-        // / SENDING ALLPOSTS ARRAY TO GET UPDATED WITH IT ON CLIENT / SO WE COULD HADNLE THE MODAL OF USER INFO
-            const allPostsAndUsers = await pool.query(`SELECT 
-                posts.*,
-                users.id AS user_id,
-                users.usertoken as user_token,
-                users.firstname as username,
-                (posts.user_id = $1) AS is_owner
-                
-                FROM posts 
-                LEFT JOIN users ON posts.user_id = users.id
-                `, [req.session.userId])
-
-            if(!allPostsAndUsers.rows) return console.log('no post found for all posts')
-
-         
+       
         res.json({
             sharedPost : sharedPostAndSharer.rows[0],
             message : 'file shared successfully !',
             success : true,
             root_parent_sharesCount : sharesCounts.rows[0],
-            allPosts  : allPostsAndUsers.rows
         })
 })
 
@@ -1690,9 +1645,7 @@ app.get('/api/allChats/:receiverId/:token', validateLogin, async(req,res)=>{
         OR
      (sender_id = $2 AND receiver_id = $1)`,[senderId, receiverId])
 
-    if(initialChats.rowCount === 0){
-        return console.log('no chat yet !')
-    }
+    if(initialChats.rowCount === 0) console.log('no chat yet !')
 
     res.json({
         chats : initialChats.rows,

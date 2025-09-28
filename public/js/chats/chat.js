@@ -1,38 +1,34 @@
 
-const socket = io()
+
+const s = io()
+let receiverId;
 const messageContainer = document.querySelector('.chat-container1');
 const messageInput = document.getElementById('chatInput')
-const receiverId = parseInt(window.location.pathname.split('/')[3])
-const userToken = window.location.pathname.split('/').pop();
-console.log(receiverId,userToken)
+
 const typingIndicator = document.querySelector('.typing-event')
 
-   socket.on('user-joined', (user)=>{
-    console.log(user.loggedInUserName, ' joined the chat')
+   s.on('user-joined', (user)=>{
+    console.log(user.loggedInUser, ' joined the chat')
     const loggedInUserId = user.loggedInUserId;
    adoptScreenHeight()
 })
 
-socket.on('user-typing', username =>{
+s.on('user-typing', username =>{
     console.log(username, ' is typing..')
     displayTypingIndicator(username)
-    // adoptScreenHeight()
+    adoptScreenHeight()
 })
 
-// listen to receiving message
-socket.on('received-message', (data)=>{
-  
-    if(data.target === 'receiver'){
-     console.log('global store chat ', window.storeChats)
+// listen to receiving messaget
 
-    //  return console.log(data.newMsg, data.sender_name)
-     displayMessage(data.newMsg.message, formatDate(data.newMsg.created_at), 'receivingMessage')
-     adoptScreenHeight()
-    }
-})
 
 const submitBtn = document.querySelector('.chatSubmitBtn')
 submitBtn.addEventListener('click', (e)=>{
+
+    // getting the receiver id from url 
+    const url = window.location.pathname
+     receiverId = url.split('/')[3]
+    // console.log(receiverId, receiverId[3])
     let message = messageInput.value
     const now = new Date().toISOString()
     const displayTime = new Date().toLocaleTimeString('en-US',{hour : '2-digit', minute: '2-digit', hour12 : true})
@@ -44,7 +40,7 @@ submitBtn.addEventListener('click', (e)=>{
     }
     if(messageInput.value === '') return;
 
-    socket.emit('newMessage-send', messageData)
+    s.emit('newMessage-send', messageData)
     displayMessage(message, displayTime, 'sendingMessage')
     messageInput.value = ''
     adoptScreenHeight()
@@ -52,7 +48,7 @@ submitBtn.addEventListener('click', (e)=>{
 // typing event
 
 messageInput.addEventListener('keypress', (e)=>{
-    socket.emit('user-typing', receiverId)
+     s.emit('user-typing', receiverId)
 })
 
 function displayMessage(message,date, sendingMessage){
@@ -71,8 +67,8 @@ function formatDate(timestamp){
     const date = new Date(timestamp)
 const formattedDate  = date.toLocaleDateString('en-US', {month : 'short'}) + 
 '-' + date.toLocaleDateString('en-US',{weekday : 'short'})
-    const timeFormat = date.toLocaleTimeString('en-US')
-    const timeAndDate = timeFormat + '-' + formattedDate
+    const timeFormat = date.toLocaleTimeString('en-US', {hour : '2-digit', minute : '2-digit', hour12: 'true'})
+    const timeAndDate = timeFormat
 
     return timeAndDate;
 }

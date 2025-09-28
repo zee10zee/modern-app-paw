@@ -1,34 +1,39 @@
 const editingPostContainer = document.getElementById('updateFormContainer')
 // clicking the eidt button functionlity
 editingPostContainer.addEventListener('click', async(e)=>{
-        e.preventDefault()
+        // e.preventDefault()
 
-        const newImageBtn = e.target.classList.contains("newImage")
+        const newImageBtn = e.target.classList.contains("newImageBtn")
         const updateEditFormButton = e.target.classList.contains("updateButton")
         const cancelUpdateButton = e.target.classList.contains("closeModal")
         // return console.log(updateEditFormButton,cancelUpdateButton)
        if(newImageBtn){
-        const parentDiv = e.target.parentElement
-            const targetFileBtn = parentDiv.querySelector('.hiddenFile')
+        console.log('true')
+        const targetFileBtn = e.target.closest('.fileInputContainer')?.querySelector('.fileInput')
             targetFileBtn.click()
-            e.preventDefault()
-            // getting the display file
-            targetFileBtn.addEventListener('change', handleFilePreview)
-       }else if(updateEditFormButton){
-         const updateform = e.target.parentElement
+       }
+
+       else if(e.target.classList.contains('fileInput')){
+        // getting the display file
+        e.target.addEventListener('change', handleFilePreview)
+       }
+       
+       else if(updateEditFormButton){
+        // e.target.preventDefault()
+         const updateform = e.target.closest('.updateForm')
+         console.log('update form ', updateform)
             const post_id = updateform.dataset.postId
-            await handleUpdatePost(post_id, updateform)
+            await handleUpdatePost(e,post_id, updateform)
        }else if(cancelUpdateButton){
         e.preventDefault()
         editPostContainer.style.display= "none"
-
        }
     })
 
     // previewing the uploaded file
     function handleFilePreview(e){
       const selectedFile = e.target.files[0]
-      const previewContainer = e.target.closest('.file-input')
+      const previewContainer = e.target.closest('.fileInputContainer')
       console.log(previewContainer)
       let isVideoFile = isVideo(selectedFile.name)
       let previewFile = previewContainer.querySelector('video,img')
@@ -63,7 +68,9 @@ editingPostContainer.addEventListener('click', async(e)=>{
 
      // hande post update
 
-    const handleUpdatePost = async(postId, updateform)=>{
+    const handleUpdatePost = async(event,postId, updateform)=>{
+     console.log(postId,updateform)
+         event.preventDefault()
         const formData = new FormData(updateform)
         const newTitle = formData.get('newTitle')
         const newDesc = formData.get('newDesc')
@@ -84,7 +91,7 @@ editingPostContainer.addEventListener('click', async(e)=>{
 
         }catch(err){
           console.log(err)
-          editPostContainer.classList.remove('hidden')
+          editPostContainer.style.display = "flex"
         }
     }
 
@@ -114,17 +121,7 @@ editingPostContainer.addEventListener('click', async(e)=>{
            targetPost.innerHTML = ''
            targetPost.innerHTML = `
             <img class="ownerPhoto" src="${post.profilepicture}" alt="Profile picture">
-               ${post.is_owner?
-                `
-              <ul id="userProfile-chat-modal" class="userProfile-chatmodal">
-                    <li class="ownerProfile" data-token-id="${post.usertoken}" data-user-id="${post.user_id}">
-                        <a  class="userProfileLink" href="/userProfile/${post.usertoken}">${post.firstname}'s Profile</a>
-                    </li>
-                    <li class="userProfile" data-user-id="${post.user_id}">
-                        <a  class="userChatLink" href="/api/chatpage/${post.user_id}">Chat with user</a>
-                    </li>
-              </ul>
-              `: ''}
+              
                <div class="title-date-burger"> 
                  <h2 class="title"> ${post.title}
                    <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>

@@ -191,7 +191,7 @@ function loadComments(comment){
                 <img class="user-profile ownerPhoto" src="${commentorProfile}" alt="user-profile">
                 ${!comment.is_owner?`
                 <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
-                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${comment.author.user_token}">You</a></strong>`}
+                `:`<strong id="author"><a class="user-link" href="/userProfile/${comment.author.user_token}">You</a></strong>`}
                 <div class="text-commentGear">
                      <p id="text">${text}</p>
                      ${comment.is_owner?`
@@ -231,11 +231,17 @@ const setupEventListener = ()=>{
     if(gear){
       e.preventDefault()
       const gearBtn = e.target
+      let cID = null;
+      const postId = gearBtn.closest('[data-post-id]')?.dataset.postId
 
-      const {contentId} = await checkPostAuthorAndCommentAuthor(e)
+      if(postId){
+        cID = postId
+      }else{
+        cID = gearBtn.closest('[data-comment-id]')?.dataset.commentId
+      }
+      const {contentId} = await checkPostAuthorAndCommentAuthor(e,cID)
 
-      console.log(contentId)
-      checkMainPostSharePost(e,postDiv)
+      checkMainPostAndSharePost(e,postDiv)
 
       modal.innerHTML = loadSpecificPostModal(contentId)
       openModal(gearBtn)
@@ -323,57 +329,23 @@ class PostsCache {
 }
 
 
-const posts = new PostsCache()
+// Usage - instant access
+const postsCache = new PostsCache();
 
- console.log('posts of postcaches from class ')
-
-async function getCachedPosts(postId){
-  console.log(postId)
-   if(postId){
-       const cachedData = posts.getPost(postId)
-
-       if(cachedData){
-        console.log('post exist , fetching ...')
-       return cachedData.data
-       }
-       
-   }
-
-   const onePost = await fetchOnePost(postId)
-   if(!onePost.id) return console.log('not found one post id')
-   console.log('post does not exist , fetching ...')
-  console.log(onePost, typeof onePost.id, typeof postId)
-   const newData = posts.setPost(onePost.id,onePost)
-   console.log(newData, 'ne data')
-   return newData
+async function getPostSuperFast(postId) {
+  // 1. Check memory cache first (instant)
+  const cached = postsCache.getPost(postId);
+  if (cached) {
+    console.log(`✅ From memory cache (${cached.timestamp}ms old)`);
+    return cached.data;
+  }
+  
+  // 2. If not in cache, fetch and cache it
+  const post = await fetchOnePost(postId);
+  postsCache.setPost(postId, post);
+  
+  return post;
 }
-// // getCachedPosts()
-
-// let cachedPosts = null;
-// let CACHE_DURATION = 30000 //30 sec
-// let cache_timestsamp = 0;
-
-// async function getCachedPosts(){
-//      const now  = new Date()
-//     //  if(!cachedPosts){
-//     //    cachedPosts = await getAllposts()
-//     //  }
-
-//     //  if(now - cache_timestsamp > CACHE_DURATION){
-//     //   cachedPosts = await getAllposts()
-//     //   cache_timestsamp = now // stor
-//     //  }
-
-//     // OR
-
-//   if(!cachedPosts || now - cache_timestsamp > CACHE_DURATION){
-//       cachedPosts = await getAllposts()
-//       cache_timestsamp = now // stores the now date()
-//   }
-
-//   return cachedPosts
-// }
-
 
 async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
   let contentId = null;
@@ -396,18 +368,17 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
     let comment = null;
     if(!finalpostId) return console.log('finalpost id is undefined')
       console.log(typeof finalpostId, 'type of final post id')
-     const post = await getCachedPosts(finalpostId)
 
-    // for (const post of posts) {
-      // return console.log(post.comments)
+     const post = await getPostSuperFast(finalpostId)
+
       comment = post.comments?.find(comment => comment.id === parseInt(commentId));
       if (!comment) return console.log('comment not found') // Stop searching once found
-    // }
     
     contentId = commentId;
     content = comment
-
     console.log('Found comment:', content);
+ 
+     return {contentId,content}
     
   } else {
    
@@ -421,21 +392,25 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
 
 
     //  const posts = 
-     const post = await getCachedPosts(postId)
+     const post = await getPostSuperFast(postId)
      content = post;
      
-     contentId = postId
+     contentId = post.id
 
      console.log('Found post:', content, contentId);
+     return {contentId, content}
   }
-    return { contentId, content};
 }
       
-function checkMainPostSharePost(event,postDiv){
-   modal.classList.add(
-    postDiv.contains(postDiv.querySelector('.shared_post')) 
-    ? 
-    "is_shared_post" : 'actual')
+function checkMainPostAndSharePost(event,postDiv){
+
+    if(postDiv.querySelector('.shared_post')){
+        modal.classList.remove('actual')
+        modal.classList.add('is_shared_post')
+    }else{
+        modal.classList.remove('is_shared_post')
+        modal.classList.add('actual')
+    }
 
   event.stopPropagation()
   modal.innerHTML = ''
@@ -643,7 +618,6 @@ function loadSpecificPostModal(postOrCommentid){
 }
 
     modal.addEventListener('click', async(e)=>{
-      console.log(modal)
     const editBtnOfModal = e.target.classList.contains('postEditBtn')
     const DeleteBtnOfModal = e.target.classList.contains('postDeleteBtn')
      const postOwnerProfileLink = e.target.classList.contains('user-profile-link')
@@ -651,30 +625,30 @@ function loadSpecificPostModal(postOrCommentid){
      const userChatLink = e.target.classList.contains('userChatLink')
        const postId = modal.dataset.postId; 
       let target = e.target
-
-      if(target.href) window.location.href = target.href
      
-
       if(editBtnOfModal && modal.classList.contains('actual')){
-         
+           modal.classList.remove('is_shared_post')
           e.preventDefault()
           editPostContainer.innerHTML = ''
           await loadEditForm(postId,editPostContainer)
-          editPostContainer.style.zIndex = 20000;
          
       }else if(DeleteBtnOfModal){
         e.preventDefault()
         await deletePost(postId)
       }
+      else if(e.target.classList.contains('user-chat-link')){
+        e.preventDefault()
+        const link = getChatUrl(e)
+         console.log(link)
+         hideHomeContent()
+        goToChatPage(link)
+      }else if(e.target.classList.contains('user-profile-link')){
+        if(target.href) window.location.href = target.href
+      }
      
     })
 
    
-
-
-    
-
-
 {/* //load edit form */}
 const loadEditForm = async(postId,editPostContainer)=>{
   const editingPost =  document.createElement('div')
@@ -691,54 +665,34 @@ const loadEditForm = async(postId,editPostContainer)=>{
             mediaTag.setAttribute('name', 'previewFile')
             mediaTag.classList.add('previewFile')
             
-            editingPost.innerHTML = `
-                <h1 id="update-title">Update Post</h1>
-                <form id="updateForm" data-post-id="${post.id}" enctype="multipart/form-data">
-                <input type="text" name="newTitle" id="newTitle" value="${post.title}">
-                <textarea name="newDesc" id="newDesc">${post.description}</textarea>
-                <div class="file-input flex-class">
-                     ${mediaTag.outerHTML}
-                     <button class="newImage">New Image</button>
-                    <input type="file" name="newFile" id="newFile" class="hiddenFile" accept="video/*,image/*" style="display:none">
-                </div>
-                <button class="updateButton">Update</button>
-                 <button class="closeModal">Cancel</button>
-            </form>
+editingPost.innerHTML = `
+<h1 id="update-title" class="updateTitle">Update Post</h1>
+
+<form id="updateForm" class="updateForm" data-post-id="${post.id}" enctype="multipart/form-data">
+  <input type="text" name="newTitle" id="newTitle" class="updateInput" value="${post.title}">
+
+  <textarea name="newDesc" id="newDesc" class="updateTextarea">${post.description}</textarea>
+
+  <div class="fileInputContainer">
+    ${mediaTag.outerHTML}
+    <button type="button" class="newImageBtn">New Image</button>
+    <input type="file" name="newFile" id="newFile" class="fileInput" accept="video/*,image/*">
+    </div>
+    
+
+  <div class="updateActions">
+    <button type="submit" class="updateButton">Update</button>
+    <button type="button" class="closeModal">Cancel</button>
+  </div>
+</form>
+
             `
 
             editPostContainer.appendChild(editingPost)
-            editPostContainer.style.display = "block"
+            editPostContainer.style.display = "flex"
     }
 }
 
-// clicking the eidt button functionlity
-editPostContainer.addEventListener('click', (e)=>{
-
-        const newImageBtn = e.target.classList.contains("newImage")
-        const updateEditFormButton = e.target.classList.contains("updateButton")
-        const cancelUpdateButton = e.target.classList.contains("closeModal")
-       if(newImageBtn){
-        const parentDiv = e.target.parentElement
-            const targetFileBtn = parentDiv.querySelector('.hiddenFile')
-            targetFileBtn.click()
-            e.preventDefault()
-            // getting the display file
-            targetFileBtn.addEventListener('change', handleFilePreview)
-       }else if(updateEditFormButton){
-         const updateform = e.target.parentElement
-         console.log(updateform)
-         updateform.addEventListener('submit', async(e)=>{
-            e.preventDefault()
-            const post_id = updateform.dataset.postId
-            console.log(updateform)
-            await handleUpdatePost(post_id, updateform)
-         })
-       }else if(cancelUpdateButton){
-        e.preventDefault()
-        editPostContainer.style.display= "none"
-
-       }
-    })
 
     // previewing the uploaded file
     function handleFilePreview(e){
@@ -789,7 +743,7 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
                 <img class="user-profile" src="${comment.author.profile_picture}" alt="user-profile">
                 ${!comment.is_owner?`
                 <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
-                `:`<strong id="author"><a class="user-link" href="/loginUserProfile/${comment.author.user_token}">You</a></strong>`}
+                `:`<strong id="author"><a class="user-link" href="/userProfile/${comment.author.user_token}">You</a></strong>`}
                 <div class="text-commentGear">
                      <p id="text">${comment.text}</p>
                      ${comment.is_owner?`

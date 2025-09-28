@@ -1,130 +1,227 @@
+const token = window.location.pathname.split('/')[2]
+const userId = window.location.pathname.split('/').pop()
 
-const token = window.location.pathname.split('/')[2];
-const userId = window.location.pathname.split('/').pop();
+const container = document.querySelector('.userProfileContainer')
 const baseUrl = 'http://localhost:3000/';
-const profileContained = new Set();
-const mediaList = document.querySelector('.media-list');
+const mediaList = document.querySelector('.mediaList');
+
+
+
+function toggleFullscreen(event){
+  let existingModal = document.querySelector('.fullscreenModal') 
+  // console.log(existingModal.classList.contains('fullscreenModal'))
+  if(existingModal) { document.body.removeChild(existingModal) }
+
+  else{
+  const mediaModal = document.createElement('div')
+  const clonedMedia = event.target.cloneNode(true)
+  mediaModal.innerHTML = ''
+  mediaModal.append(clonedMedia)
+  document.body.appendChild(mediaModal)
+  mediaModal.classList.add('fullscreenModal')
+  event.stopPropagation()
+
+  }
+}
+
+document.addEventListener('click', (e)=>{
+  if(e.target.closest('.fullscreenModal')) toggleFullscreen(e)
+})
+
+mediaList.addEventListener('click', (e)=>{
+  console.log('media list ,',e.target.tagName)
+  if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO'){
+     console.log('yes its an iamg or vid')
+     toggleFullscreen(e)
+  }
+})
+
+
 
 // Buttons directly
 const postBtn = document.querySelector('.postedPics');
-const profileBtn = document.querySelector('.profiePics');
+const profileBtn = document.querySelector('.profilePics');
 const videosBtn = document.querySelector('.videos');
+const messageBtn = document.querySelector('.chatBtn');
+const leftContainer = document.querySelector('.userInfo')
+const securityInfoContainer = document.querySelector('.securityInfo')
+const profileHeaderContainer = document.querySelector('.profileHeader')
 
-let userPost = [];
-let profilePic = null;
-
+let loginUserPosts = [];
+let loginProfile = null;
+let owner;
 window.addEventListener('DOMContentLoaded', async () => {
     const loading = document.getElementById('loading')
-loading.classList.remove('hidden')
-// Load content...
+    loading.classList.add('active')
+    // Load content...  
 
   try {
     const res = await axios.get(`/api/userProfile/${token}/${userId}`);
     if (res.status !== 200) throw new Error('Server error');
 
-    const { user, posts } = res.data;
+
+    const { user } = res.data;
+    console.log(user)
+      owner = res.data.user;
 
     document.title = `${user.firstname}'s profile`;
-    document.querySelector('.user').textContent = `${user.firstname}'s Uploaded files`;
 
-       const leftContainer = document.querySelector('.left-container')
-        console.log(leftContainer)
+       
+    leftContainer.innerHTML = loadUserInfo(user)
+    profileHeaderContainer.innerHTML = loadprofileHeader(user)
+    securityInfoContainer.innerHTML = loadSecurityInfo(user)
 
-        leftContainer.innerHTML = loadUserInfo(user)
 
+    function loadprofileHeader(){
 
+      const username = user.firstname.split(' ')[0]
+      const lastname = user.firstname.split(' ').pop()
+
+      return `<header class="profileHeader">
+  <img src="${user.profilepicture}" alt="${username} profile picture" class="profilePhoto">
+
+  <div class="profileDetails">
+    <h1 class="profileName">${username} ${lastname}</h1>
+    <p class="profileUsername">@${username}</p>
+    <p class="profileBio">"Passionate about capturing the world through my lens 📸 | Traveler, coffee enthusiast, and lifelong learner 🌍☕ | Sharing moments, stories, and creativity one post at a time ✨"</p>
+
+    <div class="profileStats">
+      <div class="stat">
+        <span class="statNumber">10</span>
+        <span class="statLabel">Posts</span>
+      </div>
+      <div class="stat">
+        <span class="statNumber">400</span>
+        <span class="statLabel">Followers</span>
+      </div>
+      <div class="stat">
+        <span class="statNumber">$50</span>
+        <span class="statLabel">Following</span>
+      </div>
+    </div>
+
+    <div class="profileActions">
+      ${!user.is_owner ?
+      `<button class="followBtn">${user.isFollowing ? 'Unfollow' : 'Follow'}</button>
+      <button class="chatBtn">Message</button>
+      `:``}
+    </div>
+  </div>
+</header>
+`
+    }
+    function loadSecurityInfo(user){
+      return `
+      ${user.is_owner ?`
+       <h2 class="securityTitle">Security Info</h2>
+    
+    <p><strong>Email:</strong> ${user.email} <button class="editBtn">Edit</button></p>
+
+    ${user.password ? `
+      <p>
+        <strong>Password:</strong> *********  
+        <span class="editBtn">Edit</span> 
+        <span class="viewBtn">View</span>
+      </p>
+    ` : ''}
+
+    <button class="disableAccountBtn">Disable account</button>
+        `:""}
+      `
+    }
     // Show post images on page load
-    userPost = posts.map(post =>{ return post.mediafile})
-     console.log(userPost)
-     profilePic = user
-    loadUploadedImages()
+    loginUserPosts = user.posts.map(post =>{ 
+        return post   
+      })
+     loginProfile = user
+        renderPhotos()
 
   } catch (err) {
     console.error('Failed to load user media:', err);
   }
-  loading.classList.add('hidden')
+  loading.classList.remove('active')
 });
 
 // Event listeners for buttons
-postBtn.addEventListener('click', () => {
-  clearMedia();
-  loadUploadedImages()
-});
+
 
 function loadUploadedImages(){
-    const uploadedPhtos = userPost.map(post =>{
-    
-      const imgTypes = ['.png' , '.gif' , '.webp' ,'.bmp' , '.tiff','.tif' ,'.heic' , '.avif']
-      return imgTypes.some(ext => post.toLowerCase().includes(ext))
+  const imgTypes = ['jpg','.png' , '.gif' , '.webp' ,'.bmp' , '.tiff','.tif' ,'.heic' , '.avif']
+        console.log(loginUserPosts)
+    const uploadedPhtos = loginUserPosts.filter(post =>{
+        console.log(post.mediafile)
+       return post.parent_share_id === null && imgTypes.some(ext => post.mediafile.toLowerCase().includes(ext)) 
+    })
+
+       const uploadedVideos = loginUserPosts.filter(post =>{
+     return post.parent_share_id === null && !imgTypes.some(ext => post.mediafile.toLowerCase().includes(ext)) 
   })
 
-  if(!uploadedPhtos || uploadedPhtos.length === 0) return mediaList.innerHTML = "<h2>No uploaded phtos yet </h2>"
-  renderMedia(userPost, 'post', profilePic);
+  return {uploadedPhtos,uploadedVideos}
   }
 
 
-profileBtn.addEventListener('click', () => {
+profileHeaderContainer.addEventListener('click', (e)=>{
+  console.log('profile header clicked')
+  if(e.target.classList.contains('chatBtn')){
+    // e.preventDefault()
+    console.log('message btn clicked', owner)
+     window.location.href = `/api/chatpage/${owner.id}/${owner.usertoken}`
+  }
+})
+
+  postBtn.addEventListener('click', () => {
   clearMedia();
-  renderMedia(userPost, 'profile', profilePic);
+  renderPhotos()
+});
+
+profileBtn.addEventListener('click', () => {
+  console.log('profie buton clicked')
+  clearMedia();
+  renderProfiles()
 });
 
 videosBtn.addEventListener('click', () => {
   clearMedia();
-  const posts = userPost.find(post =>{ return post.includes('videos')})
- console.log(posts)
-  if(posts){
-    renderMedia(userPost, 'videos', profilePic);
-  }else{
-    mediaList.innerHTML = "<h2>No videos yet </h2>"
-  }
-});
-
+  renderVideos()
+})
 
 // Show images
-function renderMedia(media, type, user){
-     if (type === 'post' && media) {
-     const images = media.filter(image =>{
-        return !image.includes('videos')
-     })
-      appendImage(images);
-    }else if (type === 'profile' && user.profilepicture) {
-      appendImage(user.profilepicture);
-    }else if(type === 'videos' && media){
-      const videos = media.filter(video =>{
-         return video.includes('videos')
-      })
-      appendImage(videos);
+function renderPhotos(){
+       const {uploadedPhtos} = loadUploadedImages()
+    if (!uploadedPhtos || uploadedPhtos.length === 0) return mediaList.innerHTML = '<p>No photos yet</p>'
+        uploadedPhtos.forEach(img => appendImage(img.mediafile)) 
     }
+
+function renderVideos(){
+   const {uploadedVideos} = loadUploadedImages()
+   if(!uploadedVideos || uploadedVideos.length === 0) return mediaList.innerHTML = '<p>No videos yet</p>'
+      uploadedVideos.forEach(video => appendImage(video.mediafile))
+}
+
+function renderProfiles(){
+  if (!loginProfile) return mediaList.innerHTML = '<p>No profile photos yet</p>'
+  appendImage(loginProfile.profilepicture)
 }
 
 // Add image
 function appendImage(path) {
- if(Array.isArray(path)){
-     path.forEach(post =>{
 
  let file = null;
-   const normalizedPost = post.replace(/\\/g, '/');
+   const normalizedPost = path.replace(/\\/g, '/') 
     file = normalizedPost.includes('videos/')? 
      document.createElement('video') : file = document.createElement('img')
-
+   console.log(file)
+    //  on when zoomed after clicking on full screen !
  if(file.tagName === 'VIDEO'){
     file.controls = true;
  }
 
-  file.src = baseUrl + normalizedPost;
-  file.alt = 'media';
-  file.loading = 'lazy';
-  file.className = 'w-full h-auto rounded shadow';
-  mediaList.appendChild(file);
-  })
-  }else{
-  const img = document.createElement('img');
-  img.src = baseUrl + path.replace(/\\/g, '/');
-  img.alt = 'media';
-  img.loading = 'lazy';
-  img.className = 'w-full h-auto rounded shadow';
-  mediaList.appendChild(img);
-  }
+  file.src = !normalizedPost.startsWith('https') ? baseUrl + normalizedPost : normalizedPost;
+ file.alt = 'media';
+file.loading = 'lazy';
+file.className = 'mediaItem';
+mediaList.appendChild(file);
  
 }
 
@@ -136,24 +233,18 @@ function clearMedia() {
 
 // load side bar left user info
 function loadUserInfo(user){
-       return `       
-       <div class="flex">
-           <h2 class="text-xl font-semibold mb-4" style="width:fit-content">${user.firstname}'s Info</h2>
-        <a href="/api/chatpage/${user.id}" id="chatUser"clicker px-4 py-2 text-white rounded transition style="margin-left: auto">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="35" height="35" fill="#0084ff">
-            <path d="M18 2C9.2 2 2 8.8 2 17.2c0 4.7 2.1 8.8 5.5 11.6v5.2l5.1-2.8c1.6.4 3.3.6 5.4.6 8.8 0 16-6.8 16-15.2S26.8 2 18 2zm2.6 18.6l-4.3-4.5-7.3 4.5 8.8-9 4.3 4.5 7.3-4.5-8.8 9z"/>
-          </svg>
-        </a >
-       </div>
-        <div class="space-y-2 text-sm">
-          <p><strong>Name:</strong> ${user.firstname}</p>
-          <p><strong>Groups:</strong></p>
-          <ul class="list-disc list-inside text-gray-600">
-            <li>Photography Club</li>
-            <li>Travel Buddies</li>
-          </ul>
-        </div>
-        `
+       return `
+    <div class="userInfoHeader">
+      <h2 class="userInfoTitle">${user.firstname}'s Info</h2>
+    </div>
+
+    <div class="userInfoBody">
+      <p><strong>Name:</strong> ${user.firstname}</p>
+      <p><strong>Groups:</strong></p>
+      <ul class="userGroups">
+        <li>Photography Club</li>
+        <li>Travel Buddies</li>
+      </ul>
+    </div>
+`
     }
-
-

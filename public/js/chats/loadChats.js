@@ -1,44 +1,59 @@
 
+const chatsContainer = document.querySelector('.chat-container')
+const bodyContainer = document.querySelector('.chats-posts-users')
+ 
+
 let oneToOnChats;
-window.addEventListener('DOMContentLoaded', async(e)=>{
+
+async function fetchAndLoadChats(receiverId, userToken){
     const res = await axios.get(`/api/allChats/${receiverId}/${userToken}`)
-     console.log(res.data)
     if(res.status === 200 && res.data.success){
         const chatBuddy = res.data.sender.firstname
-            loadChatBuddyName(chatBuddy)
            oneToOnChats = res.data.chats;
-             if(oneToOnChats.length === 0){
-                console.log('no chat yet !')
-                messageContainer.innerHTML = '<p class="noChat">No chat yet !</p>'
-                return;
-             }
-        loadAllOneToOneChats()
+           return oneToOnChats
     }
-})
-
-
-function loadChatBuddyName(buddyname){
-    const msgReceiverName = document.querySelector('#receiver')
-         msgReceiverName.textContent = buddyname;
+      return 'oops ! something went wrong fetching and loading chats'
 }
 
-function loadAllOneToOneChats(){
+
+function showHide(showingContainer,hidingContainer){
+
+if(showingContainer.classList.contains('hide')){
+// showing hiding container 
+showingContainer.classList.remove('hide')
+// hiding showing container
+hidingContainer.classList.remove('active')
+}else{
+    showingContainer.classList.add('hide')
+    hidingContainer.classList.add('active')
+}
+
+}
+
+function loadInitialChats(oneToOnChats){
+ const messageContainer = document.querySelector('.chat-container1')
+
+        
     oneToOnChats.forEach(chat => {
-            console.log(chat)
+         const direction = chat.sender_id === parseInt(loggedInUserId) ? 
+        'sendingMessage' : 'receivingMessage';
+        const messageDiv = document.createElement('div')
+        messageDiv.classList.add(direction, 'message')
         const message = chat.message;
         const date = chat.created_at;
-        const direction = chat.sender_id === parseInt(receiverId) ? 'receivingMessage' : 'sendingMessage';
-            loadInitialChats(message, date , direction)
-    })
-}
-
-function loadInitialChats(message, date, direction){
-     const messageDiv = document.createElement('div')
-    messageDiv.classList.add(direction, 'message')
-  const chatContent = ` 
+       
+    messageDiv.innerHTML = ` 
   <p class="text">${message} <span class="messageGear">...</span></p>
         <p class="date">${formatDate(date)}</p>
     `
-    messageDiv.innerHTML = chatContent
+
     messageContainer.appendChild(messageDiv)
+
+    })
+
 }
+
+// function loadChatBuddyName(buddyname){
+//     const msgReceiverName = document.querySelector('#receiver')
+//          msgReceiverName.textContent = buddyname;
+// }
