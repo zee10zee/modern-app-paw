@@ -5,29 +5,8 @@ const notifDropdown = document.getElementById('notifDropdown')
 
 function toggleDropdown(e,button) {
   
-  hideDropdownButVisible()
-
   const rect = button.getBoundingClientRect()
-  if (window.innerWidth >= 768) {
-  // Desktop → center under the button
-  notifDropdown.style.left = `${rect.left + rect.width / 2 - notifDropdown.offsetWidth / 2}px`
-  notifDropdown.style.top = `${rect.bottom + 5}px`;
-} else {
-  // Mobile → align with screen left edge or button
-//   notifDropdown.classList.add('w-full')
-  notifDropdown.style.left = `10px` // or `${rect.left}px` if you want it to follow button
-  notifDropdown.style.bottom = `50px`
-}
    showNotifDropdown(e,notifDropdown)
-}
-
-function hideDropdownButVisible(){
-  // Temporarily show it to get width
-  notifDropdown.style.display = "block";
-  notifDropdown.style.visibility = "hidden"; // keep invisible
-  const width = notifDropdown.offsetWidth; 
-  notifDropdown.style.visibility = "visible"; // show properly
-  notifDropdown.style.position = "fixed";
 }
 
 notifBtnDesktop.addEventListener('click', e => toggleDropdown(e,e.currentTarget))
@@ -107,8 +86,23 @@ notif_item.innerHTML = `
     <small class="notif_date">${formatDate(date)}</small>
   </a>  
 `;
-notifDropdown.prepend(notif_item);
 
+notifDropdown.innerHTML = `
+  <div class="notif_topbar">
+    <h3 class="notif_title">Notifications</h3>
+    <button class="notif_close" aria-label="Close">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+  <ul class="notif_list">
+    ${notif_item.outerHTML}
+  </ul>
+`;
 
 }
 

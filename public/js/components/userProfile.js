@@ -52,7 +52,6 @@ let loginProfile = null;
 let owner;
 window.addEventListener('DOMContentLoaded', async () => {
     const loading = document.getElementById('loading')
-    loading.classList.add('active')
     // Load content...  
 
   try {
@@ -65,6 +64,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       owner = res.data.user;
 
     document.title = `${user.firstname}'s profile`;
+    loading.classList.add('deactive')
 
        
     leftContainer.innerHTML = loadUserInfo(user)
@@ -146,7 +146,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 
 function loadUploadedImages(){
-  const imgTypes = ['jpg','.png' , '.gif' , '.webp' ,'.bmp' , '.tiff','.tif' ,'.heic' , '.avif']
+  const imgTypes = ['jpg','.png' , '.gif' , '.webp' ,'.bmp' ,'svg', '.tiff','.tif' ,'.heic' , '.avif']
         console.log(loginUserPosts)
     const uploadedPhtos = loginUserPosts.filter(post =>{
         console.log(post.mediafile)

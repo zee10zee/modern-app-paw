@@ -55,13 +55,8 @@ const postDiv = inputComment.closest('.posts')
        const updatedComment = response.data.updatedComment
     //    return console.log(updatedComment)
 
-       const updatedCommentDate = new Date(updatedComment.created_at).toLocaleDateString('en-US',{
-                weekday : 'short', 
-                month : 'short',
-                year : 'numeric'
-             });
        commentDiv.innerHTML = `
-       
+    
                 <img class="user-profile ownerPhoto" src="${updatedComment.user_profile_picture}" alt="user-profile">
                 ${!updatedComment.is_owner ?`
                 <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${updatedComment.usertoken}/${updatedComment.user_id}">${updatedComment.author_name}</a></strong>
@@ -72,7 +67,7 @@ const postDiv = inputComment.closest('.posts')
                      <div id="gear" data-comment-id = "${updatedComment.id}" class="gear">⋮</div>
                      `:''}
                 </div>
-                <small id="date" class="date">${updatedCommentDate}</small>
+                <small id="date" class="date">${getTimeAgo(updatedComment.created_at)}</small>
                 
                `
            inputComment.classList.remove('editingMode');

@@ -1,5 +1,19 @@
 const signupForm = document.getElementById('signUpForm')
 
+const profileLogo = document.getElementById('profile-logo')
+
+//clicking the input file explicityly for file preview
+const signUpFileInput = document.querySelector('#profilePicture')
+
+signUpFileInput.addEventListener('change', (e)=>{
+     const profileLogo = document.querySelector('#profile-logo')
+     if(!profileLogo) return console.log('no profile logo')
+     handleFilePreview(e, profileLogo)
+})
+
+profileLogo.addEventListener('click', (e)=>{
+    document.getElementById('profilePicture').click()
+})
 
 signupForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
@@ -42,7 +56,10 @@ signupForm.addEventListener('submit', async(e)=>{
     }
 
 })
-
+ function isVideo(filename){
+      return /\.(mp4|webm|ogg)$/i.test(filename);
+  }
+  
 window.loadActiveUserStoredInfoOnSignup = (id,name,profilePicture,token)=>{
     sessionStorage.setItem('loggedIn_userId', id)
     sessionStorage.setItem('loggedIn_name', name)

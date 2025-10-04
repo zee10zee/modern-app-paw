@@ -1,66 +1,114 @@
+
  let chatListContainer = document.querySelector('.chat-container')
+ const bottomNav = document.querySelector('.bottom-nav')
+const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
+
     // const socket = io()
-    const chatsMap = new Map()
-      window.addEventListener('DOMContentLoaded', async(e)=>{
-        // fetch prevous data
-        await fetchAndRenderChats()
+   const chatsMap = new Map()
+
+window.addEventListener('DOMContentLoaded', async(e)=>{
+  chatListContainer.innerHTML = loadSpinner('your chats')
+
+  await fetchAndRenderChats(chatListContainer) 
 })
 
- async function fetchAndRenderChats(){
+     const mainHomeContainer = document.querySelector('.chats-posts-users')
+
+ bottomNav.addEventListener('click', async(e)=>{
+  console.log(e.target, e.target.classList.contains('feeds-btn'))
+  if(e.target.classList.contains('chats-btn')){
+
+    if(window.innerWidth > 800) return 
+    postsContainer.innerHTML = ''
+    postsContainer.innerHTML = loadSpinner('chats')
+   
+    await fetchAndRenderChats(postsContainer)
+
+  }else if(e.target.closest('.feeds-btn')){
+    console.log('the feed btn clicked')
+    // mainHomeContainer.innerHTML
+    postsContainer.innerHTML = ''
+          renderPosts(Allposts)
+          setupEventListener()
+  }
+ })
+
+
+ document.addEventListener('click',(e)=>{
+  if(!e.target.classList.contains('chats-btn')){
+    console.log('chats container should be hidden')
+  }
+ })
+
+
+ async function fetchAndRenderChats(container){
+   // fetch prevous data
+       const chats =  await fetchChatsList()
+        //   to order based on the last message of each user
+      loadAndCheckExistingMessages(chats,chatsMap)
+
+      console.log(chats)
+    //  to make the map array , so to access them and loop them easily
+    const chatsarray = Array.from(chatsMap.values())
+
+    container.innerHTML = ''
+
+    if(!Array.isArray(chats)) return container.innerHTML = chats
+
+    chatsarray.forEach(chat => previewLastMessages(chat,container))
+ }
+
+
+ async function fetchChatsList(){
    const res = await axios.get('/api/userChatList');
      
     if((res.data.success && res.status === 200) || res.data){
           const chats = res.data.chats;
-          console.log(chats)
+          console.log(chats) 
           const emptyMsg = res.data.emptyMessage;
           if(!chats || chats.length == 0)  return chatListContainer.innerHTML = emptyMsg
-
-
-        //   to order based on the last message of each user
-             loadAndCheckExistingMessages(chats,chatsMap)
-
-           const chatsarray = Array.from(chatsMap.values())
-               chatListContainer.innerHTML = ''
-             
-            chatsarray.forEach(chat => {
-                previewLastMessages(chat,chatListContainer)
-            }) 
+          return chats
     }
 };
 
 
 
 socket.on('received-message', (data)=>{
-               console.log(data.target)
+console.log(data.target)
 
-                const newChat = data.newMsg
-                console.log(newChat, ' new chat ')
-                const receiver_name =  data.receiver_name
-                const sender_name = data.sender_name;
-                const receiver_token = data.receiver_token
-                const sender_token = data.sender_token
+const newChat = data.newMsg
+console.log(newChat, ' new chat ')
+const receiver_name =  data.receiver_name
+const sender_name = data.sender_name;
+const receiver_token = data.receiver_token
+const sender_token = data.sender_token
 
+if(data.target === 'sender'){
+      console.log('sender data ', data)
+      const senderChat = chatListContainer.querySelector(`.chatItem[data-user-id="${data.newMsg.receiver_id}"]`)
+      console.log(senderChat, 'SENDER CHAT', data, data.newMsg.receiver_id)
+      if(senderChat){
+        updateExistingChat(newChat,{receiver_name},senderChat)
+      }else{
+        previewLastMessages(newChat, chatListContainer,data)
+      }
+}else{
+    updateHomeMessageList(data)
+    console.log(data.newMsg, data.sender_name)
+}
 
-                 if(data.target === 'receiver'){
-
-                      updateHomeMessageList(data)
-
-                      console.log(data.newMsg, data.sender_name)
-                      displayMessage(data.newMsg.message, formatDate(data.newMsg.created_at), 'receivingMessage')
-                      adoptScreenHeight()
-                  }
-                  else if(data.target === 'sender'){
-                     console.log('sender data ', data)
-                     const senderChat = chatListContainer.querySelector(`.chatItem[data-user-id="${data.newMsg.receiver_id}"]`)
-                     console.log(senderChat, 'SENDER CHAT', data, data.newMsg.receiver_id)
-                     if(senderChat){
-                        updateExistingChat(newChat,{receiver_name},senderChat)
-                     }else{
-                        previewLastMessages(newChat, chatListContainer,data)
-                     }
-                }
-        
 })
+
+function displayMessage(message,date, sendingMessage){
+    const messageHTML = document.createElement('div')
+    messageHTML.classList.add(sendingMessage, 'message')
+  const chatContent = ` 
+  <p class="text">${message} <span class="messageGear">...</span></p>
+        <p class="date">${date}</p>
+    `
+    messageHTML.innerHTML = chatContent
+    messageContainer.appendChild(messageHTML)
+}
 
 function updateHomeMessageList(data){
    const newChat = data.newMsg
@@ -121,10 +169,8 @@ chatItem = document.createElement('a')
 chatItem.classList.add('chatItem')
 
 chatItem.dataset.userId = lastChat.sender_id === parseInt(loggedInUserId) 
-  ? lastChat.receiver_id 
+  ? lastChat.receiver_id
   : lastChat.sender_id
-
- console.log(meta, 'data for tokens')
 
 chatItem.href = lastChat.receiver_id === parseInt(loggedInUserId) 
   ? `/api/chatpage/${lastChat.sender_id}/${senderToken}` 
@@ -148,7 +194,7 @@ chatItem.innerHTML = `
   </div>
 `
 console.log('new chat item before appending = ', chatItem)
-container.appendChild(chatItem)
+container.prepend(chatItem)
 
 }
 

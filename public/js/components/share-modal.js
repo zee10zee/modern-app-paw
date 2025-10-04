@@ -199,11 +199,14 @@ function updateSharedpostOnUI(sharedPost,originalPost){
 
     sharePostBody+= `
                 <!-- Shared Post -->
-    <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
 
     <div class="sharedPostContent">
       <div class="sharedPostTop">
-        <span id="date">${new Date(sharedPost.created_at).toLocaleDateString()}</span>
+       <div class="profile-date"> 
+          <img class="ownerPhoto" src="${sharedPost.sharer_profile}" alt="Profile picture">
+          <span id="date">${new Date(sharedPost.created_at).toLocaleDateString()}</span>
+       </div>
+
         ${sharedPost.is_share_post_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
       </div>
 
@@ -258,7 +261,7 @@ function updateSharedpostOnUI(sharedPost,originalPost){
                       <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
                  </form>
                   <div class="commentsContainer"></div>
-                 <div class="container commentEditContainer" id="commentEditContainer"></div>`
+                 <div class="commentEditContainer" id="commentEditContainer"></div>`
    
     shareDiv.innerHTML = sharePostBody + comments_area
        postsContainer.prepend(shareDiv)

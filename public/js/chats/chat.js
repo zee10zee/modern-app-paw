@@ -19,7 +19,15 @@ s.on('user-typing', username =>{
     adoptScreenHeight()
 })
 
-// listen to receiving messaget
+s.on('received-message', (data)=>{
+if(data.target === 'receiver'){
+    // updateHomeMessageList(data)
+    const lastMessageData = localStorage.setItem('lastMsgData', data)
+    console.log(data.newMsg, data.sender_name)
+    displayMessage(data.newMsg.message, formatDate(data.newMsg.created_at), 'receivingMessage')
+    adoptScreenHeight()
+}
+})
 
 
 const submitBtn = document.querySelector('.chatSubmitBtn')
@@ -97,9 +105,32 @@ function removeTypingIndicator(){
     }
 }
 
-
 function adoptScreenHeight(){
      if(messageContainer.scrollHeight > messageContainer.clientHeight){
         messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
     }
+}
+
+// Detect keyboard show/hide
+let initialHeight = window.innerHeight;
+
+window.addEventListener('resize', () => {
+    const currentHeight = window.innerHeight;
+    
+    if (currentHeight < initialHeight) {
+        // Keyboard is open
+        document.querySelector('.inputAndSentBtn').style.marginBottom = '0';
+        // Scroll to bottom to keep input in view
+        scrollToBottom();
+    } else {
+        // Keyboard is closed
+        document.querySelector('.inputAndSentBtn').style.marginBottom = '0';
+    }
+    
+    initialHeight = currentHeight;
+});
+
+function scrollToBottom() {
+    const messagesContainer = document.querySelector('.chat-messages');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }

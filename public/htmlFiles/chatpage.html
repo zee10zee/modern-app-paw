@@ -8,13 +8,27 @@
     <title>chat page</title>
 </head>
 <body>
-    
+    <div class="chatPageContainer">
+        <div class="chat-container1">
+            <!-- Messages go here -->
+        </div>
 
-<!-- 
+        <div class="inputAndSentBtn">
+            <input type="text" name="chatInput" id="chatInput" class="chatInput" placeholder="Type a message...">
+            <button class="chatSubmitBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13"/>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+            </button>
+        </div>
+</div>
+
+
     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
    <script src="/socket.io/socket.io.js"></script>
    <script src="/js/chats/chat.js"></script>
    <script src="/js/chats/loadChats.js"></script>
-   <script src="/js/utils/navigation.js"></script> -->
+   <!-- <script src="/js/utils/navigation.js"></script> -->
 </body>
 </html>

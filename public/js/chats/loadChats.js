@@ -1,9 +1,20 @@
 
 const chatsContainer = document.querySelector('.chat-container')
 const bodyContainer = document.querySelector('.chats-posts-users')
- 
+const url = window.location.pathname.split('/').filter(segment => segment)
 
 let oneToOnChats;
+const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
+console.log(loggedInUserId)
+
+
+window.addEventListener('DOMContentLoaded', async(e)=>{
+    const receiverId = url[2]
+    const userToken = url[3]
+  const oneToOneChats = await fetchAndLoadChats(receiverId,userToken)
+         loadInitialChats(oneToOneChats)
+})
+
 
 async function fetchAndLoadChats(receiverId, userToken){
     const res = await axios.get(`/api/allChats/${receiverId}/${userToken}`)
@@ -16,19 +27,6 @@ async function fetchAndLoadChats(receiverId, userToken){
 }
 
 
-function showHide(showingContainer,hidingContainer){
-
-if(showingContainer.classList.contains('hide')){
-// showing hiding container 
-showingContainer.classList.remove('hide')
-// hiding showing container
-hidingContainer.classList.remove('active')
-}else{
-    showingContainer.classList.add('hide')
-    hidingContainer.classList.add('active')
-}
-
-}
 
 function loadInitialChats(oneToOnChats){
  const messageContainer = document.querySelector('.chat-container1')
@@ -48,6 +46,7 @@ function loadInitialChats(oneToOnChats){
     `
 
     messageContainer.appendChild(messageDiv)
+    
 
     })
 

@@ -73,13 +73,6 @@ const updateCommentUI = (postId,newComment)=>{
             const commentsContainer = postDiv.querySelector('.commentsContainer')
             const prevousLebeledComment = commentsContainer.querySelector('.new')
             if(prevousLebeledComment) commentsContainer.classList.remove('new')
-
-
-      const newCommentDate = new Date(newComment.created_at).toLocaleDateString('en-US',{
-                weekday : 'short', 
-                month : 'short',
-                year : 'numeric'
-             });
       
             const commentHTML = 
             `
@@ -94,7 +87,7 @@ const updateCommentUI = (postId,newComment)=>{
                      <div id="gear" data-comment-id = "${newComment.id}" class="gear">⋮</div>
                      `:''}
                 </div>
-                <small id="date" class="date">${newCommentDate}</small>
+                <small id="date" class="date">${getTimeAgo(newComment.created_at)}</small>
                 
                 </div>
             `

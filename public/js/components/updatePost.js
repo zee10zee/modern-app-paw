@@ -15,7 +15,11 @@ editingPostContainer.addEventListener('click', async(e)=>{
 
        else if(e.target.classList.contains('fileInput')){
         // getting the display file
-        e.target.addEventListener('change', handleFilePreview)
+           const fileContainer  = e.target.closest('.fileInputContainer')
+           e.target.addEventListener('change', (e)=>{
+            handleFilePreview(e,fileContainer)
+           })
+
        }
        
        else if(updateEditFormButton){
@@ -29,42 +33,6 @@ editingPostContainer.addEventListener('click', async(e)=>{
         editPostContainer.style.display= "none"
        }
     })
-
-    // previewing the uploaded file
-    function handleFilePreview(e){
-      const selectedFile = e.target.files[0]
-      const previewContainer = e.target.closest('.fileInputContainer')
-      console.log(previewContainer)
-      let isVideoFile = isVideo(selectedFile.name)
-      let previewFile = previewContainer.querySelector('video,img')
-       
-      if(!previewFile){
-        const mediaFile = isVideo(selectedFile.name)? 'video':'img'
-        previewFile = document.createElement(mediaFile)
-        previewContainer.prepend(previewFile)
-      }else{
-      // Replace the element if type changed
-      if ((isVideoFile && previewFile.tagName !== 'VIDEO') ||
-          (!isVideoFile && previewFile.tagName !== 'IMG')) {
-        const newFile = document.createElement(isVideoFile ? 'video' : 'img');
-        previewContainer.replaceChild(newFile, previewFile);
-        previewFile = newFile;
-      }
-    }
-      const reader = new FileReader()
-      previewFile.src = ''
-      reader.onload = (e)=>{
-       previewFile.src = e.target.result
-      }
-
-      if(selectedFile.type.startsWith('video/')){
-         reader.readAsDataURL(selectedFile)
-      }else if(selectedFile.type.startsWith('image/')){
-        reader.readAsDataURL(selectedFile)
-      }else{
-        console.log('please upload only vidoes and images')
-      }
-    }
 
      // hande post update
 
@@ -82,7 +50,7 @@ editingPostContainer.addEventListener('click', async(e)=>{
          console.log(response.data)
          if(response.status === 200){
         const updatedPostResult = response.data.updatedPost
-        // return console.log(updatedPost[0].comments)
+        console.log(updatedPostResult)
         const postIndex = Allposts.findIndex(post => post.post_id === parseInt(postId))
       
              getUpdatedUi(updatedPostResult, postId);
@@ -120,87 +88,93 @@ editingPostContainer.addEventListener('click', async(e)=>{
 
            targetPost.innerHTML = ''
            targetPost.innerHTML = `
-            <img class="ownerPhoto" src="${post.profilepicture}" alt="Profile picture">
-              
-               <div class="title-date-burger"> 
-                 <h2 class="title"> ${post.title}
-                   <span id="date" class="date">${new Date(post.created_at).toLocaleDateString()}</span>
-                 </h2>
-                 ${post.user_id?`
-                 <div id="gear" class="gear">⋮</div>
-                  `:''}
-                 
-               </div>
-               <p class="description" data-full-text="${post.description}">${post.description.substring(0,100)} 
-               </p>
-               ${post.description.length > 100 ?`
-               <a class="showMoreLink" title="${post.description}" href="/api/showPost/${post.post_id}">Read more...</a>
-               `:""}
+           <div class="postHeader">
+  <img class="ownerPhoto" src="${post.profilepicture}" alt="Profile picture">
 
-                  <div class="mediaContainer">
-                    ${mediaTag.outerHTML}
-                  </div>
-                  
-               <div class="likes-comments-share" style="display:flex; justify-content : space-between;">
-                  <div class="like">
-                     <form class="likeForm" action="/api/post/${post.id}/like" method="post">
-                      <button class="likeBtn">❤️</button>
-                      </form>
-                      <p id="likesCount" class="likesCount">${post.likecounts}</p>
-                  </div>
-                  <div class="commentsCount">
-                    <button id="commentButton" class="commentBtn">💬</button>
-                    <p class="commentCount">${post.commentcounts}</p>
-                  </div>
+  <div class="postHeaderContent">
+    <div class="postHeaderTop">
+      <span class="posterName">${post.firstname}</span>
+      ${post.is_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
+    </div>
+    <span class="postDate">${getTimeAgo(post.created_at)}</span>
+  </div>
+</div>
 
-                  <div class="share">
-                    <form action="/api/share/id">
-                      <button class="shareBtn">↗️</button>
-                    </form>
-                    <p>${post.shares_count}</p>
-                  </div>
-                 
-                </div>
-                
-                 <form action="/api/post/${post.id}/comment" method="POST" id="commentForm" class="commentingForm">
-                      <input type="hidden" name="post_id" value="${post.id}"> 
-                      <input type="text" name="comment" id="comment" class="commentInput" placeholder="type your comment">
-                 </form>
-                 <div class="commentsContainer">
-                    ${commentsDiv}
-                    <div class="container commentEditContainer" id="commentEditContainer"></div>
-                 </div>
-           `
-          
-             const commentContainer = targetPost.querySelector('.commentsContainer')
-             if(!commentContainer) return console.log('comments container not found')
+<!-- Post Title & Description -->
+<h2 class="title">${post.title}</h2>
+<p class="description">
+  ${post.description.substring(0,100)}
+</p>
+${post.description.length > 100 ? `
+  <a class="showMoreLink" title="${post.description}" href="/api/showOnePost/${post.id}">Read more...</a>
+` : ''}
 
-          
+<!-- Media -->
+<div class="mediaContainer">
+  ${renderMedia(post.mediafile)}
+</div>
 
-        editPostContainer.style.display = "none"
+<!-- Comments & Likes Area -->
+<div class="commentsArea">
+  <!-- Like -->
+  <div class="likeSection">
+    <form class="likeForm" action="/api/post/${post.id}/like" method="post">
+      <button class="likeBtn" data-post-id="${post.id}">❤️</button>
+    </form>
+    <p id="likesCount" class="likesCount">${post.likecounts}</p>
+  </div>
+
+  <!-- Comments -->
+  <div class="commentSection">
+    <button id="commentButton" class="CommentBtn" data-post-id="${post.id}">💬</button>
+    <p class="commentCount">${post.commentcounts}</p>
+  </div>
+
+  <!-- Share -->
+  <div class="shareSection">
+    <form action="/api/share/id">
+      <button class="shareBtn" data-post-id="${post.id}">↗️</button>
+    </form>
+    <p class="sharesCount">${post.shares_count}</p>
+  </div>
+</div>
+
+<!-- Comment Input -->
+<form id="commentForm" class="commentInputForm">
+  <input type="hidden" name="post_id" value="${post.id}">
+  <input type="text" name="comment" id="comment" class="commentInput" placeholder="Type your comment">
+</form>
+
+<!-- Comments List -->
+<div class="commentsContainer">
+  ${commentsDiv}
+</div>
+
+<!-- Comment Edit Container -->
+<div class="commentEditContainer" id="commentEditContainer"></div>
+
+`
+      
+  const commentContainer = targetPost.querySelector('.commentsContainer')
+  if(!commentContainer) return console.log('comments container not found')
+  editPostContainer.style.display = "none"
 }
 
 // updated post comments 
 function loadUpdatedPostComments(comment){
- console.log(comment)
-const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
-                weekday : 'short', 
-                month : 'short',
-                year : 'numeric'
-             });
 
   return `<div class="comment" data-comment-id="${comment.id}">
-                <img class="user-profile" src="${comment.author.profile_picture}" alt="user-profile">
+                <img class="user-profile ownerPhoto" src="${comment.author.profile_picture}" alt="user-profile">
                 ${!comment.is_owner?`
                 <strong id="author"><a class="user-link" class="userProfileLink" href="/userProfile/${comment.author.user_token}/${comment.author.user_id}">${commentAuthor}</a></strong>
                 `:`<strong id="author"><a class="user-link" href="/userProfile/${comment.author.user_token}">You</a></strong>`}
                 <div class="text-commentGear">
                      <p id="text">${comment.text}</p>
                      ${comment.is_owner?`
-                     <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear">⋮</div>
+                     <div id="comment-gear" data-comment-id = "${comment.id}" class="comment-gear gear">⋮</div>
                      `:''}
                 </div>
-                <small id="date" class="date">${commentDate}</small>
+                <small id="date" class="date">${getTimeAgo(comment.created_at)}</small>
                 
                 </div>`
 }

@@ -50,6 +50,7 @@ const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
               </div>`
             }
 
+
 const renderPosts = (posts)=>{
      
         posts.forEach((post)=>{
@@ -58,6 +59,9 @@ const renderPosts = (posts)=>{
              postDIV.classList.add('posts', post.is_shared && 'shared')
              postDIV.dataset.postId = post.id
              postDIV.setAttribute('id', post.id)
+              
+             
+             const actualPostDate = getTimeAgo(post.created_at)
 
              const originalPost = post.original_post
             
@@ -85,7 +89,7 @@ const renderPosts = (posts)=>{
             <span class="posterName">${post.poster_name}</span>
             ${post.is_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
         </div>
-        <span class="postDate">${new Date(post.created_at).toLocaleDateString()}</span>
+        <span class="postDate">${actualPostDate}</span>
       </div>
 
     <h2 class="title">${post.title}</h2>
@@ -100,11 +104,14 @@ const renderPosts = (posts)=>{
   </div>
 ` : `
   <!-- Shared Post -->
-    <img class="ownerPhoto" src="${post.sharer_profile}" alt="Profile picture">
 
     <div class="sharedPostContent">
       <div class="sharedPostTop">
-        <span id="date">${new Date(post.created_at).toLocaleDateString()}</span>
+      <div class="profile-date"> 
+        <img class="ownerPhoto" src="${post.sharer_profile}" alt="Profile picture">
+        <span id="date">${actualPostDate}</span>
+      </div>
+
         ${post.is_share_post_owner ? `<div id="gear" class="gear">⋮</div>` : ''}
       </div>
 
@@ -115,7 +122,7 @@ const renderPosts = (posts)=>{
           <img class="ownerPhoto" src="${originalPost.owner.profilepicture}" alt="Profile picture">
           <div>
             <a href="/userProfile/${originalPost.owner.usertoken}/${originalPost.owner.id}" class="userProfileLink">${originalPost.owner.firstname}</a>
-            <p class="postDate">${new Date(originalPost.created_at).toLocaleDateString()}</p>
+            <p class="postDate">${getTimeAgo(originalPost.created_at)}</p>
           </div>
         </div>
 
@@ -181,11 +188,6 @@ function loadComments(comment){
   const commentorProfile = comment.author.profile_picture
   const commentAuthor = comment.author.firstname
   const text = comment.text
-  const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
-    weekday : 'short', 
-    month : 'short',
-    year : 'numeric'
-  });
 
   return `<div class="comment" data-comment-id="${comment.id}">
                 <img class="user-profile ownerPhoto" src="${commentorProfile}" alt="user-profile">
@@ -198,11 +200,13 @@ function loadComments(comment){
                      <div id="gear" data-comment-id = "${comment.id}" class="gear">⋮</div>
                      `:''}
                 </div>
-                <small id="date" class="date">${commentDate}</small>
+                <small id="date" class="date">${getTimeAgo(comment.created_at)}</small>
                 
                 </div>`
  
 }
+   
+
 
 const clickHandler = (e, container,parentContainer) => {
             if (!container.contains(e.target) && 
@@ -215,8 +219,10 @@ const clickHandler = (e, container,parentContainer) => {
 
       let modal = document.querySelector('.general_modal')
 
-
+       console.log('modal modal moda l', modal)
       // const mediaModal = document.createElement('div')
+
+      // Add this to your modal creation code
 
 const setupEventListener = ()=>{
    postsContainer.addEventListener('click', async(e)=>{
@@ -239,10 +245,11 @@ const setupEventListener = ()=>{
       }else{
         cID = gearBtn.closest('[data-comment-id]')?.dataset.commentId
       }
+
       const {contentId} = await checkPostAuthorAndCommentAuthor(e,cID)
+      console.log('content id ', contentId, modal)
 
       checkMainPostAndSharePost(e,postDiv)
-
       modal.innerHTML = loadSpecificPostModal(contentId)
       openModal(gearBtn)
 
@@ -264,10 +271,12 @@ const setupEventListener = ()=>{
     }else{
       finalpostId = postId
     }
+
+
       const {content} = await checkPostAuthorAndCommentAuthor(e,finalpostId)
        const targetContent = content
 
-       console.log(targetContent)
+       console.log(targetContent,'modal ', modal)
         if(!targetContent) return console.log('no target post found') 
 
 const commentElement = e.target.closest('.comment');
@@ -348,6 +357,7 @@ async function getPostSuperFast(postId) {
 }
 
 async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
+
   let contentId = null;
   let content = null;
   console.log(event.target.closest('.comment'));
@@ -369,6 +379,11 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
     if(!finalpostId) return console.log('finalpost id is undefined')
       console.log(typeof finalpostId, 'type of final post id')
 
+    loadModalSpinner()
+
+      // Let the browser render the spinner first
+      await new Promise(requestAnimationFrame);
+
      const post = await getPostSuperFast(finalpostId)
 
       comment = post.comments?.find(comment => comment.id === parseInt(commentId));
@@ -376,8 +391,7 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
     
     contentId = commentId;
     content = comment
-    console.log('Found comment:', content);
- 
+    console.log('Found comment:', content, 'modal', modal);
      return {contentId,content}
     
   } else {
@@ -390,14 +404,17 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
     modal.dataset.postId = postId;
     contentId = postId;
 
+    loadModalSpinner();
 
-    //  const posts = 
-     const post = await getPostSuperFast(postId)
+    await new Promise(requestAnimationFrame); // first tick
+    await new Promise(requestAnimationFrame); // second tick (forces paint)
+
+    const post = await getPostSuperFast(postId);
      content = post;
      
      contentId = post.id
 
-     console.log('Found post:', content, contentId);
+     console.log('Found post:', content, contentId, 'modal ', modal);
      return {contentId, content}
   }
 }
@@ -438,6 +455,11 @@ function toggleFullscreen(event){
 }
 
 
+function loadModalSpinner(){
+   modal.style.display = "flex"
+   modal.innerHTML = loadSpinner("content")
+}
+
 // // open modal
 function openModal(target) {
    
@@ -445,32 +467,34 @@ function openModal(target) {
   if (!target) return;
 
   modal.style.display = "flex"
+  modal.style.zIndex ='10000000'
 
+//   // return console.log(target,modal)
  const targetRect = target.getBoundingClientRect();
 const postdiv = target.closest('.posts');
 const postDivRect = postdiv.getBoundingClientRect();
 
-// Calculate top position (add scrollY to convert to document coordinates)
+// // Calculate top position (add scrollY to convert to document coordinates)
 const top = targetRect.bottom + window.scrollY;
 
-// Calculate centered left position (viewport coordinates)
+// // Calculate centered left position (viewport coordinates)
 let left = targetRect.left + targetRect.width / 2 - modal.offsetWidth / 2 + scrollX;
 
-// Convert to document coordinates by adding scrollX
+// // Convert to document coordinates by adding scrollX
 left += window.scrollX;
 
 console.log('Initial left:', left);
 
-// Set boundaries relative to document coordinates
+// // Set boundaries relative to document coordinates
 const minLeft = postDivRect.left + window.scrollX;
 const maxLeft = postDivRect.right + window.scrollX - modal.offsetWidth;
 
 console.log('Min and max lefts:', minLeft, maxLeft);
 
-// Clamp modal's left so it stays inside postDiv
+// // Clamp modal's left so it stays inside postDiv
 left = Math.max(minLeft, Math.min(left, maxLeft));
 
-console.log('Final left:', left);
+// console.log('Final left:', left);
 
 // Apply styles (fixed the syntax error)
 modal.style.left = `${left}px`;
@@ -584,7 +608,7 @@ function getPostAuthorModal(targetPost,e){
 
 
 function appendToModal(displayPost,e){
- console.log('comes from appendTomodal, ', displayPost.user_name, displayPost.author)
+ console.log('comes from appendTomodal', displayPost)
   if(displayPost){
          modal.innerHTML = ''
         modal.innerHTML = popUserProfileAndChat(displayPost)
@@ -636,15 +660,11 @@ function loadSpecificPostModal(postOrCommentid){
         e.preventDefault()
         await deletePost(postId)
       }
-      else if(e.target.classList.contains('user-chat-link')){
-        e.preventDefault()
-        const link = getChatUrl(e)
-         console.log(link)
-         hideHomeContent()
-        goToChatPage(link)
-      }else if(e.target.classList.contains('user-profile-link')){
-        if(target.href) window.location.href = target.href
+
+      if(userChatLink || postOwnerProfileLink){
+         window.location.href = target.href
       }
+      
      
     })
 
@@ -694,42 +714,6 @@ editingPost.innerHTML = `
 }
 
 
-    // previewing the uploaded file
-    function handleFilePreview(e){
-      const selectedFile = e.target.files[0]
-      const previewContainer = e.target.closest('.file-input')
-      console.log(previewContainer)
-      let isVideoFile = isVideo(selectedFile.name)
-      let previewFile = previewContainer.querySelector('video,img')
-       
-      if(!previewFile){
-        const mediaFile = isVideo(selectedFile.name)? 'video':'img'
-        previewFile = document.createElement(mediaFile)
-        previewContainer.prepend(previewFile)
-      }else{
-      // Replace the element if type changed
-      if ((isVideoFile && previewFile.tagName !== 'VIDEO') ||
-          (!isVideoFile && previewFile.tagName !== 'IMG')) {
-        const newFile = document.createElement(isVideoFile ? 'video' : 'img');
-        previewContainer.replaceChild(newFile, previewFile);
-        previewFile = newFile;
-      }
-    }
-      const reader = new FileReader()
-      previewFile.src = ''
-      reader.onload = (e)=>{
-       previewFile.src = e.target.result
-      }
-
-      if(selectedFile.type.startsWith('video/')){
-         reader.readAsDataURL(selectedFile)
-      }else if(selectedFile.type.startsWith('image/')){
-        reader.readAsDataURL(selectedFile)
-      }else{
-        console.log('please upload only vidoes and images')
-      }
-    }
-
 // updated post comments 
 function loadUpdatedPostComments(comment){
  console.log(comment)
@@ -755,23 +739,43 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
                 </div>`
 }
 
-
-
-    // const deleteForm = postsContainer.deleteForm
-
   document.addEventListener('DOMContentLoaded', async(e)=>{
- const Allposts = await getAllposts()
 
+    postsContainer.innerHTML = loadSpinner('posts')
+
+    try{
+      const Allposts = await getAllposts()
+      
         if(Allposts && Array.isArray(Allposts)){
           if(Allposts.length === 0 && postsContainer.children.length === 0) return checkEmptyPosts()
 
           postsContainer.innerHTML = ''
-          loadPostsOnLoad()
+          renderPosts(Allposts)
           setupEventListener()
         }else{
           console.log('posts is not an array here !')
         } 
+    }catch(err){
+      console.log(err)
+    }
+    
 })
+
+function loadSpinner(content){
+   return ` 
+     <p>loading ${content} ..</p>
+    <div id="loading" class="loading">
+       <div class="spinner"></div>
+    </div>`
+}
+
+
+const getAllposts = async()=>{
+  const res = await axios.get('/api/posts')
+  // return console.log(res.data.posts)
+    if(res.status === 200){
+    return Allposts = res.data.posts
+}}
 
 const fetchOnePost = async(postId)=>{
 
@@ -779,17 +783,6 @@ const fetchOnePost = async(postId)=>{
   const post = allPosts.find(post => post.id === parseInt(postId))
   return post
 }
-
-
-
-const getAllposts = async()=>{
-  const res = await axios.get('/api/posts')
-  // return console.log(res.data.posts)
-    if(res.status === 200){
-         console.log(Allposts)
-        return Allposts = res.data.posts
-}}
-
 
 function checkEmptyPosts(){
            postsContainer.innerHTML = ''
@@ -799,12 +792,6 @@ function checkEmptyPosts(){
             <a class = "initialCreatePostBtn" href="/api/newPost">Create One  😊 </a>
           </div>`
 }
-
-
- function loadPostsOnLoad(){
-    renderPosts(Allposts)
-  }
-
 
  function toggleDescriptionExpand(postDiv,event){
        const showText = event.target.closest('.showMoreLink')
@@ -821,16 +808,3 @@ function checkEmptyPosts(){
         showText.textContent = 'Read more'
       }
       }
-
-
-function closeAnyModal(modalElement,secondContainer){
-  window.addEventListener('click', (e)=>{
-    const containerArea = e.target.closest('.posts');
-
-    if(modalElement.style.display !== "none" && !containerArea || secondContainer){
-         modalElement.style.display = "none"
-  }
-  })
-}
-
-

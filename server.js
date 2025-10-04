@@ -637,6 +637,8 @@ app.get('/api/latestPosts', validateLogin, async(req,res)=>{
         })
 })
 
+
+
 app.get('/api/posts',validateLogin, async(req,res)=>{
     // Original posts query
 
