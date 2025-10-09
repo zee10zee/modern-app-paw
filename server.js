@@ -105,6 +105,7 @@ io.on('connection', async(socket)=>{
 
 //   typing event
     socket.on('user-typing', (uId)=>{
+        console.log('user typeing')
         const receiver = activeUsers.get(uId)
         socket.to(receiver).emit('user-typing', loggedInUser.firstname)
     })
@@ -553,7 +554,7 @@ app.get('/userProfile/:token/:id',validateLogin,async(req,res)=>{
 app.get('/api/userProfile/:token/:userId',validateLogin,async(req,res)=>{
     const token = req.params.token;
     const userId = parseInt(req.params.userId);
-      console.log(token, typeof(userId))
+      console.log(token, userId, typeof(userId))
     try{
         const userWithPosts = await pool.query(`SELECT 
         users.*,

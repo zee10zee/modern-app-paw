@@ -14,7 +14,7 @@ const typingIndicator = document.querySelector('.typing-event')
 })
 
 s.on('user-typing', username =>{
-    console.log(username, ' is typing..')
+    
     displayTypingIndicator(username)
     adoptScreenHeight()
 })

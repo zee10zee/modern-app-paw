@@ -102,7 +102,7 @@
 <div class="chats-posts-users">
   <!-- Left Container (Chats) -->
   <div class="chat-list-container leftContainer">
-    <h2 class="myChat">My Chats</h2>
+    
     <div class="chat-container"></div>
   </div>
 
@@ -113,17 +113,35 @@
 
   <!-- Right Container (Online Users) -->
   <div class="rightContainer">
-    <h2>Online Users</h2>
-    <div class="chatsPreview">
-      <li>users 1</li>
-      <li>users 2</li>
-      <li>users 3</li>
-      <li>users 4</li>
-    </div>
-  </div>
+  <h2>Community</h2>
+  <ul class="community-list">
+    <!-- Online users first -->
+    <li class="user online">
+      <div class="profile">
+        <img src="/static-images/anonymous-user.png" alt="Ali">
+      </div>
+      <div class="user-info">
+        <p class="fname">Ali</p>
+        <i class="online-status">Online</i>
+      </div>
+    </li>
+
+    <!-- Offline users -->
+    <li class="user offline">
+      <div class="profile">
+        <img src="/uploads/1751110235162-1free-html5-and-css3-login-forms.jpg.avif" alt="Sara">
+      </div>
+      <div class="user-info">
+        <p class="fname">Sara</p>
+        <i class="online-status">2 hours ago</i>
+      </div>
+    </li>
+  </ul>
+</div>
 </div>
 
-
+<div class="userProfileContainer"></div>
+<div class="smChatListContainer"></div>
 <!-- Share Modal -->
 <div id="share-container" class="share-modal" style="display: none;"></div>
 
@@ -172,6 +190,8 @@
   </div>
 </div>
 
+</div>
+
 </body>
     <script src="/socket.io/socket.io.js"></script>    
     <script defer src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -194,7 +214,12 @@
    <script defer src="/js/components/fetchNewPosts.js"></script>
    <script defer src="/js/components/getTimeAgo.js"></script>
    <script defer src="/js/components/media-preview.js"></script>
-   
+   <script defer src="/js/components/modal-eventListener.js"></script>
+   <script defer src="/js/components/handle-bottom-nav.js"></script>
+   <script defer src="/js/components/userData.js"></script>
+   <script defer src="/js/components/loadUserSections.js"></script>
+   <script defer src="/js/components/userProfile.js"></script>
+   <script defer src="/js/components/topNav.js"></script>
 
 </body>
 </html>

@@ -51,7 +51,7 @@ const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
             }
 
 
-const renderPosts = (posts)=>{
+const renderPosts = (posts,container)=>{
      
         posts.forEach((post)=>{
           // return console.log(post.id)
@@ -180,7 +180,7 @@ const comments_area = `
 `;
 
 postDIV.innerHTML = postHeader + comments_area
-postsContainer.appendChild(postDIV)
+container.appendChild(postDIV)
   })
 }
 
@@ -224,8 +224,8 @@ const clickHandler = (e, container,parentContainer) => {
 
       // Add this to your modal creation code
 
-const setupEventListener = ()=>{
-   postsContainer.addEventListener('click', async(e)=>{
+const setupEventListener = (container)=>{
+   container.addEventListener('click', async(e)=>{
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
      const ownerPhoto = e.target.classList.contains('ownerPhoto');
@@ -246,10 +246,12 @@ const setupEventListener = ()=>{
         cID = gearBtn.closest('[data-comment-id]')?.dataset.commentId
       }
 
+      loadModalSpinner()
       const {contentId} = await checkPostAuthorAndCommentAuthor(e,cID)
       console.log('content id ', contentId, modal)
 
       checkMainPostAndSharePost(e,postDiv)
+     
       modal.innerHTML = loadSpecificPostModal(contentId)
       openModal(gearBtn)
 
@@ -262,39 +264,39 @@ const setupEventListener = ()=>{
      
        // Handle post click
     const sharedPost = photoBtn.closest('.shared_post')
-    
-     console.log(sharedPost, 'shared post variable 304')
-
 
     if(sharedPost) {
        finalpostId = sharedPost.dataset.postId
     }else{
       finalpostId = postId
     }
-
-
+      loadModalSpinner()
       const {content} = await checkPostAuthorAndCommentAuthor(e,finalpostId)
        const targetContent = content
 
-       console.log(targetContent,'modal ', modal)
         if(!targetContent) return console.log('no target post found') 
 
-const commentElement = e.target.closest('.comment');
+    const commentElement = e.target.closest('.comment');
 
-if (!commentElement) {
-  console.log('no comment author click')
-    getPostAuthorModal(targetContent, e);
+    if (!commentElement) {
+      console.log('no comment author click')
+        getPostAuthorModal(targetContent, e);
 
-}  else {
-    getCommentAuthorModal(targetContent, e);
-    console.log('Clicked on something else');
-}
-  openModal(photoBtn)
+    }  else {
+        getCommentAuthorModal(targetContent, e);
+        console.log('Clicked on something else');
+    }
+      openModal(photoBtn)
 
-}
+    }
 
     else if(imgOrVideo){
       toggleFullscreen(e)
+    }
+    else if(e.target.closest('.chatItem')){
+      const href = e.target.closest('.chatItem')?.href
+      console.log('go to chat ', href)
+       window.location.href =  href
     }
 })
 }
@@ -379,10 +381,6 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
     if(!finalpostId) return console.log('finalpost id is undefined')
       console.log(typeof finalpostId, 'type of final post id')
 
-    loadModalSpinner()
-
-      // Let the browser render the spinner first
-      await new Promise(requestAnimationFrame);
 
      const post = await getPostSuperFast(finalpostId)
 
@@ -404,10 +402,6 @@ async function checkPostAuthorAndCommentAuthor(event, finalpostId = null) {
     modal.dataset.postId = postId;
     contentId = postId;
 
-    loadModalSpinner();
-
-    await new Promise(requestAnimationFrame); // first tick
-    await new Promise(requestAnimationFrame); // second tick (forces paint)
 
     const post = await getPostSuperFast(postId);
      content = post;
@@ -433,13 +427,12 @@ function checkMainPostAndSharePost(event,postDiv){
   modal.innerHTML = ''
 }
 
-document.addEventListener('click', (e)=>{
-  if(e.target.closest('.fullscreenModal')) toggleFullscreen(e)
-})
+// document.addEventListener('click', (e)=>{
+//   if(e.target.closest('.fullscreenModal')) toggleFullscreen(e)
+// })
 
 function toggleFullscreen(event){
   let existingModal = document.querySelector('.fullscreenModal') 
-  // console.log(existingModal.classList.contains('fullscreenModal'))
   if(existingModal) { document.body.removeChild(existingModal) }
 
   else{
@@ -456,7 +449,9 @@ function toggleFullscreen(event){
 
 
 function loadModalSpinner(){
+
    modal.style.display = "flex"
+   modal.innerHTML = 'loading ..'
    modal.innerHTML = loadSpinner("content")
 }
 
@@ -526,12 +521,12 @@ function popUserProfileAndChat(post){
   ${!post.is_owner 
     ? `
       <div class="action-item">
-        <a href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link">
+        <a  href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link">
           ${post.username}'s profile
         </a>
       </div>
       <div class="action-item">
-        <a href="/api/chatpage/${post.user_id}/${post.user_token}" class="user-chat-link">
+        <a class="userChatLink" href="/api/chatpage/${post.user_id}/${post.user_token}" class="user-chat-link">
           Chat with ${post.username}
         </a>
       </div>
@@ -641,33 +636,6 @@ function loadSpecificPostModal(postOrCommentid){
 `
 }
 
-    modal.addEventListener('click', async(e)=>{
-    const editBtnOfModal = e.target.classList.contains('postEditBtn')
-    const DeleteBtnOfModal = e.target.classList.contains('postDeleteBtn')
-     const postOwnerProfileLink = e.target.classList.contains('user-profile-link')
-     const commentorLink = e.target.classList.contains('user-link');
-     const userChatLink = e.target.classList.contains('userChatLink')
-       const postId = modal.dataset.postId; 
-      let target = e.target
-     
-      if(editBtnOfModal && modal.classList.contains('actual')){
-           modal.classList.remove('is_shared_post')
-          e.preventDefault()
-          editPostContainer.innerHTML = ''
-          await loadEditForm(postId,editPostContainer)
-         
-      }else if(DeleteBtnOfModal){
-        e.preventDefault()
-        await deletePost(postId)
-      }
-
-      if(userChatLink || postOwnerProfileLink){
-         window.location.href = target.href
-      }
-      
-     
-    })
-
    
 {/* //load edit form */}
 const loadEditForm = async(postId,editPostContainer)=>{
@@ -749,9 +717,7 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
         if(Allposts && Array.isArray(Allposts)){
           if(Allposts.length === 0 && postsContainer.children.length === 0) return checkEmptyPosts()
 
-          postsContainer.innerHTML = ''
-          renderPosts(Allposts)
-          setupEventListener()
+      loadHomePosts(Allposts)
         }else{
           console.log('posts is not an array here !')
         } 
@@ -760,6 +726,78 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
     }
     
 })
+
+// const allContainer = document
+
+window.addEventListener('resize', async(e)=>{
+ const viewPortSize = window.innerWidth 
+  let size;
+ console.log(viewPortSize)
+  if(viewPortSize > 800){
+    const allContainer = document.querySelector('.chats-posts-users')  
+  allContainer.innerHTML = ''
+
+  const leftContainer = createElement('div', 'leftContainer')
+  leftContainer.classList.add('chat-list-container')
+  fetchAndRenderChats(leftContainer)
+
+  // right container
+  const rightContainer = createElement('div', 'rightContainer')
+  rightContainer.innerHTML = `<h2>Community</h2>
+  <ul class="community-list">
+    <!-- Online users first -->
+    <li class="user online">
+      <div class="profile">
+        <img src="/static-images/anonymous-user.png" alt="Ali">
+      </div>
+      <div class="user-info">
+        <p class="fname">Ali</p>
+        <i class="online-status">Online</i>
+      </div>
+    </li>
+
+    <!-- Offline users -->
+    <li class="user offline">
+      <div class="profile">
+        <img src="/uploads/1751110235162-1free-html5-and-css3-login-forms.jpg.avif" alt="Sara">
+      </div>
+      <div class="user-info">
+        <p class="fname">Sara</p>
+        <i class="online-status">2 hours ago</i>
+      </div>
+    </li>
+  </ul>`
+
+  const centerContainer = createElement('div', 'posts-container')
+  centerContainer.setAttribute('id', 'postsContainer')
+  const posts = await getAllposts()
+  renderPosts(posts, centerContainer)
+
+  allContainer.innerHTML = 
+  `${leftContainer.outerHTML}
+    ${centerContainer.outerHTML}
+    ${rightContainer.outerHTML}
+   `
+   setupEventListener(allContainer)   
+
+  }else{
+    size = 'mobile size'
+  }
+   setTimeout(() => {
+    console.log(size)
+  }, 250);
+})
+
+
+
+function loadHomePosts(posts){
+  const allContainer = document.querySelector('.chats-posts-users')
+  const container = window.innerWidth > 800 ? postsContainer :  allContainer
+  
+  container.innerHTML = ''
+  renderPosts(posts, container)
+  setupEventListener(container)
+}
 
 function loadSpinner(content){
    return ` 

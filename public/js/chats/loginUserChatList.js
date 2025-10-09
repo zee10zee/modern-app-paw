@@ -1,5 +1,6 @@
 
  let chatListContainer = document.querySelector('.chat-container')
+
  const bottomNav = document.querySelector('.bottom-nav')
 const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
 
@@ -8,31 +9,8 @@ const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
 
 window.addEventListener('DOMContentLoaded', async(e)=>{
   chatListContainer.innerHTML = loadSpinner('your chats')
-
   await fetchAndRenderChats(chatListContainer) 
 })
-
-     const mainHomeContainer = document.querySelector('.chats-posts-users')
-
- bottomNav.addEventListener('click', async(e)=>{
-  console.log(e.target, e.target.classList.contains('feeds-btn'))
-  if(e.target.classList.contains('chats-btn')){
-
-    if(window.innerWidth > 800) return 
-    postsContainer.innerHTML = ''
-    postsContainer.innerHTML = loadSpinner('chats')
-   
-    await fetchAndRenderChats(postsContainer)
-
-  }else if(e.target.closest('.feeds-btn')){
-    console.log('the feed btn clicked')
-    // mainHomeContainer.innerHTML
-    postsContainer.innerHTML = ''
-          renderPosts(Allposts)
-          setupEventListener()
-  }
- })
-
 
  document.addEventListener('click',(e)=>{
   if(!e.target.classList.contains('chats-btn')){
@@ -75,9 +53,17 @@ window.addEventListener('DOMContentLoaded', async(e)=>{
 
 socket.on('received-message', (data)=>{
 console.log(data.target)
+if(window.innerWidth > 800){
+  console.log('large size ')
+}else{
+  'small size'
+}
+ loadOrUpdateTheChats(data)
+})
 
-const newChat = data.newMsg
-console.log(newChat, ' new chat ')
+
+function loadOrUpdateTheChats(data){
+  const newChat = data.newMsg
 const receiver_name =  data.receiver_name
 const sender_name = data.sender_name;
 const receiver_token = data.receiver_token
@@ -96,8 +82,7 @@ if(data.target === 'sender'){
     updateHomeMessageList(data)
     console.log(data.newMsg, data.sender_name)
 }
-
-})
+}
 
 function displayMessage(message,date, sendingMessage){
     const messageHTML = document.createElement('div')
@@ -119,7 +104,7 @@ function updateHomeMessageList(data){
     // return console.log(chatsMap.size)
     if(isAvailible){
         console.log('chat is available in the map')
-        const receiverChat = chatListContainer.querySelector(`.chatItem[data-user-id="${newChat.sender_id}"]`)
+        const receiverChat = userChatListContainer.querySelector(`.chatItem[data-user-id="${newChat.sender_id}"]`)
         console.log('receiver chat item ', receiverChat)
 
         updateExistingChat(newChat,{sender_name},receiverChat)
@@ -131,7 +116,10 @@ function updateHomeMessageList(data){
     }
 }
 
+const userChatListContainer = window.innerWidth > 800 ? chatListContainer : document.querySelector('#postsContainer')
+
 function updateExistingChat(newChat, sender = {},ChatElement){
+
    console.log(newChat, sender, ChatElement)
     const writer = ChatElement.querySelector('.writer')
     if(!writer) return console.log('writer not found')
@@ -143,7 +131,8 @@ function updateExistingChat(newChat, sender = {},ChatElement){
     if(!date) return console.log('date not found')
       console.log(formatDate(newChat.created_at))
       date.textContent = formatDate(newChat.created_at)
-    chatListContainer.prepend(ChatElement)
+
+    userChatListContainer.prepend(ChatElement)
     }
 
  function loadAndCheckExistingMessages(chats,chatsMap){
@@ -158,7 +147,6 @@ function updateExistingChat(newChat, sender = {},ChatElement){
 
 
 function previewLastMessages(lastChat,container, meta = {}){
- console.log(lastChat)
   const senderName = lastChat.sender_name || meta.sender_name
   const receiverName = lastChat.receiver_name || meta.receiver_name
   const receiverToken = lastChat.receiver_token || meta.receiver_token
@@ -193,8 +181,7 @@ chatItem.innerHTML = `
     <span class="unreadCount">0</span>
   </div>
 `
-console.log('new chat item before appending = ', chatItem)
-container.prepend(chatItem)
+container.innerHTML = chatItem.outerHTML
 
 }
 

@@ -510,9 +510,28 @@ button { background: none; border: none; cursor: pointer; }
   gap: 0.5rem;
 }
 
+/* .allContainer{
+    display: flex;
+    flex-direction: column;
+    max-width: 1200px;
+    width: 100%;
+    margin: 50px auto
+} */
+
 /* Responsive: hide left and right on small screens */
 @media (max-width: 768px) {
 
+  *{
+    font-size: 20px;
+  }
+
+  input[type = "text"]{
+    padding: 10px 8px;
+  }
+
+  .user-profile-page.active{
+    display: block;
+  }
   .chat-list-container.leftContainer,
   .rightContainer {
     display: none; /* hide chats and online users */
@@ -1777,13 +1796,21 @@ svg{
 }
 
 /* General container */
-.userProfileContainer {
+.userProfileContainer, .smChatListContainer{
+  display: flex;
+  flex-direction: column;
   max-width: 1200px;
   margin: 0 auto;
   padding: 16px;
   font-family: Arial, sans-serif;
   color: #333;
+  margin-top: 60px;
+  display: none;
 }
+.smChatListContainer, .userProfileContainer.deactive{
+  display: none;
+}
+
 
 /* ================= PROFILE HEADER ================= */
 .profileHeader {
@@ -2307,6 +2334,9 @@ svg{
 .chats-posts-users.hide{
   display: none;
 }
+.smChatListContainer, .userProfileContainer.active{
+  display: flex;
+}
 
 .chatPageContainer.active{
   display: flex
@@ -2716,6 +2746,50 @@ svg{
   font-size: 14px;
 }
 
+/* RIGHT container of home page */
+
+.community-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.community-list .user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.profile img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.fname {
+  font-weight: bold;
+  margin: 0;
+}
+
+.online-status {
+  font-size: 0.8em;
+  color: gray;
+  margin-top: 2px;
+}
+
+/* Optional: highlight online users */
+.user.online .online-status {
+  color: green;
+  font-weight: bold;
+}
 
 
 

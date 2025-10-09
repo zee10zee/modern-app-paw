@@ -1,0 +1,29 @@
+const topNav = document.querySelector('.top-nav')
+
+if(!topNav) console.log('no top nav')
+
+topNav.addEventListener('click', async(e) =>{
+  if(e.target.closest('.profilePicContain')){
+    e.preventDefault()        
+    console.log('large size owner profile clicked')
+    hideHomePage()
+    getSectionsAndLoadUserPage(e)
+  }else if(e.target.classList.contains('logo')){
+    e.preventDefault()
+      console.log('memory dom clicked')
+      hideUserProfilePage()
+      await showHomePage()
+  }
+})
+
+async function showHomePage(){
+  const allContainer = document.querySelector('.chats-posts-users')
+    allContainer.classList.remove('hide')
+    const posts = await getAllposts()
+    loadHomePosts(posts)
+    
+}
+
+
+
+
