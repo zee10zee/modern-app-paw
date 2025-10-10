@@ -108,12 +108,13 @@ button { background: none; border: none; cursor: pointer; }
   background: #374151;
 }
 
-/* Notification dropdown itself */
+/* Notification notifDropdown itself */
 /* Default (desktop / large screens) */
 #notifDropdown {
     position: fixed;
-    height: fit-content;
-     left: 480px;
+    max-height: 350px;
+    height: 0px;
+    right: 5px;
     top: 56px;
     max-width: 350px;
     width: 100%;
@@ -121,9 +122,13 @@ button { background: none; border: none; cursor: pointer; }
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: height 0.5s ease;
     overflow-y: auto;
-    display: none; /* toggled via JS */
     z-index: 100;
+}
+
+#notifDropdown.lg-reveal{
+  height: 100%;
 }
 /* Top bar with title + close button */
 .notif_topbar {
@@ -169,23 +174,19 @@ button { background: none; border: none; cursor: pointer; }
 /* Each notification item */
 .notif_item {
   border-bottom: 1px solid #f0f0f0;
+  display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    color: #333;
+    transition: background 0.2s ease;
 }
 
 .notif_item:last-child {
   border-bottom: none;
 }
 
-/* Notification link wrapper */
-.notif_link {
-  display: flex;
-  flex-direction: column;
-  padding: 0.75rem 1rem;
-  text-decoration: none;
-  color: #333;
-  transition: background 0.2s ease;
-}
-
-.notif_link:hover {
+.notif_item:hover {
   background: #f9f9f9;
 }
 
@@ -208,22 +209,27 @@ button { background: none; border: none; cursor: pointer; }
    #notifDropdown {
     position: fixed;
     left: 0;
-    top: 700px;
+    top: 0;
     max-width: 100%;        /* nearly full width */
-    height: fit-content;      /* cover most of the height */
+    height: 0;      /* cover most of the height */
     max-height: none;  /* allow full scroll */
     border-radius: 0.75rem;
     border: 1px solid #ddd;
     box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     z-index: 1000;
+    transition: height 0.5s ease;
+    overflow: hidden;
   }
 
-  .notif_link {
+  #notifDropdown.reveal{
+  height: 610px;
+}
+
+  .notif_item {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
   }
-
   .notifText {
     font-size: 30px;
     margin: 0;
@@ -238,6 +244,15 @@ button { background: none; border: none; cursor: pointer; }
 
 
 
+.highlight {
+  animation: highlight-pulse 2s ease;
+  background-color: rgba(255, 255, 0, 0.1);
+}
+
+@keyframes highlight-pulse {
+  0% { background-color: rgba(255, 255, 0, 0.3); }
+  100% { background-color: transparent; }
+}
 
 
 /* Container for profile pic inside nav */
@@ -2790,7 +2805,6 @@ svg{
   color: green;
   font-weight: bold;
 }
-
 
 
 

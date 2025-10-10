@@ -16,8 +16,11 @@ bottomNav.addEventListener('click', async(e)=>{
   else if(e.target.closest('.groups-btn')){
     alert('groups are under work , enjoy the rest !!')
   }
+  else if(e.target.classList.contains('notif-btn')){
+     console.log('bell icon clicked and dropdown appear', notifDropdown)
+     notifDropdown.classList.add('reveal')
+  } 
  })
-
 
  async function hideAllShowChatPage(){
   hideHomePage()

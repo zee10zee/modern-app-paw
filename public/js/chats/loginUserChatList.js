@@ -121,6 +121,7 @@ const userChatListContainer = window.innerWidth > 800 ? chatListContainer : docu
 function updateExistingChat(newChat, sender = {},ChatElement){
 
    console.log(newChat, sender, ChatElement)
+   return console.log(ChatElement, 'chat element ')
     const writer = ChatElement.querySelector('.writer')
     if(!writer) return console.log('writer not found')
     writer.textContent = newChat.receiver_id === parseInt(loggedInUserId) ? sender.sender_name : sender.receiver_name;

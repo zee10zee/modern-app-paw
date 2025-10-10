@@ -13,6 +13,9 @@ topNav.addEventListener('click', async(e) =>{
       console.log('memory dom clicked')
       hideUserProfilePage()
       await showHomePage()
+  }if(e.target.closest('.notif-btn')){
+     notifDropdown.classList.add('lg-reveal')
+     e.stopPropagation()
   }
 })
 
@@ -24,6 +27,11 @@ async function showHomePage(){
     
 }
 
-
+// close notificaiotn modal if outside clicked
+document.addEventListener('click', (e)=>{
+    if(!e.target.closest('#notifDropdown') || !e.target.classList.contains('.notif-btn')) {
+        notifDropdown.classList.remove('lg-reveal')
+    }
+})
 
 

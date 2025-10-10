@@ -717,7 +717,7 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
         if(Allposts && Array.isArray(Allposts)){
           if(Allposts.length === 0 && postsContainer.children.length === 0) return checkEmptyPosts()
 
-      loadHomePosts(Allposts)
+        loadHomePosts(Allposts)
         }else{
           console.log('posts is not an array here !')
         } 
@@ -792,7 +792,8 @@ window.addEventListener('resize', async(e)=>{
 
 function loadHomePosts(posts){
   const allContainer = document.querySelector('.chats-posts-users')
-  const container = window.innerWidth > 800 ? postsContainer :  allContainer
+  const container = postsContainer
+  // window.innerWidth > 800 ? postsContainer :  allContainer
   
   container.innerHTML = ''
   renderPosts(posts, container)

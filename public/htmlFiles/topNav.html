@@ -1,0 +1,35 @@
+
+    <!-- Unified Top Nav -->
+  <!-- Logo -->
+  <a href="/" id="memoryDom" class="logo">MemoryDom</a>
+
+  <!-- Search Bar -->
+  <input type="search" name="search-all" id="search-all" class="search-bar" placeholder="Search for users, posts ...">
+
+  <!-- Icons Section (desktop only) -->
+  <ul id="NavRightIcons" class="nav-icons">
+    <!-- Notification -->
+    <li>
+      <button id="notifBtn" class="notif-btn">
+        🔔
+        <span id="notCount" class="notif-count">0</span>
+      </button>
+    </li>
+
+    <!-- Active User -->
+    <li class="profilePicContain topNavProfileContainer"></li>
+
+    <!-- Logout -->
+    <li>
+      <form action="/api/logout" method="post" id="logoutForm">
+        <button type="submit" class="logout-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14" height="24" width="24">
+            <g>
+              <path fill="#8fbffa" d="M2.5 0.351a40.476 40.476 0 0 1 5.74 0c1.136 0.081 2.072 0.874 2.264 1.932a2.248 2.248 0 0 0 -2.108 2.28h-3.642a2.25 2.25 0 1 0 0 4.5h3.642a2.25 2.25 0 0 0 2.145 2.281l-0.004 0.086c-0.06 1.199 -1.06 2.131 -2.296 2.22a40.491 40.491 0 0 1 -5.742 0C1.263 13.56 0.263 12.628 0.203 11.43A89.318 89.318 0 0 1 0.095 7c0 -1.52 0.037 -3.001 0.108 -4.429C0.263 1.372 1.263 0.439 2.5 0.351Z"></path>
+              <path fill="#2859c5" d="M9.66 4.701a1 1 0 0 1 1.433 -1.067c1.107 0.554 2.178 1.624 2.731 2.731a1 1 0 0 1 0 0.895c-0.553 1.107 -1.624 2.178 -2.731 2.731A1 1 0 0 1 9.66 8.924l0.195 -1.111h-5.102a1 1 0 0 1 0 -2h5.102L9.661 4.7Z"></path>
+            </g>
+          </svg>
+        </button>
+      </form>
+    </li>
+  </ul>
