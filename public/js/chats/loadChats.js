@@ -5,8 +5,6 @@ const url = window.location.pathname.split('/').filter(segment => segment)
 
 let oneToOnChats;
 const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
-console.log(loggedInUserId)
-
 
 window.addEventListener('DOMContentLoaded', async(e)=>{
     const receiverId = url[2]
@@ -31,7 +29,6 @@ async function fetchAndLoadChats(receiverId, userToken){
 function loadInitialChats(oneToOnChats){
  const messageContainer = document.querySelector('.chat-container1')
 
-        
     oneToOnChats.forEach(chat => {
          const direction = chat.sender_id === parseInt(loggedInUserId) ? 
         'sendingMessage' : 'receivingMessage';

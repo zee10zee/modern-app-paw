@@ -127,6 +127,16 @@ button { background: none; border: none; cursor: pointer; }
     z-index: 100;
 }
 
+.no-notif{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  width: 100%;
+  text-align: center;
+
+}
+
 #notifDropdown.lg-reveal{
   height: 100%;
 }
@@ -264,7 +274,8 @@ button { background: none; border: none; cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e5e7eb; /* light gray fallback */
+  background: rgb(62, 65, 65);
+  padding: 6px;
 }
 
 /* Anchor wrapping profile pic */
@@ -334,10 +345,10 @@ button { background: none; border: none; cursor: pointer; }
 }
 
 /* Notification count badge */
-.notif-count {
+.sm-notif-count{
   position: absolute;
   top: 0.2rem;
-  right: 1.2rem;
+  right: 9px;
   background: #e02424; /* red */
   color: white;
   font-size: 0.7rem;
@@ -345,6 +356,17 @@ button { background: none; border: none; cursor: pointer; }
   border-radius: 999px;
   padding: 0.2rem 0.45rem;
   line-height: 1;
+}
+.count-chats{
+  position: absolute;
+    top: 1px;
+    right: 13px;
+    color: #fff;
+    font-size: 15px;
+    padding: 1px 6px;
+    border-radius: 50px;
+    font-weight: bold;
+    background: #ef4444;
 }
 
 /* Profile picture button */
@@ -1811,7 +1833,7 @@ svg{
 }
 
 /* General container */
-.userProfileContainer, .smChatListContainer{
+.userProfileContainer,.smChatListContainer{
   display: flex;
   flex-direction: column;
   max-width: 1200px;
@@ -1822,7 +1844,7 @@ svg{
   margin-top: 60px;
   display: none;
 }
-.smChatListContainer, .userProfileContainer.deactive{
+.smChatListContainer, .userProfileContainer, .no-notif.deactive{
   display: none;
 }
 
@@ -2349,7 +2371,10 @@ svg{
 .chats-posts-users.hide{
   display: none;
 }
-.smChatListContainer, .userProfileContainer.active{
+.smChatListContainer.active{
+  display: flex;
+}
+.userProfileContainer.active{
   display: flex;
 }
 

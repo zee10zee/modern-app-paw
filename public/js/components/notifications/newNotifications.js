@@ -1,6 +1,6 @@
 
 const notifDropdown = document.getElementById('notifDropdown')
-
+const noNotif = document.querySelector('.no-notif')
 
   let hasMatch = false;
    let post_id;
@@ -16,8 +16,7 @@ window.addEventListener('DOMContentLoaded',async(e)=>{
    if(n.receiver_id === parseInt(loggedInUserId)){ 
        hasMatch = true;
 
-      // return console.log(notifDropdown)
-       const notifList =  displayNewNotifications(n.message,n.timestamp,n.post_id)
+       const notifList = displayNewNotifications(n.message,n.timestamp,n.post_id)
        notifDropdown.appendChild(notifList)
        
         countNotifs = res.data.notSeen_notifs.count
@@ -27,7 +26,9 @@ window.addEventListener('DOMContentLoaded',async(e)=>{
    }
    }) 
 }
-if(!hasMatch) notifDropdown.innerHTML = res.data.empty_message;
+if(!hasMatch){
+    noNotif.innerHTML = res.data.empty_message;
+} 
 })
 
 // listening to like notification
@@ -53,9 +54,7 @@ const notCountEl = document.querySelector('#notCount').textContent = data.notifs
 })
 
 function displayNewNotifications(message,date,postId){
-const notifDropdown = document.querySelector('#notifDropdown');
 const notif_list = createElement('ul','notif_list')
-const notifTopbar = createElement('div','notif_topbar')
 const notif_item = document.createElement('li');
 notif_item.classList.add('notif_item');
 notif_item.id = postId
@@ -64,10 +63,9 @@ notif_item.innerHTML = `
     <small class="notif_date">${formatDate(date)}</small>
 `
 notif_list.prepend(notif_item)
+noNotif.classList.add('deactive')
 return notif_list
 }
-
-
 
 
 function formatDate(timestamp){

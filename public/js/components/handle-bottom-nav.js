@@ -1,8 +1,12 @@
-    const chatPageContainer = document.querySelector('.smChatListContainer')
+
+const chatPageContainer = document.querySelector('.smChatListContainer')
+const bottomNav = document.querySelector('.bottom-nav')
+const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
+const userPageContainer =  document.querySelector('.userProfileContainer')
 
 bottomNav.addEventListener('click', async(e)=>{
   
-  if(e.target.classList.contains('chats-btn')){
+  if(e.target.closest('.chats-btn')){
     await hideAllShowChatPage()
 
   }else if(e.target.closest('.feeds-btn')){
@@ -11,23 +15,23 @@ bottomNav.addEventListener('click', async(e)=>{
      
   }else if(e.target.closest('.profileImageLink')){
     e.preventDefault()
-    hideAllShowUserProfilePage(e)
+    await hideAllShowUserProfilePage(e)
   }
   else if(e.target.closest('.groups-btn')){
     alert('groups are under work , enjoy the rest !!')
   }
-  else if(e.target.classList.contains('notif-btn')){
-     console.log('bell icon clicked and dropdown appear', notifDropdown)
-     notifDropdown.classList.add('reveal')
+  else if(e.target.closest('.notif-btn')){
+     
+     notifDropdown.classList.toggle('reveal')
   } 
  })
 
  async function hideAllShowChatPage(){
-  hideHomePage()
+    hideHomePage()
     hideUserProfilePage()
     chatPageContainer.classList.add('active')
     chatPageContainer.innerHTML = loadSpinner('chats')
-    await fetchAndRenderChats(chatPageContainer)
+    await fetchAndRenderChatList()
  }
 async function hideAllShowHomePage(){
   hideUserProfilePage()
@@ -35,10 +39,13 @@ async function hideAllShowHomePage(){
     postsContainer.innerHTML = loadSpinner('posts')
     await showHomePage()
 }
- function hideAllShowUserProfilePage(e){
+ async function hideAllShowUserProfilePage(e){
     hideHomePage()
     hideChatPage()
-    getSectionsAndLoadUserPage(e)
+    userPageContainer.classList.add('active')
+    userPageContainer.innerHTML = loadSpinner('loading user profile..')
+    
+    await getSectionsAndLoadUserPage(e)
  }
 
 
@@ -47,11 +54,9 @@ async function hideAllShowHomePage(){
   const parent = e.target.closest('.profileImageLink') || e.target
      const splittedUrl =  parent.getAttribute('href').split('/')
      const segments = splittedUrl.filter(segment => segment)
-  console.log(segments)
-
-    // postsContainer.innerHTML = loadSpinner('user info..')
    
-       const {profileHeader, userInfo, securityInfo} = await fetchDataAndUserSections(segments[1], segments[2])
+       const {profileHeader, userInfo, securityInfo} = 
+       await fetchDataAndUserSections(segments[1], segments[2])
        
         loadUserPageUi(profileHeader,userInfo,securityInfo)
     // }
@@ -62,7 +67,6 @@ async function hideAllShowHomePage(){
 
 
  async function loadUserPageUi(profileHeader,userInfo,securityInfo){
-  const userPageContainer =  document.querySelector('.userProfileContainer')
  
         const profileHeaderDiv = createElement('div','profileHeader')
         profileHeaderDiv.innerHTML = profileHeader
@@ -180,3 +184,26 @@ return file;
 function hideUserProfilePage(){
   userProfileContainer.classList.remove('active')
 }
+
+
+// get totoal unread chat counts of lgin user
+
+async function getUnreadChatCount(){
+  try{
+    const {data} =await axios.get('/api/chatsCount')
+    console.log(data)
+  const unreadCounts = data.totalUnreadChats
+
+  if(unreadCounts){
+    const chatCountEl = document.querySelector('.count-chats')
+    chatCountEl.textContent = unreadCounts
+  }
+  }catch(err){
+    console.log(err.message, err)
+  }
+}
+
+
+document.addEventListener('DOMContentLoaded', async(e)=>{
+  await getUnreadChatCount()
+})

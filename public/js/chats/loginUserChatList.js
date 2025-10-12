@@ -1,157 +1,69 @@
 
- let chatListContainer = document.querySelector('.chat-container')
+ let desktopChatContainer = document.querySelector('.lgChatListContainer')
+const mobileChatContainer = document.querySelector('.smChatListContainer')
+let chatListContainer = window.innerWidth >= 800 ? desktopChatContainer : mobileChatContainer
 
- const bottomNav = document.querySelector('.bottom-nav')
-const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
-
-    // const socket = io()
-   const chatsMap = new Map()
+   let lastMessages = {}
 
 window.addEventListener('DOMContentLoaded', async(e)=>{
   chatListContainer.innerHTML = loadSpinner('your chats')
-  await fetchAndRenderChats(chatListContainer) 
+   await fetchAndRenderChatList()
 })
 
- document.addEventListener('click',(e)=>{
-  if(!e.target.classList.contains('chats-btn')){
-    console.log('chats container should be hidden')
-  }
- })
+async function fetchAndRenderChatList(){
+  const chats = await fetchChatsList()
+    if(!Array.isArray(chats)) return console.log('no message in database')
+
+    const lastMessages = getLastChats(chats)
+     renderChatList(lastMessages)
+}
 
 
- async function fetchAndRenderChats(container){
-   // fetch prevous data
-       const chats =  await fetchChatsList()
-        //   to order based on the last message of each user
-      loadAndCheckExistingMessages(chats,chatsMap)
+function renderChatList(lastMessages){
 
-      console.log(chats)
-    //  to make the map array , so to access them and loop them easily
-    const chatsarray = Array.from(chatsMap.values())
+   chatListContainer.innerHTML = ''
+  const chatsArray = Object.values(lastMessages) 
 
-    container.innerHTML = ''
+   chatsArray.forEach(chat =>{
+     chatListContainer.appendChild(previewLastMessage(chat,null))
+   })  
+}
 
-    if(!Array.isArray(chats)) return container.innerHTML = chats
+function getLastChats(chats){
 
-    chatsarray.forEach(chat => previewLastMessages(chat,container))
- }
+  if(!Array.isArray(chats)) return;
 
+   chats.forEach((chat)=>{
+     const receiverId = chat.receiver_id
+     const senderId = chat.sender_id
 
- async function fetchChatsList(){
-   const res = await axios.get('/api/userChatList');
+     const key = generateConversationKey(receiverId,senderId)
+
+    let existingLastMessage = lastMessages[key]
+    let existingMsgDate = existingLastMessage ? new Date(existingLastMessage.created_at) : null 
+
+     if(!existingLastMessage || new Date(chat.created_at) > existingMsgDate){
+      // map should be updated 
      
-    if((res.data.success && res.status === 200) || res.data){
-          const chats = res.data.chats;
-          console.log(chats) 
-          const emptyMsg = res.data.emptyMessage;
-          if(!chats || chats.length == 0)  return chatListContainer.innerHTML = emptyMsg
-          return chats
-    }
-};
-
-
-
-socket.on('received-message', (data)=>{
-console.log(data.target)
-if(window.innerWidth > 800){
-  console.log('large size ')
-}else{
-  'small size'
-}
- loadOrUpdateTheChats(data)
-})
-
-
-function loadOrUpdateTheChats(data){
-  const newChat = data.newMsg
-const receiver_name =  data.receiver_name
-const sender_name = data.sender_name;
-const receiver_token = data.receiver_token
-const sender_token = data.sender_token
-
-if(data.target === 'sender'){
-      console.log('sender data ', data)
-      const senderChat = chatListContainer.querySelector(`.chatItem[data-user-id="${data.newMsg.receiver_id}"]`)
-      console.log(senderChat, 'SENDER CHAT', data, data.newMsg.receiver_id)
-      if(senderChat){
-        updateExistingChat(newChat,{receiver_name},senderChat)
-      }else{
-        previewLastMessages(newChat, chatListContainer,data)
-      }
-}else{
-    updateHomeMessageList(data)
-    console.log(data.newMsg, data.sender_name)
-}
+        lastMessages[key] = chat
+     }
+   })
+   return lastMessages
 }
 
-function displayMessage(message,date, sendingMessage){
-    const messageHTML = document.createElement('div')
-    messageHTML.classList.add(sendingMessage, 'message')
-  const chatContent = ` 
-  <p class="text">${message} <span class="messageGear">...</span></p>
-        <p class="date">${date}</p>
-    `
-    messageHTML.innerHTML = chatContent
-    messageContainer.appendChild(messageHTML)
+function generateConversationKey(receiver,senderId){
+  const sortedKey = [receiver,senderId].sort((a,b)=> a - b)
+
+    console.log('receiver id ', sortedKey[0], ' sender id ', sortedKey[1])
+
+    return  `chat-pair ${sortedKey[0]}-${sortedKey[1]}`
 }
 
-function updateHomeMessageList(data){
-   const newChat = data.newMsg
-  const sender_name = data.sender_name;
-
-   const chatKey = [newChat.sender_id,newChat.receiver_id].sort().join('-')
-  const isAvailible = chatsMap.get(chatKey)
-    // return console.log(chatsMap.size)
-    if(isAvailible){
-        console.log('chat is available in the map')
-        const receiverChat = userChatListContainer.querySelector(`.chatItem[data-user-id="${newChat.sender_id}"]`)
-        console.log('receiver chat item ', receiverChat)
-
-        updateExistingChat(newChat,{sender_name},receiverChat)
-    }
-    else{
-        console.log('chat is not available in the chat !')
-        previewLastMessages(newChat,chatListContainer,data)
-        
-    }
-}
-
-const userChatListContainer = window.innerWidth > 800 ? chatListContainer : document.querySelector('#postsContainer')
-
-function updateExistingChat(newChat, sender = {},ChatElement){
-
-   console.log(newChat, sender, ChatElement)
-   return console.log(ChatElement, 'chat element ')
-    const writer = ChatElement.querySelector('.writer')
-    if(!writer) return console.log('writer not found')
-    writer.textContent = newChat.receiver_id === parseInt(loggedInUserId) ? sender.sender_name : sender.receiver_name;
-    const msg = ChatElement.querySelector('.textMessage')
-    if(!msg) return console.log('message element not found')
-    msg.textContent = newChat.message
-    const date = ChatElement.querySelector('.date')
-    if(!date) return console.log('date not found')
-      console.log(formatDate(newChat.created_at))
-      date.textContent = formatDate(newChat.created_at)
-
-    userChatListContainer.prepend(ChatElement)
-    }
-
- function loadAndCheckExistingMessages(chats,chatsMap){
-        for(let chat of chats){
-                  const keyy = [chat.sender_id,chat.receiver_id].sort().join('-')
-                  const existingChat = chatsMap.get(keyy)
-                  if(!existingChat || new Date(chat.created_at) > new Date(existingChat.created_at)){
-                    chatsMap.set(keyy, chat)
-                  }
-            }
-    }
-
-
-function previewLastMessages(lastChat,container, meta = {}){
+function previewLastMessage(lastChat,meta = {}){
   const senderName = lastChat.sender_name || meta.sender_name
   const receiverName = lastChat.receiver_name || meta.receiver_name
   const receiverToken = lastChat.receiver_token || meta.receiver_token
-  const senderToken = lastChat.receiver_token || meta.receiver_token
+  const senderToken = lastChat.sender_token || meta.sender_token
   let chatItem;
 
 chatItem = document.createElement('a')
@@ -161,12 +73,11 @@ chatItem.dataset.userId = lastChat.sender_id === parseInt(loggedInUserId)
   ? lastChat.receiver_id
   : lastChat.sender_id
 
-chatItem.href = lastChat.receiver_id === parseInt(loggedInUserId) 
-  ? `/api/chatpage/${lastChat.sender_id}/${senderToken}` 
-  : `/api/chatpage/${lastChat.receiver_id}/${receiverToken}`
+chatItem.href = lastChat.sender_id === parseInt(loggedInUserId) 
+  ? `/api/chatpage/${lastChat.receiver_id}/${receiverToken}` 
+  : `/api/chatpage/${lastChat.sender_id}/${senderToken}`
 
   console.log('chat item hrf = ',chatItem.href)
-
 
 chatItem.innerHTML = `
   <div class="chatContent">
@@ -182,9 +93,83 @@ chatItem.innerHTML = `
     <span class="unreadCount">0</span>
   </div>
 `
-container.innerHTML = chatItem.outerHTML
+return chatItem
 
 }
+
+
+
+ async function fetchChatsList(){
+   const res = await axios.get('/api/userChatList');
+     
+    if((res.data.success && res.status === 200) || res.data){
+          const chats = res.data.chats;
+          const emptyMsg = res.data.emptyMessage;
+          if(!chats || chats.length == 0)  return chatListContainer.innerHTML = emptyMsg
+          return chats
+    }
+};
+
+
+
+socket.on('received-message', (data)=>{
+    const {newMsg} = data
+    const chatMateId = checkConversationItemEl(newMsg)
+    const newMsgKey = generateConversationKey(newMsg.receiver_id, newMsg.sender_id)
+
+    console.log(checkIfConversationExist(newMsg,newMsgKey))
+
+    if(!checkIfConversationExist(newMsg,newMsgKey)){
+      return appendAndSaveChatItem(newMsg,data,newMsgKey)
+    }
+
+    updateExistingConversation(newMsg,chatMateId)
+    console.log('updated !')
+})
+
+function checkIfConversationExist(newMsg,newMsgKey){
+   if(Object.keys(lastMessages).includes(newMsgKey)){
+      console.log('yes key is there ', Object.keys(lastMessages))
+      console.log('updating..')
+      lastMessages[newMsgKey] = newMsg
+      return true
+}
+      return false;
+}
+
+function appendAndSaveChatItem(newMsg,data,newMsgKey){
+  chatListContainer.prepend(previewLastMessage(newMsg,data))
+    console.log('Appended !')
+    console.log('saving into the local chat list ...')
+     lastMessages[newMsgKey] = newMsg
+     console.log('saved !')
+}
+
+
+function checkConversationItemEl(newMsg){
+  const chatMateId = newMsg.sender_id === loggedInUserId ? newMsg.receiver_id : newMsg.sender_id
+  return chatMateId
+}
+
+
+function updateExistingConversation(newMsg,mateId){
+  const chatItemEl = chatListContainer.querySelector(`.chatItem[data-user-id="${mateId}"]`)
+  console.log(chatItemEl)
+  // CHANGE THE NEW MESSAGE / NEW DATE / NEW UNDREAD CHATS
+  const msgEl = chatItemEl.querySelector('.textMessage')
+  if(!msgEl) return console.log('no msgEl')
+
+  const dateEl = chatItemEl.querySelector('.date')
+  if(!dateEl) return console.log('no date El')
+
+  const unreadCountEl = chatItemEl.querySelector('.unreadCount')
+  if(!unreadCountEl) return console.log('no unread count el')
+
+  msgEl.textContent = newMsg.message
+  msgEl.textContent = newMsg.message
+  unreadCountEl.textContent = 0
+}
+
 
 function formatDate(timestamp){
     const date = new Date(timestamp)

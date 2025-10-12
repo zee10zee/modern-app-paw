@@ -729,64 +729,67 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
 
 // const allContainer = document
 
-window.addEventListener('resize', async(e)=>{
- const viewPortSize = window.innerWidth 
-  let size;
- console.log(viewPortSize)
-  if(viewPortSize > 800){
-    const allContainer = document.querySelector('.chats-posts-users')  
-  allContainer.innerHTML = ''
+// window.addEventListener('resize', async(e)=>{
+//  const viewPortSize = window.innerWidth 
+//   let size;
+//  console.log(viewPortSize)
+//   if(viewPortSize > 800){
+//     const allContainer = document.querySelector('.chats-posts-users')  
+//   allContainer.innerHTML = ''
+  
+// // const chatListContainer = document.querySelector('.lgChatListContainer')
+//   //  const leftContainer = document.querySelector('.leftContainer')
+//   //  chatListContainer.appendChild(chatListContainer)
+       
+//         const a = await fetchAndRenderChatList()
+//         console.log(a)
 
-  const leftContainer = createElement('div', 'leftContainer')
-  leftContainer.classList.add('chat-list-container')
-  fetchAndRenderChats(leftContainer)
+//   // right container
+//   const rightContainer = createElement('div', 'rightContainer')
+//   rightContainer.innerHTML = `<h2>Community</h2>
+//   <ul class="community-list">
+//     <!-- Online users first -->
+//     <li class="user online">
+//       <div class="profile">
+//         <img src="/static-images/anonymous-user.png" alt="Ali">
+//       </div>
+//       <div class="user-info">
+//         <p class="fname">Ali</p>
+//         <i class="online-status">Online</i>
+//       </div>
+//     </li>
 
-  // right container
-  const rightContainer = createElement('div', 'rightContainer')
-  rightContainer.innerHTML = `<h2>Community</h2>
-  <ul class="community-list">
-    <!-- Online users first -->
-    <li class="user online">
-      <div class="profile">
-        <img src="/static-images/anonymous-user.png" alt="Ali">
-      </div>
-      <div class="user-info">
-        <p class="fname">Ali</p>
-        <i class="online-status">Online</i>
-      </div>
-    </li>
+//     <!-- Offline users -->
+//     <li class="user offline">
+//       <div class="profile">
+//         <img src="/uploads/1751110235162-1free-html5-and-css3-login-forms.jpg.avif" alt="Sara">
+//       </div>
+//       <div class="user-info">
+//         <p class="fname">Sara</p>
+//         <i class="online-status">2 hours ago</i>
+//       </div>
+//     </li>
+//   </ul>`
 
-    <!-- Offline users -->
-    <li class="user offline">
-      <div class="profile">
-        <img src="/uploads/1751110235162-1free-html5-and-css3-login-forms.jpg.avif" alt="Sara">
-      </div>
-      <div class="user-info">
-        <p class="fname">Sara</p>
-        <i class="online-status">2 hours ago</i>
-      </div>
-    </li>
-  </ul>`
+//   const centerContainer = createElement('div', 'posts-container')
+//   centerContainer.setAttribute('id', 'postsContainer')
+//   const posts = await getAllposts()
+//   renderPosts(posts, centerContainer)
 
-  const centerContainer = createElement('div', 'posts-container')
-  centerContainer.setAttribute('id', 'postsContainer')
-  const posts = await getAllposts()
-  renderPosts(posts, centerContainer)
+//   allContainer.innerHTML = 
+//   `${leftContainer.outerHTML}
+//     ${centerContainer.outerHTML}
+//     ${rightContainer.outerHTML}
+//    `
+//    setupEventListener(allContainer)   
 
-  allContainer.innerHTML = 
-  `${leftContainer.outerHTML}
-    ${centerContainer.outerHTML}
-    ${rightContainer.outerHTML}
-   `
-   setupEventListener(allContainer)   
-
-  }else{
-    size = 'mobile size'
-  }
-   setTimeout(() => {
-    console.log(size)
-  }, 250);
-})
+//   }else{
+//     size = 'mobile size'
+//   }
+//    setTimeout(() => {
+//     console.log(size)
+//   }, 250);
+// })
 
 
 

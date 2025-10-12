@@ -1684,6 +1684,25 @@ app.get('/api/userChatList', validateLogin, async(req,res)=>{
         })
 })  
 
+
+app.get('/api/chatsCount',validateLogin,async(req,res)=>{
+   
+    const chatsCount = await pool.query(`
+    SELECT * FROM chats WHERE 
+    receiver_id = $1 AND is_read = false`, [req.session.userId])
+
+    if(chatsCount.rowCount === 0){
+        console.log('no new messages ')
+        return res.json({message : 'no new chats'})
+    } 
+    
+
+    res.json({
+      totalUnreadChats : chatsCount.rowCount,   
+      success : true
+    })
+})
+
 // CHATS 
 
 function validateLogin(req,res,next){
