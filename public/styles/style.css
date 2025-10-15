@@ -429,10 +429,6 @@ button { background: none; border: none; cursor: pointer; }
   transition: background-color 0.2s, transform 0.1s;
 }
 
-.addNewPostBtn .add-btn.hide {
-  display: none;
-}
-
 .addNewPostBtn .add-btn:hover {
   background-color: #2563eb; /* blue-600 on hover */
   transform: translateY(-1px);
@@ -925,7 +921,6 @@ button { background: none; border: none; cursor: pointer; }
 .gear {
   cursor: pointer;
   font-size: 18px;
-  user-select: none;
 }
 
 /* Description */
@@ -2141,6 +2136,7 @@ svg{
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 50px;
 }
 
 /* ================== Individual Message ================== */
@@ -2374,6 +2370,7 @@ svg{
 .smChatListContainer.active{
   display: flex;
 }
+
 .userProfileContainer.active{
   display: flex;
 }
@@ -2385,8 +2382,8 @@ svg{
 .chatPageContainer {
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height - better for mobile */
-    display: flex;
     flex-direction: column;
+     display: none;
 }
 
 .chat-container1 {
@@ -2755,10 +2752,10 @@ svg{
 }
 
 .pic-logo {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 300px;
   border: 2px dashed #bbb;
-  border-radius: 50%;
+  border-radius: 3px;
   margin: 0 auto 10px;
   display: flex;
   align-items: center;
@@ -2777,6 +2774,11 @@ svg{
   width: 50px;
   height: 50px;
   fill: #666;
+}
+
+.pic-logo img,video{
+  width: 100%;
+  object-fit: contain;
 }
 
 #mediaFile {

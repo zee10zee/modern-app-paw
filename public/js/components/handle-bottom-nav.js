@@ -1,21 +1,29 @@
 
-const chatPageContainer = document.querySelector('.smChatListContainer')
+const smChatPageContainer = document.querySelector('.smChatListContainer')
 const bottomNav = document.querySelector('.bottom-nav')
 const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
 const userPageContainer =  document.querySelector('.userProfileContainer')
 
 bottomNav.addEventListener('click', async(e)=>{
-  
+  postBtn.hide()
+
   if(e.target.closest('.chats-btn')){
-    await hideAllShowChatPage()
+    await hideAllShowChatList()
 
   }else if(e.target.closest('.feeds-btn')){
     console.log('the feed btn clicked')
+    postBtn.show()
     await hideAllShowHomePage()
      
-  }else if(e.target.closest('.profileImageLink')){
+  }else if(e.target.closest('.profilePicContain')){
     e.preventDefault()
-    await hideAllShowUserProfilePage(e)
+    const parentEl = e
+    const parent_parent_el = e.target.closest('.profileImageLink')
+    const link = parent_parent_el.getAttribute('href')
+    console.log(link)
+    localStorage.setItem('clickedOwnerLink',link)
+
+    await hideAllShowUserProfilePage(parentEl)
   }
   else if(e.target.closest('.groups-btn')){
     alert('groups are under work , enjoy the rest !!')
@@ -26,56 +34,98 @@ bottomNav.addEventListener('click', async(e)=>{
   } 
  })
 
- async function hideAllShowChatPage(){
+ async function hideAllShowChatList(){
     hideHomePage()
     hideUserProfilePage()
-    chatPageContainer.classList.add('active')
-    chatPageContainer.innerHTML = loadSpinner('chats')
+    hideChatPage()
+    smChatPageContainer.classList.add('active')
+    smChatPageContainer.innerHTML = loadSpinner('chats')
     await fetchAndRenderChatList()
  }
 async function hideAllShowHomePage(){
   hideUserProfilePage()
+    hideChatList()
     hideChatPage()
     postsContainer.innerHTML = loadSpinner('posts')
     await showHomePage()
 }
  async function hideAllShowUserProfilePage(e){
     hideHomePage()
+    hideChatList()
     hideChatPage()
     userPageContainer.classList.add('active')
-    userPageContainer.innerHTML = loadSpinner('loading user profile..')
-    
-    await getSectionsAndLoadUserPage(e)
+    userPageContainer.innerHTML = loadSpinner('user profile..')
+   
+    const targetParent = e.target.closest('.action-item,.profilePicContain,.profileImageLink')
+
+     await getSectionsAndLoadUserPage(targetParent)
  }
 
+ function hideChatPage(){
+  const chatPage = document.querySelector('.chatPageContainer')
+  if(chatPage) chatPage.classList.remove('active')
+ }
 
- async function getSectionsAndLoadUserPage(e){
+let user_token;
+let id;
 
-  const parent = e.target.closest('.profileImageLink') || e.target
+ async function getSectionsAndLoadUserPage(parent){
+  
      const splittedUrl =  parent.getAttribute('href').split('/')
      const segments = splittedUrl.filter(segment => segment)
-   
+
+      user_token = segments[1];
+      id = segments[2]
+ 
        const {profileHeader, userInfo, securityInfo} = 
-       await fetchDataAndUserSections(segments[1], segments[2])
+       await fetchDataAndUserSections(user_token, id)
        
         loadUserPageUi(profileHeader,userInfo,securityInfo)
-    // }
  }
  function appendElementTo(el, container){
    container.appendChild(el)
  }
 
 
- async function loadUserPageUi(profileHeader,userInfo,securityInfo){
- 
-        const profileHeaderDiv = createElement('div','profileHeader')
-        profileHeaderDiv.innerHTML = profileHeader
-
-        const leftContainer = createElement('div','leftContainer')
-        leftContainer.innerHTML = userInfo + securityInfo
-        
+ async function loadUserPageUi(profileHead,userInfo,securityInfo){
         const profileGrid = createElement('div','profileGrid')
-        const centerContainer = createElement('div','centerContainer')
+        const profileHeader = handleProfileHeader(profileHead)
+        const leftContainer = handleLeftContainer(userInfo,securityInfo)
+         console.log(profileHeader)
+
+        const centerContainer = await handleCenterContainer()
+        const rightContainer =  handleRightContainer()
+
+        profileGrid.append(leftContainer,centerContainer,rightContainer)
+        const genDiv = profileHeader.outerHTML +  profileGrid.outerHTML
+        userPageContainer.innerHTML = genDiv
+        userPageContainer.classList.add('active')
+ }
+
+
+ function handleProfileHeader(profileHeader){
+  const profileHeaderDiv = createElement('div','profileHeader')
+        profileHeaderDiv.innerHTML = profileHeader
+        return profileHeaderDiv
+ }
+
+ function handleLeftContainer(userInfo,securityInfo){
+  const leftContainer = createElement('div','leftContainer')
+        leftContainer.innerHTML = userInfo + securityInfo
+        return leftContainer;
+ }
+
+function handleRightContainer(){
+  const rawContent = ` <h2 class="sidebarTitle">Right Sidebar</h2>
+        <p class="sidebarText">Optional content like ads or friend suggestions.</p>`
+
+        const rightContainer = createElement('div','rightContainer')
+        rightContainer.innerHTML =  rawContent
+        return rightContainer;
+}
+
+ async function handleCenterContainer(){
+  const centerContainer = createElement('div','centerContainer')
       
         
         centerContainer.textContent = ''
@@ -84,12 +134,16 @@ async function hideAllShowHomePage(){
         const mediaList =  createElement('div','mediaList')
 
         mediaList.innerHTML = loadSpinner('photos ...')
-          const {uploadedPhotos} = await loadUploadedImages()
 
+        const linkToken = user_token
+        const userId = id
+
+          const {uploadedPhotos} = await loadUploadedImages(linkToken,userId)
+         console.log('RECAP ', uploadedPhotos)
          const initialImages = uploadedImages(uploadedPhotos)
 
         if(typeof initialImages === 'string') {
-          console.log('yes')
+          
           mediaList.innerHTML = initialImages
         }else{
           mediaList.innerHTML = ''
@@ -111,23 +165,7 @@ async function hideAllShowHomePage(){
        `
         photosWithVideos.append(h2,mediaTabs,mediaList)
         centerContainer.appendChild(photosWithVideos)
-
-
-        const rawContent = ` <h2 class="sidebarTitle">Right Sidebar</h2>
-        <p class="sidebarText">Optional content like ads or friend suggestions.</p>`
-
-        const rightContainer = createElement('div','rightContainer')
-        rightContainer.innerHTML =  rawContent
-
-        profileGrid.append(leftContainer,centerContainer,rightContainer)
-
-        const genDiv = `
-          ${profileHeader} 
-           ${profileGrid.outerHTML}
-        `
-
-        userPageContainer.innerHTML = genDiv
-        userPageContainer.classList.add('active')
+        return centerContainer
  }
 
   function uploadedImages(uploadedPhotos){
@@ -155,8 +193,8 @@ return file;
 }
 
  async function fetchDataAndUserSections(token,id){
-  const data = await fetchUser(token,id)
-       console.log(data, 'data')
+ const data = await fetchUser(token,id)
+        console.log(data, 'data catch point media')
         const userInfo = loadSections(data.user).userInfo
         const securityInfo = loadSections(data.user).securityInfo
         const profileHeader = loadSections(data.user).profileHeader
@@ -177,7 +215,7 @@ return file;
 
  }
 
- function hideChatPage(){
+ function hideChatList(){
   chatListContainer.classList.remove('active')
 }
 

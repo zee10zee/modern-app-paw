@@ -12,7 +12,7 @@ const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
      
  const loggedInUser = document.querySelector('.loggedInUser')
  const  profilePicContain = document.querySelectorAll('.profilePicContain')
-        
+
         appendUserProfileOnNav()
 
     function appendUserProfileOnNav(){
@@ -225,6 +225,15 @@ const clickHandler = (e, container,parentContainer) => {
       // Add this to your modal creation code
 
 const setupEventListener = (container)=>{
+  container.addEventListener('mouseover', async(e)=>{
+  const ownerPhoto = e.target.classList.contains('ownerPhoto');
+  const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
+  postId = postDiv ? postDiv.dataset.postId : null; 
+    if(ownerPhoto){
+       
+    }
+  })
+
    container.addEventListener('click', async(e)=>{
      const gear = e.target.classList.contains('gear')
      const showMoreLink = e.target.classList.contains('showMoreLink')
@@ -259,35 +268,7 @@ const setupEventListener = (container)=>{
       toggleDescriptionExpand(postDiv,e)
     }
     else if(ownerPhoto){
-      const photoBtn = e.target
-     let finalpostId = null;
-     
-       // Handle post click
-    const sharedPost = photoBtn.closest('.shared_post')
-
-    if(sharedPost) {
-       finalpostId = sharedPost.dataset.postId
-    }else{
-      finalpostId = postId
-    }
-      loadModalSpinner()
-      const {content} = await checkPostAuthorAndCommentAuthor(e,finalpostId)
-       const targetContent = content
-
-        if(!targetContent) return console.log('no target post found') 
-
-    const commentElement = e.target.closest('.comment');
-
-    if (!commentElement) {
-      console.log('no comment author click')
-        getPostAuthorModal(targetContent, e);
-
-    }  else {
-        getCommentAuthorModal(targetContent, e);
-        console.log('Clicked on something else');
-    }
-      openModal(photoBtn)
-
+      await handleModalAndLinks(e)
     }
 
     else if(imgOrVideo){
@@ -300,6 +281,45 @@ const setupEventListener = (container)=>{
     }
 })
 }
+
+async function handleModalAndLinks(e){
+ 
+    e.preventDefault()
+     const photoBtn = e.target
+     
+    const targetContent = await fetchClickedPostContent(e)
+
+        if(!targetContent) return console.log('no target post found') 
+
+      const commentElement = e.target.closest('.comment');
+
+      if (!commentElement) {
+        console.log('no comment author click')
+          getPostAuthorModal(targetContent, e);
+
+      }  else {
+          getCommentAuthorModal(targetContent, e);
+          console.log('Clicked on something else');
+      }
+      openModal(photoBtn)
+  }
+
+
+  async function fetchClickedPostContent(event){
+    let finalpostId = null;
+     
+       // Handle post click
+    const sharedPost = event.target.closest('.shared_post')
+
+        if(sharedPost) {
+          finalpostId = sharedPost.dataset.postId
+        }else{
+          finalpostId = postId
+        }
+      
+      const {content} = await checkPostAuthorAndCommentAuthor(event,finalpostId)
+      return content
+  }
 
 
 // USING CLASSES FOR CACHING
@@ -449,9 +469,8 @@ function toggleFullscreen(event){
 
 
 function loadModalSpinner(){
-
+  modal.innerHTML = ''   
    modal.style.display = "flex"
-   modal.innerHTML = 'loading ..'
    modal.innerHTML = loadSpinner("content")
 }
 
@@ -520,19 +539,19 @@ function popUserProfileAndChat(post){
   return `
   ${!post.is_owner 
     ? `
-      <div class="action-item">
+      <div class="action-item" href="/userProfile/${post.user_token}/${post.user_id}" user-data-id="${post.user_id}">
         <a  href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link">
           ${post.username}'s profile
         </a>
       </div>
-      <div class="action-item">
+      <div class="action-item" href="/api/chatpage/${post.user_id}/${post.user_token}" class="user-chat-link" user-data-id="${post.user_id}">
         <a class="userChatLink" href="/api/chatpage/${post.user_id}/${post.user_token}" class="user-chat-link">
           Chat with ${post.username}
         </a>
       </div>
     ` 
     : `
-      <div class="action-item">
+      <div class="action-item" href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link" user-data-id="${post.user_id}">
         <a href="/userProfile/${post.user_token}/${post.user_id}" class="user-profile-link">
           Your profile
         </a>
@@ -717,7 +736,7 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
         if(Allposts && Array.isArray(Allposts)){
           if(Allposts.length === 0 && postsContainer.children.length === 0) return checkEmptyPosts()
 
-        loadHomePosts(Allposts)
+         loadHomePosts(Allposts)
         }else{
           console.log('posts is not an array here !')
         } 
@@ -726,6 +745,34 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
     }
     
 })
+
+class newPostBtn{
+
+  constructor(){
+    this.postBtn = document.querySelector('.add-btn')
+    console.log('post btn ', this.postBtn)
+  }
+  show(){
+    
+    if(!this.postBtn) return console.log('no post btn fond')
+    this.postBtn.style.display = "flex"
+    console.log('is showing')
+  }
+
+  hide(){
+    if(!this.postBtn) return console.log('no post btn fond')
+    this.postBtn.style.display = "none"
+    console.log('bt is hiding')
+  }
+}
+
+const postBtn = new newPostBtn() 
+
+
+function hideAddPostBtn(){
+const addNwePostBtn = document.querySelector('.addNewPostBtn')
+  addNwePostBtn.classList.add('hide')
+}
 
 // const allContainer = document
 

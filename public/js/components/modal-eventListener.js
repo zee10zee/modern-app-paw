@@ -20,9 +20,19 @@ modal.addEventListener('click', async(e)=>{
 
       if(userChatLink){
         // e.preventDefault()
-         window.location.href = target.href
+        //  window.location.href = target.href
+        const userLink = getReceiverLink(e,'.user-profile-link')
+         storeOnLocalStorage('chat-list-user-url',userLink)
+        console.log('loading chats ..')
+         hideAllPages()
+         await loadChatPage(userLink)
+         postBtn.hide()
       }else if(postOwnerProfileLink){
         e.preventDefault()
+        const el = e.target.closest('.action-item')
+        const link = el.getAttribute('href')
+        console.log(link)
+        const clickedPostOwner = localStorage.setItem('clickedOwnerLink',link)
           hideAllShowUserProfilePage(e)
       }
     })

@@ -7,7 +7,12 @@ topNav.addEventListener('click', async(e) =>{
     e.preventDefault()        
     console.log('large size owner profile clicked')
     hideHomePage()
-    getSectionsAndLoadUserPage(e)
+    const parentEl = e.target.closest('.profileImageLink')
+
+    const link = parentEl.getAttribute('href') 
+
+    // localStorage.setItem('clickedOwnerLink',link)
+    getSectionsAndLoadUserPage(parentEl)
   }else if(e.target.classList.contains('logo')){
     e.preventDefault()
       console.log('memory dom clicked')

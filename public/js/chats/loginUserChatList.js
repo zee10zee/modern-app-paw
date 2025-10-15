@@ -114,17 +114,36 @@ return chatItem
 
 socket.on('received-message', (data)=>{
     const {newMsg} = data
-    const chatMateId = checkConversationItemEl(newMsg)
-    const newMsgKey = generateConversationKey(newMsg.receiver_id, newMsg.sender_id)
 
-    console.log(checkIfConversationExist(newMsg,newMsgKey))
+    if(data.target === 'receiver'){
+      const chatMateId = checkConversationItemEl(newMsg)
+      const newMsgKey = generateConversationKey(newMsg.receiver_id, newMsg.sender_id)
+      console.log(checkIfConversationExist(newMsg,newMsgKey))
 
-    if(!checkIfConversationExist(newMsg,newMsgKey)){
-      return appendAndSaveChatItem(newMsg,data,newMsgKey)
+      if(!checkIfConversationExist(newMsg,newMsgKey)){
+        return appendAndSaveChatItem(newMsg,data,newMsgKey)
+      }
+
+      updateExistingConversation(newMsg,chatMateId)
+      console.log('updated !')
+      }
+
+    else if(data.target === 'sender'){
+      console.log('i ma receiveing for my self')
     }
+    
+})
 
-    updateExistingConversation(newMsg,chatMateId)
-    console.log('updated !')
+socket.off('user-typing') //removes existing socket
+socket.on('user-typing', (username)=>{
+   console.log(username, 'is typing on chat list')
+  const userChatListMsgEl = chatListContainer.querySelector('.textMessage')
+  const prevousTextMessage = userChatListMsgEl.textContent
+  userChatListMsgEl.textContent = `${username} is typing`
+
+  setTimeout(() => {
+    userChatListMsgEl.textContent = prevousTextMessage
+  }, 2000);
 })
 
 function checkIfConversationExist(newMsg,newMsgKey){
@@ -166,7 +185,7 @@ function updateExistingConversation(newMsg,mateId){
   if(!unreadCountEl) return console.log('no unread count el')
 
   msgEl.textContent = newMsg.message
-  msgEl.textContent = newMsg.message
+ dateEl.textContent = formatDate(newMsg.created_at)
   unreadCountEl.textContent = 0
 }
 

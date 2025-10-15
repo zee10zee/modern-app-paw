@@ -3,15 +3,9 @@ const container = document.querySelector('.userProfileContainer')
 const baseUrl = 'http://localhost:3000/';
 
 const messageBtn = document.querySelector('.chatBtn');
- const parent = bottomNav.querySelector('.profileImageLink')
+ const profileImgLink = bottomNav.querySelector('.profileImageLink')
 
-const splittedUrl =  parent.getAttribute('href').split('/')
-console.log(splittedUrl)
-const segments = splittedUrl.filter(segment => segment)
-console.log(segments)
-
-const token = segments[1]
-const userId = segments[2]
+  // const {token,userId} =  getTokenAndUserId(profileImgLink)
 
 let loginUserPosts = [];
 let loginProfile = null;
@@ -24,22 +18,27 @@ document.addEventListener('click', (e)=>{
 const userProfileContainer = document.querySelector('.userProfileContainer')
 userProfileContainer.addEventListener('click', async(e)=>{
   e.preventDefault()
+   const storedLink = localStorage.getItem('clickedOwnerLink')
+  const targetEl = storedLink|| profileImgLink
+  const {token,userId} =  getTokenAndUserId(targetEl)
+  
   const mediaList = userProfileContainer.querySelector('.mediaList')
-
+  
   if(e.target.classList.contains('postedPics')){
  clearMedia();
-  await renderPhotos(mediaList)
+ console.log(targetEl)
+
+  await renderPhotos(mediaList,token,userId)
   }
 
    else if(e.target.classList.contains('profilePics')){
- clearMedia();
-
+    clearMedia();
    await renderProfiles(mediaList,token,userId)
   }
 
    else if(e.target.classList.contains('videos')){
  clearMedia();
-   await renderVideos(mediaList)
+   await renderVideos(mediaList, token,userId)
   }
 
   else if(e.target.classList.contains('chatBtn')){{
@@ -54,14 +53,28 @@ userProfileContainer.addEventListener('click', async(e)=>{
   }
   }
 })
+function getTokenAndUserId(el){
+  console.log(el)
+const link = el || el.getAttribute('href') //we sent the link from the cliced post owner
 
-async function loadUploadedImages(){
+const splittedUrl = link.split('/')
+ console.log(splittedUrl)
+const segments = splittedUrl.filter(segment => segment)
+ console.log(segments)
+
+const token = segments[1]
+const userId = segments[2]
+console.log(token,userId)
+return {token,userId}
+}
+
+async function loadUploadedImages(token,userId){
   const imgTypes = ['jpg','.png' , '.gif' , '.webp' ,'.bmp' ,'svg', '.tiff','.tif' ,'.heic' , '.avif']
 
   const data = await fetchUser(token,userId)
+console.log(data.owner)
+
   loginUserPosts = data.user.posts
-  // const photos = loginUserPosts.filter(post => {return post.mediafile})
-  // console.log(photos)
     
     const uploadedPhotos = loginUserPosts.filter(post =>{
        return post.parent_share_id === null && imgTypes.some(ext => post.mediafile.toLowerCase().includes(ext)) 
@@ -79,10 +92,10 @@ async function loadUploadedImages(){
 
   
 // Show images
-async function renderPhotos(mediaList){
+async function renderPhotos(mediaList,token,userId){
    mediaList.innerHTML = loadSpinner('fotos ..')
 
-       const {uploadedPhotos} = await loadUploadedImages()
+       const {uploadedPhotos} = await loadUploadedImages(token,userId)
        console.log(uploadedPhotos)
     if (!uploadedPhotos || uploadedPhotos.length === 0) return mediaList.innerHTML = '<p>No photos yet</p>'
 
@@ -90,9 +103,9 @@ async function renderPhotos(mediaList){
         uploadedPhotos.forEach(post => appendImage( mediaList,post.mediafile)) 
     }
 
-async function renderVideos(mediaList){
+async function renderVideos(mediaList,token,userId){
    mediaList.innerHTML = loadSpinner('videos..')
-   const {uploadedVideos} = await loadUploadedImages()
+   const {uploadedVideos} = await loadUploadedImages(token,userId)
    if(!uploadedVideos || uploadedVideos.length === 0) return mediaList.innerHTML = '<p>No videos yet</p>'
 
       mediaList.innerHTML = '' // so it removes the spinnner 

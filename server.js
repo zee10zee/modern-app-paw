@@ -18,7 +18,7 @@ import sharedsession from "express-socket.io-session"
 import fs from "fs"
 import cors from "cors"
 import admin from "firebase-admin"
-import { profile } from "console";
+import { error, profile } from "console";
 
 
 let notifLoginUser;
@@ -104,20 +104,18 @@ io.on('connection', async(socket)=>{
   socket.emit('user-joined',{loggedInUser: loggedInUser.firstname, loggedInUserId: loggedInUser.id});
 
 //   typing event
-    socket.on('user-typing', (uId)=>{
-        console.log('user typeing')
-        const receiver = activeUsers.get(uId)
-        socket.to(receiver).emit('user-typing', loggedInUser.firstname)
-    })
+    socket.on('start-typing', (uId)=>{
+        const receiver = activeUsers.get(parseInt(uId))
+        if(!receiver) return console.log('receiver is not found please check !')
 
-    // reseting new posts count for banner alert
-    //  socket.on('reset_new_posts_count', ()=>{
-    //     userUnseenPosts.set(socket.userId,0)
-    //  })
+        socket.to(receiver).emit('user-typing', loggedInUser.firstname)
+
+        socket.to(receiver).emit('usertyping-on-chatlist', 
+            loggedInUser.firstname)
+    })
 
     // received message listener
     socket.on('newMessage-send', async(data)=>{
-
         console.log('come from client ', data)
         // return console.log(data.userId)
         const receiverId = parseInt(data.userId)
@@ -1703,6 +1701,17 @@ app.get('/api/chatsCount',validateLogin,async(req,res)=>{
     })
 })
 
+
+// mark chats seen 
+
+app.patch('/api/chats/seen', validateLogin, async(e)=>{
+    const seenChats = await pool.query(`UPDATE chats SET is_read = true
+        WHERE chats.conversation_id  = $1 AND
+        chats.receiever_id = $2 AND
+        chats.is_read = false `, [conversationId,req.session.userId])
+})
+
+
 // CHATS 
 
 function validateLogin(req,res,next){
@@ -1713,6 +1722,18 @@ function validateLogin(req,res,next){
     }
 }
 
+// pool.query(`CREATE TABLE conversations (
+//     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+//     sender_id INTEGER REFERENCES users(id), 
+//     receiver_id INTEGER REFERENCES users(id),
+//     created_at timestamp default now(),
+//     UNIQUE(sender_id,receiver_id))`
+// ).then(data => console.log('new tbale created'))
+
+// pool.query(`create index if not exists idx_chats_conversation_id 
+//     ON chats(conversation_id)
+//     `
+// ).then(data => console.log('index added success')).catch(error => console.log(error))
 
 // pool.query(`ALTER TABLE shares
 //     ADD CONSTRAINT fk_shares_user_token

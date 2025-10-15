@@ -1,45 +1,47 @@
 
-
-const s = io()
 let receiverId;
-const messageContainer = document.querySelector('.chat-container1');
-const messageInput = document.getElementById('chatInput')
 
-const typingIndicator = document.querySelector('.typing-event')
-
-   s.on('user-joined', (user)=>{
+   socket.on('user-joined', (user)=>{
     console.log(user.loggedInUser, ' joined the chat')
     const loggedInUserId = user.loggedInUserId;
-   adoptScreenHeight()
+    // adoptTotalHeight()
 })
 
-s.on('user-typing', username =>{
-    
+socket.on('user-typing', username =>{
+    // return console.log(username)
     displayTypingIndicator(username)
-    adoptScreenHeight()
+    adoptTotalHeight()
 })
 
-s.on('received-message', (data)=>{
+socket.on('received-message', (data)=>{
 if(data.target === 'receiver'){
-    // updateHomeMessageList(data)
     const lastMessageData = localStorage.setItem('lastMsgData', data)
     console.log(data.newMsg, data.sender_name)
     displayMessage(data.newMsg.message, formatDate(data.newMsg.created_at), 'receivingMessage')
-    adoptScreenHeight()
+    adoptTotalHeight()
 }
 })
 
 
-const submitBtn = document.querySelector('.chatSubmitBtn')
-submitBtn.addEventListener('click', (e)=>{
+chatPageContainer.addEventListener('click', (e)=>{
 
-    // getting the receiver id from url 
-    const url = window.location.pathname
-     receiverId = url.split('/')[3]
-    // console.log(receiverId, receiverId[3])
+    if(e.target.closest('.chatSubmitBtn')){
+      setUpAndSendMessage()
+    }
+   
+})
+
+
+
+function setUpAndSendMessage(){
+    const messageInput = chatPageContainer.querySelector('#chatInput')
+
+    const receiverId = getReceiverId()
+     console.log(receiverId)
     let message = messageInput.value
     const now = new Date().toISOString()
-    const displayTime = new Date().toLocaleTimeString('en-US',{hour : '2-digit', minute: '2-digit', hour12 : true})
+    const displayTime = new Date().toLocaleTimeString('en-US',
+        {hour : '2-digit', minute: '2-digit', hour12 : true})
 
     const messageData = {
         msg : message, 
@@ -48,16 +50,38 @@ submitBtn.addEventListener('click', (e)=>{
     }
     if(messageInput.value === '') return;
 
-    s.emit('newMessage-send', messageData)
+    socket.emit('newMessage-send', messageData)
     displayMessage(message, displayTime, 'sendingMessage')
     messageInput.value = ''
-    adoptScreenHeight()
-})
+    adoptTotalHeight()
+}
 // typing event
 
+const messageInput = chatPageContainer.querySelector('#chatInput')
+if(messageInput){
 messageInput.addEventListener('keypress', (e)=>{
-     s.emit('user-typing', receiverId)
+     const receiverId = getReceiverId()
+      console.log(receiverId, 'on key press')
+     socket.emit('start-typing', receiverId)
+     adoptTotalHeight()
 })
+}
+
+
+
+function adoptTotalHeight(){
+const chatContainer = document.querySelector('.chat-container1')
+   if(chatContainer.scrollTop < chatContainer.scrollHeight){
+     chatContainer.scrollTop  = chatContainer.scrollHeight - chatContainer.clientHeight
+    }
+}
+
+function getReceiverId(){
+    const url = localStorage.getItem('chat-list-user-url')
+    const filteredURL = url.split('/').filter(segment => segment)
+     const receiverId = filteredURL[2]
+     return receiverId
+}
 
 function displayMessage(message,date, sendingMessage){
     const messageHTML = document.createElement('div')
@@ -67,7 +91,9 @@ function displayMessage(message,date, sendingMessage){
         <p class="date">${date}</p>
     `
     messageHTML.innerHTML = chatContent
-    messageContainer.appendChild(messageHTML)
+    const messageContainer = chatPageContainer.querySelector('.chat-container1')
+
+    if(messageContainer) messageContainer.appendChild(messageHTML)
 }
 
 
@@ -83,16 +109,22 @@ const formattedDate  = date.toLocaleDateString('en-US', {month : 'short'}) +
 
 //typing indicator display
 
+
 function displayTypingIndicator(username){
-    // to prevent diplaying after each key press/ we need only once !
+const messageContainer = document.querySelector('.chat-container1')
+
+if(!messageContainer) return console.log('message container is not defined !')
+
+    // remove the indicator element if any from before 
     removeTypingIndicator()
     
+    // then recreate the indidcator element 
     const indicatorEl = document.createElement('p')
-    indicatorEl.classList.add('typing-event')
+    indicatorEl.classList.add('typing-event','date')
     indicatorEl.textContent = `${username} is typing...`
-
     messageContainer.appendChild(indicatorEl)
 
+    // remove the element after two seconds too , if message delays
    indicatorEl.timeout = setTimeout(removeTypingIndicator,2000);
 }
 
@@ -102,12 +134,6 @@ function removeTypingIndicator(){
     if(existingEl) {
         clearTimeout(existingEl.timeout)
         existingEl.remove()
-    }
-}
-
-function adoptScreenHeight(){
-     if(messageContainer.scrollHeight > messageContainer.clientHeight){
-        messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
     }
 }
 
@@ -130,7 +156,8 @@ window.addEventListener('resize', () => {
     initialHeight = currentHeight;
 });
 
-function scrollToBottom() {
-    const messagesContainer = document.querySelector('.chat-messages');
+
+function scrollToBottom(containerClass) {
+    const messagesContainer = document.querySelector(containerClass);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
