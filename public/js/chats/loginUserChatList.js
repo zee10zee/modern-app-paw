@@ -24,6 +24,10 @@ function renderChatList(lastMessages){
    chatListContainer.innerHTML = ''
   const chatsArray = Object.values(lastMessages) 
 
+   const containerTitle = document.createElement('h2')
+   containerTitle.textContent = 'Chat List'
+   chatListContainer.prepend(containerTitle)
+   
    chatsArray.forEach(chat =>{
      chatListContainer.appendChild(previewLastMessage(chat,null))
    })  

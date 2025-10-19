@@ -5,7 +5,6 @@ modal.addEventListener('click', async(e)=>{
      const commentorLink = e.target.classList.contains('user-link');
      const userChatLink = e.target.classList.contains('userChatLink')
        const postId = modal.dataset.postId; 
-      let target = e.target
      
       if(editBtnOfModal && modal.classList.contains('actual')){
            modal.classList.remove('is_shared_post')
@@ -27,12 +26,15 @@ modal.addEventListener('click', async(e)=>{
          hideAllPages()
          await loadChatPage(userLink)
          postBtn.hide()
+         modal.style.display = 'none';
+
       }else if(postOwnerProfileLink){
         e.preventDefault()
         const el = e.target.closest('.action-item')
         const link = el.getAttribute('href')
         console.log(link)
         const clickedPostOwner = localStorage.setItem('clickedOwnerLink',link)
-          hideAllShowUserProfilePage(e)
+          hideAllShowUserProfilePage(el)
+          modal.style.display = 'none';
       }
     })

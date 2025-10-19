@@ -1,5 +1,6 @@
 
 const smChatPageContainer = document.querySelector('.smChatListContainer')
+const smGroupsContainer = document.querySelector('.smGroupsContainer')
 const bottomNav = document.querySelector('.bottom-nav')
 const bottomNavchatContainer =  document.querySelector('.bottom-nav-chats')
 const userPageContainer =  document.querySelector('.userProfileContainer')
@@ -17,54 +18,130 @@ bottomNav.addEventListener('click', async(e)=>{
      
   }else if(e.target.closest('.profilePicContain')){
     e.preventDefault()
+    let targetParent;
+   
     const parentEl = e
     const parent_parent_el = e.target.closest('.profileImageLink')
     const link = parent_parent_el.getAttribute('href')
     console.log(link)
     localStorage.setItem('clickedOwnerLink',link)
 
-    await hideAllShowUserProfilePage(parentEl)
+     if(parentEl){
+       targetParent = parentEl.target.closest('.action-item,.profilePicContain,.profileImageLink')
+    }else{
+      console.log('looking at static parnet')
+      targetParent = document.querySelector('.action-item, .profilePicContain, .profileImageLink')
+    }
+
+    await hideAllShowUserProfilePage(targetParent)
   }
   else if(e.target.closest('.groups-btn')){
-    alert('groups are under work , enjoy the rest !!')
+    hideAllShowCommunity()
   }
   else if(e.target.closest('.notif-btn')){
-     
      notifDropdown.classList.toggle('reveal')
   } 
  })
+
+
+ async function hideAllShowCommunity(){
+    hideHomePage()
+    hideUserProfilePage()
+    hideChatPage()
+    smGroupsContainer.classList.add('active')
+    // smGroupsContainer.innerHTML = loadSpinner('groups')
+    await fetchCommunity(smGroupsContainer)
+    setView('.smGroupsContainer')
+ }
+
+ function setView(viewName){
+  localStorage.setItem('last-active-window', viewName)
+ }
 
  async function hideAllShowChatList(){
     hideHomePage()
     hideUserProfilePage()
     hideChatPage()
+    hideCommunity()
     smChatPageContainer.classList.add('active')
     smChatPageContainer.innerHTML = loadSpinner('chats')
     await fetchAndRenderChatList()
+    setView('.smChatListContainer')
  }
 async function hideAllShowHomePage(){
   hideUserProfilePage()
     hideChatList()
     hideChatPage()
+    hideCommunity()
     postsContainer.innerHTML = loadSpinner('posts')
     await showHomePage()
+    setView('.posts-container')
 }
- async function hideAllShowUserProfilePage(e){
+
+ async function hideAllShowUserProfilePage(targetParent){
     hideHomePage()
     hideChatList()
     hideChatPage()
+    hideCommunity()
     userPageContainer.classList.add('active')
     userPageContainer.innerHTML = loadSpinner('user profile..')
-   
-    const targetParent = e.target.closest('.action-item,.profilePicContain,.profileImageLink')
 
+    if(!targetParent) return console.log('No valid user profile parent found !')
+    
+       console.log(targetParent, ' target parent')
      await getSectionsAndLoadUserPage(targetParent)
+     setView('.userProfileContainer')
  }
 
  function hideChatPage(){
   const chatPage = document.querySelector('.chatPageContainer')
   if(chatPage) chatPage.classList.remove('active')
  }
+
+  function hideCommunity(){
+  const communityContainer = document.querySelector('.smGroupsContainer')
+  if(communityContainer) communityContainer.classList.remove('active')
+ }
+
+async function fetchCommunity(container){
+  const res = await axios.get('/api/users/community')
+
+  console.log(res, res.data)
+  if(res.statusText === 'OK'){
+    console.log('proceed')
+    const community = res.data.community_users;
+
+    const community_array = Array.from(community)
+
+    // smGroupsContainer.classList.add('rightContainer')
+    const communityTitle = document.createElement('h2')
+    communityTitle.textContent = `Community`
+    container.append(communityTitle)
+    container.classList.add('striking-box')
+    community_array.forEach(user => container.append(loadCommunity(user)))
+
+}
+}
+
+function loadCommunity(user){
+  const userlist = document.createElement('ul')
+  const eachList = document.createElement('li')
+  userlist.classList.add('community-list')
+  eachList.classList.add('user','online')
+
+  eachList.innerHTML = `
+      <div class="profile">
+        <img src="${user.profilepicture}" alt="${user.firstname}">
+      </div>
+      <div class="user-info">
+        <p class="fname">${user.firstname}</p>
+        <i class="online-status">Online</i>
+      </div>
+ `
+
+ userlist.append(eachList)
+ return userlist
+}
 
 let user_token;
 let id;

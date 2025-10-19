@@ -1,16 +1,28 @@
+
 const chatList = document.querySelector('.smChatListContainer')
 const chatPageContainer = document.querySelector('.chatPageContainer')
 
-chatList.addEventListener('click', async(e)=>{
+hanleChatListClick(chatList)
+
+function hanleChatListClick(listContainer){
+    listContainer.addEventListener('click', async(e)=>{
     e.preventDefault()
     if(e.target.closest('.chatItem')){
         const userLink = getReceiverLink(e,'.chatItem')
         storeOnLocalStorage('chat-list-user-url',userLink)
         console.log('loading chats ..')
-         hideAllPages()
-         await loadChatPage(userLink)
+        chatPageContainer.innerHTML = loadSpinner('all chats ...')
+         await hideAllShowChatPage(userLink)
+         setView('.chatPageContainer')
     }
 })
+}
+
+async function hideAllShowChatPage(userLink){
+    hideAllPages()
+    chatPageContainer.innerHTML = loadSpinner('all chats ...')
+    await loadChatPage(chatPageContainer,userLink)
+}
 
 function updateChatCount(){
     // const seenChats = 
@@ -32,7 +44,22 @@ function hideChatPage(){
   chatPageContainer.classList.remove('active')
 }
 
-async function loadChatPage(link){
+
+async function loadChatPage(container,userLink){
+const messages = await fetchChatPageMessages(userLink)
+
+// if(window.innerWidth < 800){
+const chatsLayer = loadInitialChats(messages)
+     container.innerHTML = chatsLayer.outerHTML
+     container.classList.add('active')
+//    adoptTotalHeight()   
+// }
+  
+
+
+}
+
+async function fetchChatPageMessages(link){
     console.log(link)
     const url = link.split('/').filter(url => url)
     console.log(url)
@@ -40,16 +67,13 @@ async function loadChatPage(link){
     const userToken = url[3]
     const oneToOneChats = await fetchAndLoadChats(receiverId,userToken)
     console.log(oneToOneChats)
-    const chatsLayer = loadInitialChats(oneToOneChats)
-    const fixedBottom = loadChatBoxAndButton()
-    chatPageContainer.innerHTML = chatsLayer.outerHTML + fixedBottom
-   chatPageContainer.classList.add('active')
-   adoptTotalHeight()
+  return oneToOneChats
 }
 
 
 function loadChatBoxAndButton(){
-    return `  <div class="inputAndSentBtn">
+    const chatBottomBox = createElement('div', 'inputAndSentBtn')
+    chatBottomBox.innerHTML =  `
             <input type="text" name="chatInput" id="chatInput" class="chatInput" placeholder = "Type a message...">
             <button class="chatSubmitBtn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -57,7 +81,10 @@ function loadChatBoxAndButton(){
                     <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
                 </svg>
             </button>
-        </div>`
+      `
+
+      return chatBottomBox
+      
 }
 
 async function fetchAndLoadChats(receiverId, userToken){
@@ -73,7 +100,7 @@ async function fetchAndLoadChats(receiverId, userToken){
 
 
 function loadInitialChats(oneToOnChats){
- const messageContainer =createElement('div','chat-container1')
+ const messageContainer = createElement('div','chat-container1')
 
     oneToOnChats.forEach(chat => {
          const direction = chat.sender_id === parseInt(loggedInUserId) ? 
@@ -88,8 +115,11 @@ function loadInitialChats(oneToOnChats){
         <p class="date">${formatDate(date)}</p>
     `
 
-    messageContainer.appendChild(messageDiv)
+    messageContainer.append(messageDiv)
 })
+
+   const chatPageBottom = loadChatBoxAndButton()
+    messageContainer.append(chatPageBottom)
     return messageContainer
 
 }

@@ -8,6 +8,7 @@
     <meta  class="fbdescription" property="og:description" content="A compelling description of what this feature does and why users should try it." />
     <meta  class="fbimg" property="og:image" content="https://yourapp.com/images/og-image-for-cool-feature.jpg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/modals.css">
     <link rel="stylesheet" href="/styles/style.css">
 
     <title>Home</title>
@@ -125,39 +126,13 @@
   <div id="postsContainer" class="posts-container"></div>
 
   <!-- Right Container (Online Users) -->
-  <div class="rightContainer">
-  <h2>Community</h2>
-  <ul class="community-list">
-    <!-- Online users first -->
-    <li class="user online">
-      <div class="profile">
-        <img src="/static-images/anonymous-user.png" alt="Ali">
-      </div>
-      <div class="user-info">
-        <p class="fname">Ali</p>
-        <i class="online-status">Online</i>
-      </div>
-    </li>
-
-    <!-- Offline users -->
-    <li class="user offline">
-      <div class="profile">
-        <img src="/uploads/1751110235162-1free-html5-and-css3-login-forms.jpg.avif" alt="Sara">
-      </div>
-      <div class="user-info">
-        <p class="fname">Sara</p>
-        <i class="online-status">2 hours ago</i>
-      </div>
-    </li>
-  </ul>
-</div>
+  <div class="rightContainer"></div>
 </div>
 
 <div class="userProfileContainer"></div>
 <div class="smChatListContainer"></div>
 <div class="chatPageContainer"></div>
-
-
+<div class="smGroupsContainer"></div>
 
 <!-- Share Modal -->
 <div id="share-container" class="share-modal" style="display: none;"></div>
@@ -241,6 +216,12 @@
    <script defer src="/js/components/handle-dropdown.js"></script>
    <script defer src="/js/chats/handle-readChats.js"></script>
    <script defer src="/js/chats/chat.js"></script>
+   <script defer src="/js/components/community.js"></script>
+   <script defer src="/js/components/updateProfilePic.js"></script>
+   <script defer src="/js/components/currentPageLoad.js"></script>
+   <script defer src="/js/chats/handle-chatList-click.js"></script>
+
+
 
 </body>
 </html>

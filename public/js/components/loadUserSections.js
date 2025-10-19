@@ -30,8 +30,18 @@ function loadprofileHeader(user){
   const username = user.firstname.split(' ')[0]
   const lastname = user.firstname.split(' ').pop()
 
-  return `<header class="profileHeader">
-<img src="${user.profilepicture}" alt="${username} profile picture" class="profilePhoto">
+
+  return `<header class="profileHead">
+  <div class="profilePic-update-logo">
+    <div class="profileCover">
+       <img src="${user.profilepicture}" alt="${username} profile picture" class="profilePhoto">
+    </div>
+    ${user.is_owner ? `
+    <div class="update-profile-logo" style="display : flex; flex-direction:column; align-items: center">
+       <span class="update-profile-text">Update profile</span>
+    </div> 
+    `:''} 
+  </div>
 
 <div class="profileDetails">
 <h1 class="profileName">${username} ${lastname}</h1>

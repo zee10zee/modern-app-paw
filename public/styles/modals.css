@@ -1,0 +1,104 @@
+/* success-modal: slides down from top, stays briefly, then slides back up (3s total) */
+.success-modal {
+  position: fixed;
+  left: 50%;
+  top: -80px;                    /* start off-screen above */
+  transform: translateX(-50%);   /* center horizontally */
+  padding: 12px 20px;
+  background: #28a745;           /* success green */
+  color: #fff;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  opacity: 0;
+  z-index: 9999;
+  pointer-events: none;          /* doesn't steal clicks while animating */
+  will-change: top, opacity;
+  animation: success-pop 3s cubic-bezier(.22,.9,.2,1) forwards;
+}
+
+/* keyframes: 0% off-screen + invisible, 10% slide-in, 80% stay visible, 100% slide-out */
+@keyframes success-pop {
+  0% {
+    top: -80px;
+    opacity: 0;
+  }
+  10% {
+    top: 18px;   /* final visible position (a little below top) */
+    opacity: 1;
+  }
+  80% {
+    top: 18px;
+    opacity: 1;
+  }
+  100% {
+    top: -80px;
+    opacity: 0;
+  }
+}
+
+/* optional smaller/bolder look for compact notifications */
+.success-modal.small {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* accessibility: respect reduced-motion preference (no animation) */
+@media (prefers-reduced-motion: reduce) {
+  .success-modal {
+    animation: none;
+    top: 18px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+
+.striking-box {
+  background: #fff; /* or any background color */
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),   /* soft shadow */
+    0 12px 24px rgba(0, 0, 0, 0.2),  /* larger shadow */
+    0 20px 40px rgba(0, 0, 0, 0.1);  /* deep outer glow */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Optional hover effect to make it pop even more */
+.striking-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 8px 16px rgba(0,0,0,0.35),
+    0 16px 32px rgba(0,0,0,0.25),
+    0 24px 48px rgba(0,0,0,0.15);
+}
+
+
+@media (max-width : 800px){
+    .inputAndSentBtn {
+    position: fixed;
+    width: 99%;
+    overflow: hidden;
+    bottom: 50px;
+    left: 0;
+    padding: auto;
+    margin: 0 auto;
+    padding-left: 0;
+    padding-right: 3px;
+    z-index: 2000;
+}
+.chat-container1 {
+  max-height: 820px; /* or any preferred height */
+  overflow-y: auto;
+  padding: 16px;
+  background-color: #f9fafb; /* light gray */
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 50px;
+}
+}

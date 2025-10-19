@@ -236,7 +236,9 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
 
       if(userExist.rowCount > 0) return res.json({message :"email is already registered please log in"})
 
-      const profile = req.file? path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : null
+      const profile = req.file? 
+      path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : 
+      '/static-images/anonymous-user.png'
 
       // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
         const userToken = crypto.randomBytes(32).toString('hex')
@@ -268,6 +270,29 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
         newUser : newUser.rows[0],
         isLoggedIn : true,
         userId : req.session.userId
+    })
+})
+
+// user profile update
+
+app.patch('/api/user/:id/profileUpdate', 
+    upload.single('updated-profile'), 
+    validateLogin, async(req,res)=>{
+    const id = parseInt(req.params.id)
+
+    if(!req.file)  return console.log('no file selected !')
+
+        const imgPath = `/uploads/${req.file.filename}`
+      const updatedImage = 
+      await pool.query(`UPDATE users 
+      SET profilepicture = $1 WHERE id = $2 RETURNING *`,[imgPath,req.session.userId])
+
+    if(updatedImage.rowCount === 0) return console.log('failure updating profile')
+
+    res.json({
+        message : 'profile image udpated successfully !',
+        success :true,
+        updatedPic : updatedImage.rows[0],
     })
 })
 
@@ -1711,6 +1736,24 @@ app.patch('/api/chats/seen', validateLogin, async(e)=>{
         chats.is_read = false `, [conversationId,req.session.userId])
 })
 
+// getting community
+
+app.get('/api/users/community', validateLogin, async(req,res)=>{
+    const community = await pool.query(`SELECT * FROM users ORDER BY active_at DESC`)
+
+    if(community.rowCount === 0){
+        return res.json({
+            message : 'no user has joined yet ! be patient',
+        })
+    }
+
+    res.json({
+        community_users : community.rows
+    })
+})
+
+
+
 
 // CHATS 
 
@@ -1721,6 +1764,8 @@ function validateLogin(req,res,next){
         res.redirect('/api/login')
     }
 }
+
+// pool.query('ALTER TABLE users ADD COLUMN active_at TIMESTAMPTZ DEFAULT NOW()').then(data => console.log(console.log('is active created')))
 
 // pool.query(`CREATE TABLE conversations (
 //     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

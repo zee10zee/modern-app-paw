@@ -41,7 +41,7 @@ userProfileContainer.addEventListener('click', async(e)=>{
    await renderVideos(mediaList, token,userId)
   }
 
-  else if(e.target.classList.contains('chatBtn')){{
+  else if(e.target.classList.contains('chatBtn')){
     const data = await fetchUser(token,userId)
     const owner = data.owner
 
@@ -51,8 +51,17 @@ userProfileContainer.addEventListener('click', async(e)=>{
      console.log('message btn clicked', owner)
      window.location.href = `/api/chatpage/${owner.id}/${owner.usertoken}`
   }
-  }
+  // else if(e.target.closest('.update-profile-logo')){
+  //       console.log('you clicked the update profile')
+
+  //       const parent = e.target.closest('.update-profile-logo')
+  //       const input = parent.querySelector('.updateProfileInput')
+
+  //       console.log(parent, 'parent ',input, 'input', input["type"], 'type of input')
+  //   }
 })
+
+
 function getTokenAndUserId(el){
   console.log(el)
 const link = el || el.getAttribute('href') //we sent the link from the cliced post owner

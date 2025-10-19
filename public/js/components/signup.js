@@ -40,14 +40,12 @@ signupForm.addEventListener('submit', async(e)=>{
         const checkNewUserEl = document.getElementById('newUserCheck')
             console.log(checkNewUserEl)
 
-        // if(checkNewUserEl.style.display === 'none') {
             checkNewUserEl.style.display = "block"
             checkNewUserEl.textContent = response.data.message
 
             setTimeout(() => {
                 checkNewUserEl.style.display = 'none'
             }, 3000);
-        // }
         
     }
 

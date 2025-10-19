@@ -1,4 +1,4 @@
-
+const messageContainer = chatPageContainer.querySelector('.chat-container1')
 let receiverId;
 
    socket.on('user-joined', (user)=>{
@@ -14,27 +14,53 @@ socket.on('user-typing', username =>{
 })
 
 socket.on('received-message', (data)=>{
-if(data.target === 'receiver'){
-    const lastMessageData = localStorage.setItem('lastMsgData', data)
-    console.log(data.newMsg, data.sender_name)
-    displayMessage(data.newMsg.message, formatDate(data.newMsg.created_at), 'receivingMessage')
-    adoptTotalHeight()
-}
+    handleReceiverMessage(data)
 })
+
+
+function handleReceiverMessage(data){
+    if(data.target === 'receiver'){
+    const lastMessageData = localStorage.setItem('lastMsgData', data)
+    console.log(data.newMsg, data.sender_name, 'just inside handleReceiving message')
+    const msg = data.newMsg.message
+    const msgTime = formatDate(data.newMsg.created_at)
+    const directionClass = 'receivingMessage'
+    
+    if(window.innerWidth < 800){
+      appendMessageToContainer(msg,msgTime,directionClass,messageContainer)
+      adoptTotalHeight()
+    }else{
+    console.log('before appending to receiving message ')
+       
+        const lgChatPageContainer = main.querySelector('.chat-container1')
+        console.log(lgChatPageContainer, 'just about to append receiving message')
+        console.log('message data info ', data, data.newMsg, ' AND AVRIABLES ', msgTime,msg, directionClass)
+        appendMessageToContainer(msg,msgTime,directionClass,lgChatPageContainer)
+    }
+}
+}
+
+function appendMessageToContainer(msg,messageTime,directionC,container){
+    console.log('is appending the messgae !')
+    const messageHTML = displayMessage(msg,messageTime,directionC)
+   console.log('the last part is this : for having the message relat time', messageHTML)
+   console.log('the contaienr its appending ',container)
+    if(container) container.appendChild(messageHTML)
+}
 
 
 chatPageContainer.addEventListener('click', (e)=>{
 
     if(e.target.closest('.chatSubmitBtn')){
-      setUpAndSendMessage()
+      setUpAndSendMessage(chatPageContainer)
     }
    
 })
 
 
 
-function setUpAndSendMessage(){
-    const messageInput = chatPageContainer.querySelector('#chatInput')
+function setUpAndSendMessage(container){
+    const messageInput = container.querySelector('#chatInput')
 
     const receiverId = getReceiverId()
      console.log(receiverId)
@@ -51,7 +77,11 @@ function setUpAndSendMessage(){
     if(messageInput.value === '') return;
 
     socket.emit('newMessage-send', messageData)
-    displayMessage(message, displayTime, 'sendingMessage')
+    console.log(chatPageContainer)
+    const messageContainer = container.querySelector('.chat-container1')
+
+   
+    appendMessageToContainer(message, displayTime, 'sendingMessage',messageContainer)   
     messageInput.value = ''
     adoptTotalHeight()
 }
@@ -91,9 +121,7 @@ function displayMessage(message,date, sendingMessage){
         <p class="date">${date}</p>
     `
     messageHTML.innerHTML = chatContent
-    const messageContainer = chatPageContainer.querySelector('.chat-container1')
-
-    if(messageContainer) messageContainer.appendChild(messageHTML)
+    return messageHTML
 }
 
 
@@ -147,7 +175,7 @@ window.addEventListener('resize', () => {
         // Keyboard is open
         document.querySelector('.inputAndSentBtn').style.marginBottom = '0';
         // Scroll to bottom to keep input in view
-        scrollToBottom();
+        // scrollToBottom('.');
     } else {
         // Keyboard is closed
         document.querySelector('.inputAndSentBtn').style.marginBottom = '0';

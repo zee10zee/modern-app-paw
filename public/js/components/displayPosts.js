@@ -11,18 +11,23 @@ const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
  let postId;
      
  const loggedInUser = document.querySelector('.loggedInUser')
+ const upLink = `/userProfile/${userToken}/${loggedInUserId}`
  const  profilePicContain = document.querySelectorAll('.profilePicContain')
+   
 
         appendUserProfileOnNav()
 
     function appendUserProfileOnNav(){
       profilePicContain.forEach(container =>{
-            const profile = document.createElement('img')
+      container.setAttribute('href', upLink)
+
+
+        const profile = document.createElement('img')
         profile.classList.add('profilePic')
         const profileLink = document.createElement('a')
         profileLink.classList.add('profileImageLink')
 
-        profileLink.href = `/userProfile/${userToken}/${loggedInUserId}`
+        profileLink.href = upLink
         profile.src = photo
         profileLink.append(profile)
         container.append(profileLink)
@@ -208,29 +213,33 @@ function loadComments(comment){
    
 
 
+
 const clickHandler = (e, container,parentContainer) => {
-            if (!container.contains(e.target) && 
-                e.target !== gear && 
-                e.target !== parentContainer) {
-                container.style.display = "none";
-                window.removeEventListener('click', clickHandler);
-            }
-        };
+    if (!container.contains(e.target) && 
+        e.target !== gear && 
+        e.target !== parentContainer) {
+        container.style.display = "none";
+        window.removeEventListener('click', clickHandler);
+    }
+};
 
-      let modal = document.querySelector('.general_modal')
+let modal = document.querySelector('.general_modal')
 
-       console.log('modal modal moda l', modal)
-      // const mediaModal = document.createElement('div')
-
-      // Add this to your modal creation code
+let contentData = null;
+let isDataReady = false;
+let fetchedContent = null;
 
 const setupEventListener = (container)=>{
   container.addEventListener('mouseover', async(e)=>{
   const ownerPhoto = e.target.classList.contains('ownerPhoto');
+  const gear = e.target.classList.contains('gear')
   const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
   postId = postDiv ? postDiv.dataset.postId : null; 
-    if(ownerPhoto){
-       
+  const cID = findClickedPostOrComment(e.target)
+    if(gear){
+         
+         contentData = await checkPostAuthorAndCommentAuthor(e,cID)        
+          isDataReady = true 
     }
   })
 
@@ -239,36 +248,28 @@ const setupEventListener = (container)=>{
      const showMoreLink = e.target.classList.contains('showMoreLink')
      const ownerPhoto = e.target.classList.contains('ownerPhoto');
      const postDiv = e.target.closest('.posts') || e.target.closest('.editPostContainer')
-      // const mediaTag = postDiv.querySelector('.mediaFile')
      const imgOrVideo = e.target.classList.contains('mediaFile')
      postId = postDiv ? postDiv.dataset.postId : null; 
       //  return console.log(gear)
-    if(gear){
+    if(gear && isDataReady){
       e.preventDefault()
       const gearBtn = e.target
-      let cID = null;
-      const postId = gearBtn.closest('[data-post-id]')?.dataset.postId
-
-      if(postId){
-        cID = postId
-      }else{
-        cID = gearBtn.closest('[data-comment-id]')?.dataset.commentId
-      }
-
-      loadModalSpinner()
-      const {contentId} = await checkPostAuthorAndCommentAuthor(e,cID)
-      console.log('content id ', contentId, modal)
-
-      checkMainPostAndSharePost(e,postDiv)
-     
-      modal.innerHTML = loadSpecificPostModal(contentId)
-      openModal(gearBtn)
+       checkMainPostAndSharePost(e,postDiv)
+       loadModalSpinner()
+       modal.innerHTML = loadSpecificPostModal(contentData.contentId)
+       openModal(gearBtn)    
 
     }else if(showMoreLink){
       toggleDescriptionExpand(postDiv,e)
     }
     else if(ownerPhoto){
-      await handleModalAndLinks(e)
+      const cID = findClickedPostOrComment(e.target)
+      loadModalSpinner()
+      const contentData = await checkPostAuthorAndCommentAuthor(e,cID)    
+      const tpost = handleModalAndLinks(e,contentData.content)
+      modal.innerHTML = popUserProfileAndChat(tpost)
+      openModal(e.target)
+      e.stopPropagation()
     }
 
     else if(imgOrVideo){
@@ -282,45 +283,71 @@ const setupEventListener = (container)=>{
 })
 }
 
-async function handleModalAndLinks(e){
+
+function findClickedPostOrComment(gearBtn){
+  let cID = null;
+      const postId = gearBtn.closest('[data-post-id]')?.dataset.postId
+
+      if(postId){
+        cID = postId
+      }else{
+        cID = gearBtn.closest('[data-comment-id]')?.dataset.commentId
+      }
+
+      return cID
+}
+
+function createModal(){
+  const newModal = document.createElement('div')
+      newModal.classList.add('post-user-modal')
+  return newModal
+}
+
+
+ function handleModalAndLinks(e,targetContent){
  
     e.preventDefault()
      const photoBtn = e.target
-     
-    const targetContent = await fetchClickedPostContent(e)
-
-        if(!targetContent) return console.log('no target post found') 
+    
+  if(!targetContent) return console.log('no target post found') 
 
       const commentElement = e.target.closest('.comment');
 
       if (!commentElement) {
         console.log('no comment author click')
-          getPostAuthorModal(targetContent, e);
+          const postModal = getPostAuthorModal(targetContent, e);
+          return postModal
 
       }  else {
-          getCommentAuthorModal(targetContent, e);
-          console.log('Clicked on something else');
+        
+          const commentModal =  getCommentAuthorModal(targetContent, e);
+          return commentModal
       }
-      openModal(photoBtn)
   }
 
 
-  async function fetchClickedPostContent(event){
-    let finalpostId = null;
+  // async function fetchClickedPostContent(event){
+  //   let finalpostId = null;
      
-       // Handle post click
-    const sharedPost = event.target.closest('.shared_post')
+  //      // Handle post click
+  //   const sharedPost = event.target.closest('.shared_post')
 
-        if(sharedPost) {
-          finalpostId = sharedPost.dataset.postId
-        }else{
-          finalpostId = postId
-        }
+  //       if(sharedPost) {
+  //         finalpostId = sharedPost.dataset.postId
+  //       }else{
+  //         finalpostId = postId
+  //       }
       
-      const {content} = await checkPostAuthorAndCommentAuthor(event,finalpostId)
-      return content
-  }
+  //     const {content} = await checkPostAuthorAndCommentAuthor(event,finalpostId)
+  //     return content
+  // }
 
+
+  class postModal {
+    constructor(){
+
+    }
+  }
 
 // USING CLASSES FOR CACHING
 //********************* */
@@ -447,10 +474,6 @@ function checkMainPostAndSharePost(event,postDiv){
   modal.innerHTML = ''
 }
 
-// document.addEventListener('click', (e)=>{
-//   if(e.target.closest('.fullscreenModal')) toggleFullscreen(e)
-// })
-
 function toggleFullscreen(event){
   let existingModal = document.querySelector('.fullscreenModal') 
   if(existingModal) { document.body.removeChild(existingModal) }
@@ -469,6 +492,7 @@ function toggleFullscreen(event){
 
 
 function loadModalSpinner(){
+  console.log('loading is running !')
   modal.innerHTML = ''   
    modal.style.display = "flex"
    modal.innerHTML = loadSpinner("content")
@@ -476,14 +500,11 @@ function loadModalSpinner(){
 
 // // open modal
 function openModal(target) {
-   
-  console.log(target)
   if (!target) return;
-
+ console.log('after clicking the owner profile ')
   modal.style.display = "flex"
   modal.style.zIndex ='10000000'
-
-//   // return console.log(target,modal)
+ console.log(target, 'open modal target should be show after hover and click')
  const targetRect = target.getBoundingClientRect();
 const postdiv = target.closest('.posts');
 const postDivRect = postdiv.getBoundingClientRect();
@@ -497,42 +518,43 @@ let left = targetRect.left + targetRect.width / 2 - modal.offsetWidth / 2 + scro
 // // Convert to document coordinates by adding scrollX
 left += window.scrollX;
 
-console.log('Initial left:', left);
-
-// // Set boundaries relative to document coordinates
+// Set boundaries relative to document coordinates
 const minLeft = postDivRect.left + window.scrollX;
 const maxLeft = postDivRect.right + window.scrollX - modal.offsetWidth;
 
-console.log('Min and max lefts:', minLeft, maxLeft);
-
-// // Clamp modal's left so it stays inside postDiv
+// Clamp modal's left so it stays inside postDiv
 left = Math.max(minLeft, Math.min(left, maxLeft));
 
-// console.log('Final left:', left);
-
-// Apply styles (fixed the syntax error)
 modal.style.left = `${left}px`;
 modal.style.top = `${top}px`;
+
+handleMediaAndModalClick()
+}
+
+function handleMediaAndModalClick(){
   // Close modal when clicking outside
   document.addEventListener('click', function handler(e) {
-    if (!modal.contains(e.target) || e.target.classList.contains('closep')) {
-      modal.style.display = 'none';
-      document.removeEventListener('click', handler);
-    }
+      if (!modal.contains(e.target) || e.target.classList.contains('closep')) {
+        modal.style.display = 'none';
+        document.removeEventListener('click', handler);
+      }
 
-       
-       if(e.target.classList.contains('.mediaFile') || e.target.classList.contains('collapseFullScreen')){
-          const mediaModal = document.createElement('div')
-          const clone = e.target.cloneNode(true)
-          console.log(clone, 'clone of media file')
-          mediaModal.appendChild(clone)
-         mediaFullScreen.classList.add('fullscreenMedia')
-       }else{
-         mediaFile.style.display = "none"
-       }
+      handleMediaFullscreen(e)
   });
 }
 
+function handleMediaFullscreen(event){
+  const mediaFullScreen = document.createElement('div')
+  if(event.target.classList.contains('.mediaFile') || event.target.classList.contains('collapseFullScreen')){
+    const mediaModal = document.createElement('div')
+    const clone = event.target.cloneNode(true)
+    console.log(clone, 'clone of media file')
+    mediaModal.appendChild(clone)
+    mediaFullScreen.classList.add('fullscreenMedia')
+  }else{
+    mediaFile.style.display = "none"
+  }
+}
   
 // pop of modal on clicking user profile
 function popUserProfileAndChat(post){
@@ -584,7 +606,7 @@ function getCommentAuthorModal(targetComment,e){
      }
   }
   
-  appendToModal(displayComment,e)
+  return displayComment
 }
 
 
@@ -616,16 +638,16 @@ function getPostAuthorModal(targetPost,e){
         }
       }
 
-      appendToModal(displayPost,e)
+        return displayPost
      
       }
 
 
 function appendToModal(displayPost,e){
- console.log('comes from appendTomodal', displayPost)
+
   if(displayPost){
          modal.innerHTML = ''
-        modal.innerHTML = popUserProfileAndChat(displayPost)
+        
         modal.style.display = "flex"
         e.stopPropagation()
       }
@@ -727,6 +749,9 @@ const commentDate = new Date(comment.created_at).toLocaleDateString('en-US',{
 }
 
   document.addEventListener('DOMContentLoaded', async(e)=>{
+   const leftContainer = document.querySelector('.chat-list-container')
+    postsContainer.classList.add('striking-box')
+    leftContainer.classList.add('striking-box')
 
     postsContainer.innerHTML = loadSpinner('posts')
 
@@ -852,8 +877,8 @@ function loadHomePosts(posts){
 
 function loadSpinner(content){
    return ` 
-     <p>loading ${content} ..</p>
     <div id="loading" class="loading">
+     <p>loading ${content} ..</p>
        <div class="spinner"></div>
     </div>`
 }
