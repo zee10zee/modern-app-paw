@@ -24,12 +24,18 @@ if(usernameAlert && goodByeAlert){
 
 loginForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
+
+    const loginBtn = document.querySelector('.loginBtn')
+    loginBtn.disabled = true
+    loginBtn.innerHTML = loading()
+
     const response = await axios.post('/api/login',{
         email : email.value,
         password : password.value
     });
 
-    if(response.data.isLoggedIn){
+    if(response.data.isLoggedIn && response.status === 200){
+        // return console.log('check loaing')
         const {loggedInUser} = response.data       
     // calling the globalfunction
         window.loadActiveUserStoredInfo(
@@ -39,6 +45,8 @@ loginForm.addEventListener('submit', async(e)=>{
             loggedInUser.usertoken
         )
 
+        loginBtn.disabled = false
+        loginBtn.textContent = 'Log in'
         window.location.href="/"
     }else{
         console.log('please sign up first')
@@ -60,4 +68,22 @@ window.loadActiveUserStoredInfo = (id,name,profilePicture,token)=>{
     sessionStorage.setItem('loggedIn_name', name)
     sessionStorage.setItem('loggedIn_profile', profilePicture)
     sessionStorage.setItem('loggedIn_userToken', token)     
+}
+
+function loading(command = null){
+  return `
+  <div class="btn-loader-container">
+    <div class="ring-loader">
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    ${command ? `
+    <span>${command}...</span>
+    `:`
+    <span>Signing in...</span>
+    `}
+  </div>
+`;
 }

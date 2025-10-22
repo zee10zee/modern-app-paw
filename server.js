@@ -538,15 +538,10 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
    const tokenRow = checkToken.rows[0]
 
 //    || condition and new Date()
-// console.log(new Date() > tokenRow.expires_at)
-   if( !tokenRow || new Date() > tokenRow.expires_at){
-       console.log('token is invalid or expired')
-    //    return res.status(401).json({message : 'token is invalid or expired please insert your password again'})
-       return res.sendFile(basedir + 'expiredToken.html')
-   }
+//
    if(confirmPassword !== newPassword){
-      console.log('confirm password does not match the new passweord')
-      return res.send('confirm password does not match the new password')
+      console.log('confirm password does not match the new password')
+      return res.json({message : 'confirm password does not match the new password'})
    }
 
    const hashedPassword = await bcrypt.hash(newPassword,10)
@@ -556,12 +551,15 @@ app.post('/api/passwordReset/:token', async(req,res)=>{
 
    if(newPasswordd.rowCount === 0){
       console.log('failure in saving reset password')
-      return res.send('reset password fiaulre to save')
+      return res.json({message : 'reset password fiaulre to save'})
    }
 
    console.log('password updated successfully !')
    res.json({
-    message : 'password updated successfully !'
+    message : 'password updated successfully !', 
+    newPassword : newPassword,
+    confirmpas : confirmPassword,
+    success : true
    })
 })
 
@@ -1748,7 +1746,8 @@ app.get('/api/users/community', validateLogin, async(req,res)=>{
     }
 
     res.json({
-        community_users : community.rows
+        community_users : community.rows,
+        success : true
     })
 })
 

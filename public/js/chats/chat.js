@@ -41,22 +41,18 @@ function handleReceiverMessage(data){
 }
 
 function appendMessageToContainer(msg,messageTime,directionC,container){
-    console.log('is appending the messgae !')
     const messageHTML = displayMessage(msg,messageTime,directionC)
-   console.log('the last part is this : for having the message relat time', messageHTML)
-   console.log('the contaienr its appending ',container)
     if(container) container.appendChild(messageHTML)
 }
 
-
 chatPageContainer.addEventListener('click', (e)=>{
-
+    console.log('chat page container clicked')
     if(e.target.closest('.chatSubmitBtn')){
+      console.log('submit btn clicked too')
       setUpAndSendMessage(chatPageContainer)
     }
    
 })
-
 
 
 function setUpAndSendMessage(container){

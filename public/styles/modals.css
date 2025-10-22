@@ -1,8 +1,23 @@
-/* success-modal: slides down from top, stays briefly, then slides back up (3s total) */
+.returnHome{
+    display: none;
+}
+
+.returnHome svg{
+  width: 25px;
+  height: 25px;
+  fill: green;
+}
+
+.returnHome.active{
+  display: block;
+}
+
+
+/* success-modal: slides down from top, stays briefly, then slides back up (3s total) */ 
 .success-modal {
   position: fixed;
   left: 50%;
-  top: -80px;                    /* start off-screen above */
+  top: -80px;                    /*start off-screen above */
   transform: translateX(-50%);   /* center horizontally */
   padding: 12px 20px;
   background: #28a745;           /* success green */
@@ -76,29 +91,334 @@
 }
 
 
-@media (max-width : 800px){
-    .inputAndSentBtn {
-    position: fixed;
-    width: 99%;
-    overflow: hidden;
-    bottom: 50px;
-    left: 0;
-    padding: auto;
-    margin: 0 auto;
-    padding-left: 0;
-    padding-right: 3px;
-    z-index: 2000;
+
+/* google login loader */
+
+.btn-loader-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.chat-container1 {
-  max-height: 820px; /* or any preferred height */
-  overflow-y: auto;
-  padding: 16px;
-  background-color: #f9fafb; /* light gray */
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+
+/* Ring Loader Styles - for 2 divs structure */
+.ring-loader {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.ring-loader div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #4285f4;
+  border-radius: 50%;
+  animation: ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: #4285f4 transparent transparent transparent;
+}
+
+.ring-loader div:nth-child(1) { 
+  animation-delay: -0.45s; 
+}
+
+.ring-loader div:nth-child(2) { 
+  animation-delay: -0.3s; 
+}
+
+@keyframes ring {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#googleLoginBtn, .loginBtn, .signupBtn{
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+/* forget password page */
+
+/* Styling for the password recovery container and its elements */
+#fg-password-container {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+}
+
+#fg-password-container h1 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+#fg-password-container .email-success-message {
+  color: #007bff;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+#fg-password-container form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 50px;
+  align-items: center;
+  gap: 15px;
 }
+
+#fg-password-container input[type="email"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+#fg-password-container input[type="email"]:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+#fg-password-container button {
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#fg-password-container button:hover {
+  background: #0056b3;
+}
+
+#fg-password-container a {
+  display: inline-block;
+  margin-top: 15px;
+  color: #007bff;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+#fg-password-container a:hover {
+  color: #0056b3;
+}
+
+
+/* Styling for the password reset container and its elements */
+.resetContainer {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+}
+
+.resetContainer h2 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.resetContainer form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.resetContainer input[type="password"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.resetContainer input[type="password"]:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.resetContainer button {
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.resetContainer button:hover {
+  background: #0056b3;
+}
+
+/* Styling for failure message inside the reset container */
+.resetContainer .failure-msg {
+  width: 100%;
+  background-color: #ffe6e6;
+  color: #d93025;
+  border: 1px solid #f5c2c2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+  text-align: center;
+  font-weight: 500;
+  display: none; /* hidden by default; show when needed */
+}
+
+/* Optional: when you want to show it via JS, toggle this */
+.resetContainer .failure-msg.active {
+  display: block;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* Simple fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* chat page head */
+/* ===========================
+   Chat Page Containers (both)
+   =========================== */
+.lgChatPageContainer,
+.chatPageContainer {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+/* ===========================
+   Header (for both containers)
+   =========================== */
+.lgChatPageContainer .head,
+.chatPageContainer .head {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 12px 20px;
+  border: 1px solid #efefef;
+
+  /* Striking shadow only on head */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Left section (name + typing) */
+.lgChatPageContainer .head .left,
+.chatPageContainer .head .left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lgChatPageContainer .head .left h2,
+.chatPageContainer .head .left h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.lgChatPageContainer .head .left .top-user-typing,
+.chatPageContainer .head .left .top-user-typing {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Right section (buttons / icons) */
+.lgChatPageContainer .head .right,
+.chatPageContainer .head .right {
+  display: flex;
+  align-items: center;
+}
+
+.lgChatPageContainer .head .right ul,
+.chatPageContainer .head .right ul {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lgChatPageContainer .head .right ul li,
+.chatPageContainer .head .right ul li {
+  margin-left: 15px;
+  font-size: 0.95rem;
+  color: #2563eb;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.lgChatPageContainer .head .right ul li:hover,
+.chatPageContainer .head .right ul li:hover {
+  color: #1d4ed8;
+}
+
+/* ===========================
+   Responsive
+   =========================== */
+@media (max-width: 480px) {
+  .lgChatPageContainer .head,
+  .chatPageContainer .head {
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    position: fixed;
+    width: 100%;
+    left: 0;
+    top: 0;
+    width: 95%;
+    height: 50px;
+  }
+
+  .lgChatPageContainer .head .right ul li,
+  .chatPageContainer .head .right ul li {
+    margin-left: 0;
+    margin-right: 10px;
+  }
+}
+
+
+.closeChatPage{
+  position: absolute;
+  top: 10px;
+  right: 1px;
+  font-size: 14px;
+  padding: 3px;
+  background-color: red;
+  border-radius: 999;
 }

@@ -104,20 +104,23 @@ async function hideAllShowHomePage(){
  }
 
 async function fetchCommunity(container){
+  container.innerHTML = loadSpinner('community..')
   const res = await axios.get('/api/users/community')
-
-  console.log(res, res.data)
-  if(res.statusText === 'OK'){
+  
+  //  console.log(res.data.success, res.status === 200)
+  if(res.status === 200 && res.data.success){
     console.log('proceed')
     const community = res.data.community_users;
 
     const community_array = Array.from(community)
 
-    // smGroupsContainer.classList.add('rightContainer')
-    const communityTitle = document.createElement('h2')
+    container.innerHTML = ''
+  const communityTitle = document.createElement('h2')
+
     communityTitle.textContent = `Community`
     container.append(communityTitle)
     container.classList.add('striking-box')
+  
     community_array.forEach(user => container.append(loadCommunity(user)))
 
 }

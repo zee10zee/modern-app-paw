@@ -18,14 +18,21 @@ modal.addEventListener('click', async(e)=>{
       }
 
       if(userChatLink){
-        // e.preventDefault()
-        //  window.location.href = target.href
-        const userLink = getReceiverLink(e,'.user-profile-link')
-         storeOnLocalStorage('chat-list-user-url',userLink)
-        console.log('loading chats ..')
-         hideAllPages()
-         await loadChatPage(userLink)
-         postBtn.hide()
+          e.preventDefault()
+
+        if(window.innerWidth > 800){
+           console.log('show large size chat page')
+          await createContainerAndAppendChatPage(e)
+        }else{
+         
+          const userLink = getReceiverLink(e,'.user-profile-link')
+          storeOnLocalStorage('chat-list-user-url',userLink)
+          hideAllPages()
+          const smChatPageContainer = document.querySelector('.chatPageContainer')
+          await loadChatPage(smChatPageContainer,userLink)
+          postBtn.hide()
+        }
+        
          modal.style.display = 'none';
 
       }else if(postOwnerProfileLink){
@@ -34,6 +41,7 @@ modal.addEventListener('click', async(e)=>{
         const link = el.getAttribute('href')
         console.log(link)
         const clickedPostOwner = localStorage.setItem('clickedOwnerLink',link)
+
           hideAllShowUserProfilePage(el)
           modal.style.display = 'none';
       }

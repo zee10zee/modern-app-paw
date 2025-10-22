@@ -1,4 +1,5 @@
 const signupForm = document.getElementById('signUpForm')
+const signUpBtn = document.querySelector('.signupBtn')
 
 const profileLogo = document.getElementById('profile-logo')
 
@@ -19,6 +20,10 @@ signupForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
     const formData = new FormData(signupForm)
     try{
+
+        signupForm.disabled = true
+        signUpBtn.innerHTML = loading()
+
         const response = await axios.post('/api/signup', formData,{
         headers : {
             'Content-type' : 'multipart/form-data' 
@@ -34,6 +39,9 @@ signupForm.addEventListener('submit', async(e)=>{
             newUser.profilepicture,
             newUser.usertoken
         )
+
+        signUpBtn.disabled =false
+        signUpBtn.innerHTML = 'Sign up'
 
         window.location.href="/"
     }else{
@@ -63,4 +71,18 @@ window.loadActiveUserStoredInfoOnSignup = (id,name,profilePicture,token)=>{
     sessionStorage.setItem('loggedIn_name', name)
     sessionStorage.setItem('loggedIn_profile', profilePicture)
     sessionStorage.setItem('loggedIn_userToken', token)     
+}
+
+function loading(){
+  return `
+  <div class="btn-loader-container">
+    <div class="ring-loader">
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    <span>Signing in...</span>
+  </div>
+`;
 }

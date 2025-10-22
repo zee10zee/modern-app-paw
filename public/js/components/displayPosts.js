@@ -254,10 +254,10 @@ const setupEventListener = (container)=>{
     if(gear && isDataReady){
       e.preventDefault()
       const gearBtn = e.target
-       checkMainPostAndSharePost(e,postDiv)
-       loadModalSpinner()
-       modal.innerHTML = loadSpecificPostModal(contentData.contentId)
-       openModal(gearBtn)    
+      //  checkMainPostAndSharePost(e,postDiv)
+      //  loadModalSpinner()
+      //  modal.innerHTML = loadSpecificPostModal(contentData.contentId)
+      //  openModal(gearBtn)    
 
     }else if(showMoreLink){
       toggleDescriptionExpand(postDiv,e)
