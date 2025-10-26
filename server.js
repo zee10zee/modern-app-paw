@@ -57,7 +57,10 @@ const pool = new Pool({
 })
 
 // cors
-app.use(cors())
+app.use(cors({
+    origin : 
+    ['memorydom-v2.vercel.app', 'http://localhost:3000']
+}))
 
 
 const store = connectPgSimple(session)
@@ -262,7 +265,7 @@ app.use(express.urlencoded({extended : true}))
 
 const basedir = path.join(__dirname,'public','htmlFiles/')
 app.get('/',validateLogin,(req,res)=>{
-    res.sendFile(basedir + 'home.html')
+    res.sendFile(path.join(__dirname,'public','home.html'))
 })
 
 app.get('/api/signup', (req,res)=>{
