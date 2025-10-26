@@ -56,7 +56,7 @@ admin.initializeApp({
 
 const server = http.createServer(app)
 const io = new Server(server, {
-cors: { origin: "http://localhost:3000" },
+cors: { origin: ['memorydom-v2.vercel.app', 'http://localhost:3000'] },
 pingInterval: 10000, // send ping every 10s
 pingTimeout: 5000,   // disconnect if no pong after 5s
 })
