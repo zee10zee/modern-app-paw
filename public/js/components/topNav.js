@@ -29,7 +29,6 @@ async function showHomePage(){
     allContainer.classList.remove('hide')
     const posts = await getAllposts()
     loadHomePosts(posts)
-    
 }
 
 // close notificaiotn modal if outside clicked

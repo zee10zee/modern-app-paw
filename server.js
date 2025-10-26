@@ -18,7 +18,6 @@ import sharedsession from "express-socket.io-session"
 import fs from "fs"
 import cors from "cors"
 import admin from "firebase-admin"
-import { error, profile } from "console";
 
 
 let notifLoginUser;
@@ -56,6 +55,11 @@ const pool = new Pool({
         rejectUnauthorized : false
     }
 })
+
+// cors
+app.use(cors())
+
+
 const store = connectPgSimple(session)
 const sessionMiddleware = session({
     store : new store({
@@ -67,8 +71,10 @@ const sessionMiddleware = session({
     secret : 'mynewsecret',
     resave : false,
     saveUninitialized : false,
-    cookie : {
-        secure : false
+    cookie: {
+      httpOnly: true, // prevents JS access
+      secure: false,  // set true if using HTTPS
+      sameSite: "lax",
     }
 });
 
@@ -101,6 +107,23 @@ io.on('connection', async(socket)=>{
 
    activeUsers.set(loggedInUser.id, socket.id)
 
+   console.log(activeUsers.size, activeUsers.keys())
+   
+//    update the connected user just now
+
+const now = new Date().toISOString()
+
+console.log('logged in user id ', loggedInUser.id)
+
+const updatedUser = await pool.query(`
+    UPDATE users SET is_active = true,
+     active_at  = $1
+     WHERE id = $2 RETURNING *` ,[now, loggedInUser.id])
+
+  if(updatedUser.rowCount === 0) return console.log('failure updateing the connected User')
+
+  console.log('user status updated success proceed !')
+
   socket.emit('user-joined',{loggedInUser: loggedInUser.firstname, loggedInUserId: loggedInUser.id});
 
 //   typing event
@@ -120,16 +143,28 @@ io.on('connection', async(socket)=>{
         // return console.log(data.userId)
         const receiverId = parseInt(data.userId)
         const receiver = activeUsers.get(receiverId)
-          console.log(receiver, 'receiver', activeUsers.values())
+        console.log(receiver, 'receiver', activeUsers.values())
+        const con_id = parseInt(data.conversation_id)
+         console.log(con_id, typeof(con_id))
         const messageDetails = {
             sender_id : loggedInUser.id,
             receiver_id : receiverId,
             msg : data.msg,
-            is_read : 'false'
+            is_read : 'false',
+            conversation_id : con_id
         }
 
-        const newMessage = await pool.query(`INSERT INTO chats(sender_id, receiver_id, message, is_read)
-            VALUES($1, $2, $3,$4) RETURNING *`, [messageDetails.sender_id,messageDetails.receiver_id, messageDetails.msg, messageDetails.is_read])
+        const newMessage = await pool.query(`
+            INSERT INTO chats
+            (sender_id, receiver_id, message, is_read, conversation_id)
+            VALUES($1, $2, $3,$4, $5) RETURNING *`, 
+            [
+              messageDetails.sender_id,
+              messageDetails.receiver_id, 
+              messageDetails.msg, 
+              messageDetails.is_read,
+              messageDetails.conversation_id
+            ])
 
         if(newMessage.rowCount === 0){
             return console.log('failure saving the chat message in db')
@@ -151,12 +186,7 @@ io.on('connection', async(socket)=>{
         target : 'receiver'
     })
 
-
-    //  to self u(ser)
-    const loginUserId = loggedInUser.id;
-    const selfUserId = activeUsers.get(loginUserId)
-
-        socket.to(selfUserId).emit('received-message', {
+        socket.emit('received-message', {
             newMsg : newMessage.rows[0],
             sender_name : loggedInUser.firstname, 
             receiver_name : receiverInfo.rows[0].firstname,
@@ -166,16 +196,35 @@ io.on('connection', async(socket)=>{
 
   
 
-    socket.on('disconnect', ()=>{
-        console.log(socket.id, 'disconnected');
+    socket.on('disconnect', async()=>{
+
+        console.log('user disconnected ')
         // Remove user from activeUsers map
-        activeUsers.forEach((socket,userid)=> {
-            if (socket === socket.id) {
-            activeUsers.delete(socket);
+         for(const [userid, socket] of activeUsers.entries()) {
+            if(activeUsers.has(userid)){
+                 activeUsers.delete(userid);
+                 console.log('socket deleted')
+                // also update the user on database as is_active false
+                await markUserAsInactive(userid)
+
+                setTimeout(() => {
+                io.emit('update-users', (activeUsers.entries.length))
+                }, 5000);
             }
-  });
+                
+            }
+                
     })
 })
+
+
+async function markUserAsInactive(id){
+  const inactiveUser = await pool.query('UPDATE users SET is_active = false WHERE id = $1 RETURNING *', [id])
+
+  if(inactiveUser.rowCount === 0) return console.log('failure updating the anactive user')
+
+  console.log('user disconnected and marked as inactive success')
+}
 
 
 
@@ -425,7 +474,9 @@ app.post('/api/login', async(req,res)=>{
 
 let username = ''
 app.post('/api/logout', validateLogin, async(req,res)=>{
-   
+   const activeUser = activeUsers.get(req.session.userId)
+   console.log(activeUser, 'socket of user id active user id')
+
     const user = await pool.query('SELECT firstname FROM users WHERE id = $1', [req.session.userId])
     if(!user) return console.log('user not found')
     
@@ -438,6 +489,7 @@ app.post('/api/logout', validateLogin, async(req,res)=>{
             return res.send(err)
         }
 
+        
         res.clearCookie('connect.sid'); // clear session cookie
         res.json({  success : true, username : username})
     })
@@ -446,8 +498,8 @@ app.post('/api/logout', validateLogin, async(req,res)=>{
 const transporter = nodemailer.createTransport({
     service : 'gmail',
     auth : {
-        user : 'abedkhan.noori10@gmail.com' ,
-        pass : 'xyeergcghglemsjp'
+        user : process.env.APPEMAIL,
+        pass : process.env.APPPASSWORD
     },
     tls: {
     rejectUnauthorized: false, // 👈 allows self-signed certs
@@ -1727,17 +1779,31 @@ app.get('/api/chatsCount',validateLogin,async(req,res)=>{
 
 // mark chats seen 
 
-app.patch('/api/chats/seen', validateLogin, async(e)=>{
+app.patch('/api/chats/update/isRead', validateLogin, async(req,res)=>{
+    const conversationId = parseInt(req.body.id)
+
+   console.log(conversationId)
+
     const seenChats = await pool.query(`UPDATE chats SET is_read = true
-        WHERE chats.conversation_id  = $1 AND
-        chats.receiever_id = $2 AND
-        chats.is_read = false `, [conversationId,req.session.userId])
+        WHERE chats.conversation_id = $1 AND
+        chats.is_read = false RETURNING *`, [conversationId])
+
+    if(seenChats.rowCount === 0) return console.log('failure updating the unseen chats ')
+    
+    res.json({
+        success : true,
+        message : 'chats marked as seen !',
+        udatedConversation : seenChats.rows[0]
+    })
 })
 
 // getting community
 
 app.get('/api/users/community', validateLogin, async(req,res)=>{
-    const community = await pool.query(`SELECT * FROM users ORDER BY active_at DESC`)
+    const community = await pool.query(`SELECT * FROM users 
+        ORDER BY 
+        is_active DESC,
+        active_at DESC`)
 
     if(community.rowCount === 0){
         return res.json({
@@ -1751,17 +1817,53 @@ app.get('/api/users/community', validateLogin, async(req,res)=>{
     })
 })
 
+// create new conversation
 
+app.post('/api/conversation/new',validateLogin, async(req,res)=>{
+    const userId2 = parseInt(req.body.userId2);
+     console.log(typeof userId2, userId2, req.session.userId)
 
+    const exisingConversation = await pool.query(
+        `SELECT * FROM conversations 
+         WHERE 
+         (sender_id = $1 AND receiver_id = $2)
+            OR
+          (sender_id = $2 AND receiver_id = $1)
+         `,[req.session.userId,userId2])
+
+    if(exisingConversation.rowCount === 0) {
+        const newConversation = await pool.query(`
+        INSERT INTO conversations (sender_id,receiver_id)
+        VALUES($1, $2) RETURNING *; `, [req.session.userId, userId2])
+
+    if(newConversation.rowCount === 0) {
+        return res.json({
+            error : 'failed  to insert into conversation ',
+            success  : false
+        })
+    }
+    
+    return res.json({
+        message : 'new conversation made',
+        success : true,
+        conversation : newConversation.rows[0]
+    })
+
+    }else {
+        return res.json({
+            conversation : exisingConversation.rows[0],
+            message : 'conversation already under coverage , proceed !',
+            success : true
+        })
+    }
+})
 
 // CHATS 
-
 function validateLogin(req,res,next){
-    if(req.session.userId){
-        next()
-    }else{
-        res.redirect('/api/login')
+    if(!req.session.userId){
+        return res.redirect('/api/login')
     }
+    next()
 }
 
 // pool.query('ALTER TABLE users ADD COLUMN active_at TIMESTAMPTZ DEFAULT NOW()').then(data => console.log(console.log('is active created')))

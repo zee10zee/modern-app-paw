@@ -13,7 +13,6 @@ window.addEventListener('DOMContentLoaded', async(e)=>{
 async function fetchAndRenderChatList(){
   const chats = await fetchChatsList()
     if(!Array.isArray(chats)) return console.log('no message in database')
-
     const lastMessages = getLastChats(chats)
      renderChatList(lastMessages)
 }
@@ -34,13 +33,12 @@ function renderChatList(lastMessages){
 }
 
 function getLastChats(chats){
-
   if(!Array.isArray(chats)) return;
 
    chats.forEach((chat)=>{
      const receiverId = chat.receiver_id
      const senderId = chat.sender_id
-
+   
      const key = generateConversationKey(receiverId,senderId)
 
     let existingLastMessage = lastMessages[key]
@@ -64,14 +62,17 @@ function generateConversationKey(receiver,senderId){
 }
 
 function previewLastMessage(lastChat,meta = {}){
+
   const senderName = lastChat.sender_name || meta.sender_name
   const receiverName = lastChat.receiver_name || meta.receiver_name
   const receiverToken = lastChat.receiver_token || meta.receiver_token
   const senderToken = lastChat.sender_token || meta.sender_token
+
   let chatItem;
 
 chatItem = document.createElement('a')
 chatItem.classList.add('chatItem')
+
 
 chatItem.dataset.userId = lastChat.sender_id === parseInt(loggedInUserId) 
   ? lastChat.receiver_id
@@ -101,8 +102,6 @@ return chatItem
 
 }
 
-
-
  async function fetchChatsList(){
    const res = await axios.get('/api/userChatList');
      
@@ -115,28 +114,68 @@ return chatItem
 };
 
 
-
-socket.on('received-message', (data)=>{
+socket.on('received-message', async(data)=>{
+ console.log(data, 'data target', data)
     const {newMsg} = data
 
     if(data.target === 'receiver'){
-      const chatMateId = checkConversationItemEl(newMsg)
-      const newMsgKey = generateConversationKey(newMsg.receiver_id, newMsg.sender_id)
-      console.log(checkIfConversationExist(newMsg,newMsgKey))
-
-      if(!checkIfConversationExist(newMsg,newMsgKey)){
-        return appendAndSaveChatItem(newMsg,data,newMsgKey)
-      }
-
-      updateExistingConversation(newMsg,chatMateId)
-      console.log('updated !')
-      }
+       checkExistingChatList(newMsg,data)
+    }
 
     else if(data.target === 'sender'){
-      console.log('i ma receiveing for my self')
-    }
-    
+     
+      if(window.innerWidth > 800){
+        const chatMateId = checkConversationItemEl(newMsg)
+        const newMsgKey = generateConversationKey(newMsg.receiver_id, newMsg.sender_id)
+
+        if(!checkIfConversationExist(newMsg,newMsgKey)){
+           appendAndSaveChatItem(newMsg,data,newMsgKey)
+        }
+
+        const clickedUserLink = localStorage.getItem('chat-list-user-url')
+        const linkSections = clickedUserLink.split('/')?.filter(section => section)
+
+       const userID = linkSections[2]
+
+      const lastChatItem = chatListContainer.querySelector(`.chatItem[data-user-id="${userID}"]`)
+      updateChatListUI(lastChatItem,newMsg)
+      }else{
+        console.log('here goes for small size ')
+      }
+       
+    }    
 })
+
+
+// creating new conversation
+async function createNewConversation(userId2){
+
+      try{
+        const res = await axios.post(`api/conversation/new`,{userId2 : userId2})
+
+      if(res.status === 200 && res.data.success){
+         console.log(res.data)
+         const conversationId = res.data.conversation.id
+         console.log('only conversatin id ', conversationId)
+         return conversationId;
+      }
+      }catch(err){
+        console.log(err)
+      }
+    }
+
+
+function checkExistingChatList(newMsg,data){
+  const chatMateId = checkConversationItemEl(newMsg)
+      const newMsgKey = generateConversationKey(newMsg.receiver_id, newMsg.sender_id)
+
+      if(!checkIfConversationExist(newMsg,newMsgKey)){
+         return appendAndSaveChatItem(newMsg,data,newMsgKey)
+           
+      }
+
+      updateExistingConversation(newMsg,chatMateId, chatListContainer)    
+}
 
 socket.off('user-typing') //removes existing socket
 socket.on('user-typing', (username)=>{
@@ -161,6 +200,12 @@ function checkIfConversationExist(newMsg,newMsgKey){
 }
 
 function appendAndSaveChatItem(newMsg,data,newMsgKey){
+
+  if(!chatListContainer.querySelector('.chatItem')) 
+    {
+      chatListContainer.innerHTML = ''
+    }
+
   chatListContainer.prepend(previewLastMessage(newMsg,data))
     console.log('Appended !')
     console.log('saving into the local chat list ...')
@@ -171,13 +216,24 @@ function appendAndSaveChatItem(newMsg,data,newMsgKey){
 
 function checkConversationItemEl(newMsg){
   const chatMateId = newMsg.sender_id === loggedInUserId ? newMsg.receiver_id : newMsg.sender_id
+  console.log(newMsg, 'ON CHECK CONVERSTAOIN ITEM eL', chatMateId)
+
   return chatMateId
 }
 
 
-function updateExistingConversation(newMsg,mateId){
-  const chatItemEl = chatListContainer.querySelector(`.chatItem[data-user-id="${mateId}"]`)
-  console.log(chatItemEl)
+function updateExistingConversation(newMsg,mateId,container){
+
+
+  const chatItemEl = container.querySelector(`.chatItem[data-user-id="${mateId}"]`)
+
+  updateChatListUI(chatItemEl,newMsg)
+}
+
+function updateChatListUI(chatItemEl,newMsg){
+  if(chatItemEl !== null){
+      console.log('chat mate id in both containers ', chatItemEl)
+
   // CHANGE THE NEW MESSAGE / NEW DATE / NEW UNDREAD CHATS
   const msgEl = chatItemEl.querySelector('.textMessage')
   if(!msgEl) return console.log('no msgEl')
@@ -191,6 +247,7 @@ function updateExistingConversation(newMsg,mateId){
   msgEl.textContent = newMsg.message
  dateEl.textContent = formatDate(newMsg.created_at)
   unreadCountEl.textContent = 0
+  }
 }
 
 

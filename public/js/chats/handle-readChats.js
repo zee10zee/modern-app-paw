@@ -46,15 +46,18 @@ function hideChatPage(){
 
 
 async function loadChatPage(container,userLink){
-  console.log(container,userLink)
+ 
 const messages = await fetchChatPageMessages(userLink)
 
 const chatsLayer = loadInitialChats(messages)
-     container.innerHTML = chatsLayer.outerHTML
+container.innerHTML = chatsLayer.outerHTML
 
     //  having the head on top 
      const chatHead = loadChatPageHead()
      container.prepend(chatHead)
+
+      const chatPageBottom = loadChatBoxAndButton()
+      container.append(chatPageBottom)
 
      container.classList.add('active')
 
@@ -64,14 +67,19 @@ if(window.innerWidth < 800){
 }
 
 async function fetchChatPageMessages(link){
-    console.log(link)
+    const {receiverId,userToken} = getReceiverIdAndToken(link)
+    const oneToOneChats = await fetchAndLoadChats(receiverId,userToken)
+    console.log(oneToOneChats)
+  return oneToOneChats
+}
+
+function getReceiverIdAndToken(link){
+  console.log(link)
     const url = link.split('/').filter(url => url)
     console.log(url)
     const receiverId = url[2]
     const userToken = url[3]
-    const oneToOneChats = await fetchAndLoadChats(receiverId,userToken)
-    console.log(oneToOneChats)
-  return oneToOneChats
+    return {receiverId,userToken}
 }
 
 
@@ -123,8 +131,6 @@ function loadInitialChats(oneToOnChats){
     `
     messageContainer.append(messageDiv)
 })
-   const chatPageBottom = loadChatBoxAndButton()
-    messageContainer.append(chatPageBottom)
     return messageContainer
 }
 

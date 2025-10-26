@@ -2,10 +2,10 @@
 const postsContainer = document.getElementById('postsContainer')
 const editPostContainer = document.getElementById('updateFormContainer')
 const userNameHTML = document.querySelector('.activeUser')
-const photo = sessionStorage.getItem('loggedIn_profile')
-const username = sessionStorage.getItem('loggedIn_name')
-const userToken = sessionStorage.getItem('loggedIn_userToken')
-const loggedInUserId = sessionStorage.getItem('loggedIn_userId')
+const photo = localStorage.getItem('loggedIn_profile')
+const username = localStorage.getItem('loggedIn_name')
+const userToken = localStorage.getItem('loggedIn_userToken')
+const loggedInUserId = localStorage.getItem('loggedIn_userId')
 
  console.log(loggedInUserId, 'user id')
  let postId;
@@ -69,8 +69,6 @@ const renderPosts = (posts,container)=>{
              const actualPostDate = getTimeAgo(post.created_at)
 
              const originalPost = post.original_post
-            
-             
              const media = renderMedia(post.mediafile)
        
             //  comments variables
@@ -254,10 +252,10 @@ const setupEventListener = (container)=>{
     if(gear && isDataReady){
       e.preventDefault()
       const gearBtn = e.target
-      //  checkMainPostAndSharePost(e,postDiv)
-      //  loadModalSpinner()
-      //  modal.innerHTML = loadSpecificPostModal(contentData.contentId)
-      //  openModal(gearBtn)    
+       checkMainPostAndSharePost(e,postDiv)
+       loadModalSpinner()
+       modal.innerHTML = loadSpecificPostModal(contentData.contentId)
+       openModal(gearBtn)    
 
     }else if(showMoreLink){
       toggleDescriptionExpand(postDiv,e)

@@ -90,16 +90,16 @@ const logoutBtn = document.querySelector('#logoutForm')
 if(logoutBtn){
 
 logoutBtn.addEventListener('click', (e)=>{
-    sessionStorage.clear()
+    localStorage.clear()
     auth.signOut()
 })
 }
 
 window.loadActiveUserStoredInfoOnAuth = (id,name,profilePicture,token)=>{
-    sessionStorage.setItem('loggedIn_userId', id)
-    sessionStorage.setItem('loggedIn_name', name)
-    sessionStorage.setItem('loggedIn_profile', profilePicture)
-    sessionStorage.setItem('loggedIn_userToken', token)     
+    localStorage.setItem('loggedIn_userId', id)
+    localStorage.setItem('loggedIn_name', name)
+    localStorage.setItem('loggedIn_profile', profilePicture)
+    localStorage.setItem('loggedIn_userToken', token)     
 }
 
 

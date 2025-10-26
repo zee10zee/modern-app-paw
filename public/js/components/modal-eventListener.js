@@ -18,13 +18,20 @@ modal.addEventListener('click', async(e)=>{
       }
 
       if(userChatLink){
-          e.preventDefault()
+        e.preventDefault()
+       const link = e.target.closest('.userChatLink')?.getAttribute('href')
+
+       console.log(link)
+        const {receiverId} = getReceiverIdAndToken(link)
+         console.log(receiverId)
+         
+         await createNewConversation(receiverId)
 
         if(window.innerWidth > 800){
            console.log('show large size chat page')
           await createContainerAndAppendChatPage(e)
+          toggleHomeMenu()
         }else{
-         
           const userLink = getReceiverLink(e,'.user-profile-link')
           storeOnLocalStorage('chat-list-user-url',userLink)
           hideAllPages()
@@ -32,17 +39,39 @@ modal.addEventListener('click', async(e)=>{
           await loadChatPage(smChatPageContainer,userLink)
           postBtn.hide()
         }
-        
-         modal.style.display = 'none';
+
+         modal.style.display = 'none'; 
 
       }else if(postOwnerProfileLink){
         e.preventDefault()
-        const el = e.target.closest('.action-item')
-        const link = el.getAttribute('href')
-        console.log(link)
-        const clickedPostOwner = localStorage.setItem('clickedOwnerLink',link)
+          const el = e.target.closest('.action-item')
+          const link = el.getAttribute('href')
+          console.log(link)
+          const clickedPostOwner = localStorage.setItem('clickedOwnerLink',link)
 
           hideAllShowUserProfilePage(el)
           modal.style.display = 'none';
       }
     })
+
+
+    async function createNewConversation(userId2){
+      try{
+        const res = await axios.post(`api/conversation/new`,{userId2 : userId2})
+        console.log(res)
+
+      if(res.status === 200 && res.data.success){
+        console.log(res.data.message)
+
+        const conver_id = res.data.conversation.id
+        localStorage.setItem('conver_id', conver_id)
+
+        // window.conversationId = conver_id
+        console.log('conversation established ! with ', conver_id)
+          
+      }
+      }catch(err){
+
+        console.log(err)
+      }
+    }

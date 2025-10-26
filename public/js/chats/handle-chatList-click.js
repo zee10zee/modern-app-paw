@@ -6,7 +6,6 @@ if(window.innerWidth > 800) {
 
 chatListContainer.addEventListener('click', async(e)=>{
     e.preventDefault()
-    
     await createContainerAndAppendChatPage(e)
 })
 
@@ -18,6 +17,10 @@ async function createContainerAndAppendChatPage(e){
     if(tar_parent){
         checkDuplicateLgContainer()
         const userLink = getReceiverLink(e,'.chatItem')
+
+        const receiverId = getReceiverId(userLink)
+        // localStorage.setItem('conver_id', receiverId)
+
         storeOnLocalStorage('chat-list-user-url',userLink)
          hidePostAndRightContainer('none')
 
@@ -26,7 +29,8 @@ async function createContainerAndAppendChatPage(e){
           lgChatPageContainer.innerHTML= loadSpinner('chat page')
          await loadChatPage(lgChatPageContainer,userLink)
           main.appendChild(lgChatPageContainer)
-          toggleHomeMenu(lgChatPageContainer)
+          
+          toggleHomeMenu()
 
           const chatBtn =  main.querySelector('.chatSubmitBtn')
           handleSendMsg(chatBtn)
@@ -35,30 +39,37 @@ async function createContainerAndAppendChatPage(e){
 }
 
 
-function toggleHomeMenu(lgContainer){
-      const homeBt = document.querySelector('.returnHome')
-      console.log(homeBt)
-   // Get computed style to check actual display value
-    const computedStyle = window.getComputedStyle(lgContainer)
-    const isVisible = computedStyle.display !== 'none' && 
-                     computedStyle.visibility !== 'hidden'
-    
-    console.log('Container display:', computedStyle.display)
-    console.log('Container visible:', isVisible)
+async function updateSeenMessages(conversation_id){
+    console.log(conversation_id)
+  const res = await axios.patch('/api/chats/update/isRead', {id : conversation_id})
+  console.log(res)
 
-    if(isVisible){
-        console.log('ready to appear the home button')
-        homeBt.classList.add('active')
-    } else {
-        homeBt.classList.remove('active')
-    }
+  if(res.status === 200 && res.data.success){
+    alert('messages are marked read !')
+  }
 }
 
+
+function toggleHomeMenu(){
+
+    const homeIcon = topNav.querySelector('.returnHome')
+
+    if(homeIcon) homeIcon.remove()
+
+    // TOMMAROW THIS SHOULD WORK INSHALLAH
+     const homeBtn = createElement('div','returnHome')
+     const topRightIcons = topNav.querySelector('.rightNavIcons')
+     
+     homeBtn.innerHTML = `<?xml version="1.0" encoding="utf-8"?><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 122.88 112.07" style="enable-background:new 0 0 122.88 112.07" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path fill="green" class="st0" d="M61.44,0L0,60.18l14.99,7.87L61.04,19.7l46.85,48.36l14.99-7.87L61.44,0L61.44,0z M18.26,69.63L18.26,69.63 L61.5,26.38l43.11,43.25h0v0v42.43H73.12V82.09H49.49v29.97H18.26V69.63L18.26,69.63L18.26,69.63z"/></g></svg>`
+     topRightIcons.prepend(homeBtn)
+}
+
+// handle the home return from chat page
 topNav.addEventListener('click', (e)=>{
 if(e.target.closest('.returnHome')){
      displayHome()
-     notifDropdown.classList.remove('active')
-  }
+    e.target.closest('.returnHome').remove()
+}
 })
 
 
@@ -73,12 +84,6 @@ function displayHome(){
 
 if(!rightContainer)  hideAllShowHomePage()
 }
-
-
-// function hideUserProfileContainer(){
-//     const profileContainer = document.querySelector('.userProfileContainer')?.classList.remove('active')
-//     displayHome
-// }
 
 function checkDuplicateLgContainer(){
     const lgContainer = document.querySelector('.lgChatPageContainer')
@@ -98,15 +103,7 @@ rightContainer.style.display = state
 
 
 function handleSendMsg(btn){
-
     btn.addEventListener('click', (e)=>{
        setUpAndSendMessage(main)
     })
 }
-
-
-
-// 1 : cliking each list 
-//2 : postscontainer and right container dispaly to none
-// 2 : new container on the righ of the chat list take the full width
-// 2 : add the chat data into it

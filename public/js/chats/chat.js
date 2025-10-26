@@ -15,11 +15,22 @@ socket.on('user-typing', username =>{
 
 socket.on('received-message', (data)=>{
     handleReceiverMessage(data)
+    return console.log(data.target)
 })
 
 
 function handleReceiverMessage(data){
-    if(data.target === 'receiver'){
+
+    if(data.target === 'receiver'){ 
+        handleReceivingMessages(data)
+      console.log('handle recieving message return')
+    }else{
+      console.log('you are looking for you own message', data)
+    }
+}
+
+function handleReceivingMessages(data){
+     console.log('handle recieving message return')
     const lastMessageData = localStorage.setItem('lastMsgData', data)
     console.log(data.newMsg, data.sender_name, 'just inside handleReceiving message')
     const msg = data.newMsg.message
@@ -34,10 +45,9 @@ function handleReceiverMessage(data){
        
         const lgChatPageContainer = main.querySelector('.chat-container1')
         console.log(lgChatPageContainer, 'just about to append receiving message')
-        console.log('message data info ', data, data.newMsg, ' AND AVRIABLES ', msgTime,msg, directionClass)
+        console.log('message data info ',data, data.newMsg, ' AND AVRIABLES ', msgTime,msg, directionClass)
         appendMessageToContainer(msg,msgTime,directionClass,lgChatPageContainer)
     }
-}
 }
 
 function appendMessageToContainer(msg,messageTime,directionC,container){
@@ -46,16 +56,19 @@ function appendMessageToContainer(msg,messageTime,directionC,container){
 }
 
 chatPageContainer.addEventListener('click', (e)=>{
-    console.log('chat page container clicked')
+
     if(e.target.closest('.chatSubmitBtn')){
       console.log('submit btn clicked too')
       setUpAndSendMessage(chatPageContainer)
+      //checkout the status of unread messages
+        // await updateSeenMessages(conversation_id)
+        // console.log(conversation_id)
     }
    
 })
 
 
-function setUpAndSendMessage(container){
+async function setUpAndSendMessage(container){
     const messageInput = container.querySelector('#chatInput')
 
     const receiverId = getReceiverId()
@@ -65,29 +78,36 @@ function setUpAndSendMessage(container){
     const displayTime = new Date().toLocaleTimeString('en-US',
         {hour : '2-digit', minute: '2-digit', hour12 : true})
 
+    const storageConver_id = localStorage.getItem('conver_id')
+
+    const conversationId = storageConver_id
+     console.log('gloabal conversation id Notice ', conversationId)
     const messageData = {
         msg : message, 
         date : now,
-        userId : receiverId
+        userId : receiverId,
+        conversation_id : conversationId
     }
+    
     if(messageInput.value === '') return;
 
     socket.emit('newMessage-send', messageData)
-    console.log(chatPageContainer)
+      
     const messageContainer = container.querySelector('.chat-container1')
 
-   
     appendMessageToContainer(message, displayTime, 'sendingMessage',messageContainer)   
     messageInput.value = ''
     adoptTotalHeight()
 }
 // typing event
 
+
+
 const messageInput = chatPageContainer.querySelector('#chatInput')
 if(messageInput){
 messageInput.addEventListener('keypress', (e)=>{
      const receiverId = getReceiverId()
-      console.log(receiverId, 'on key press')
+    //   console.log(receiverId, 'on key press')
      socket.emit('start-typing', receiverId)
      adoptTotalHeight()
 })
