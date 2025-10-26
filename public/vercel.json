@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/htmlFiles/home.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/htmlFiles/$1"
+    }
+  ]
+}

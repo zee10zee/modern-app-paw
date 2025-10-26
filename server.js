@@ -50,7 +50,7 @@ const {Pool} = pkg;
 
  console.log('DB connection string:', process.env.DB);
 const pool = new Pool({
-    connectionString :  process.env.DB,
+    connectionString :  process.env.DB || process.env.DBString_Pro,
     ssl : {
         rejectUnauthorized : false
     }
@@ -59,7 +59,8 @@ const pool = new Pool({
 // cors
 app.use(cors({
     origin : 
-    ['memorydom-v2.vercel.app', 'http://localhost:3000']
+    ['memorydom-v2.vercel.app', 'http://localhost:3000'],
+    credentials : true
 }))
 
 
@@ -265,7 +266,7 @@ app.use(express.urlencoded({extended : true}))
 
 const basedir = path.join(__dirname,'public','htmlFiles/')
 app.get('/',validateLogin,(req,res)=>{
-    res.sendFile(path.join(__dirname,'public','home.html'))
+    res.sendFile(basedir + '/home.html')
 })
 
 app.get('/api/signup', (req,res)=>{
