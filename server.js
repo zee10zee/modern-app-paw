@@ -68,15 +68,16 @@ pingTimeout: 5000,   // disconnect if no pong after 5s
 const {Pool} = pkg;
 // postid in  thes string case pool needs an object we should do like : 
 
- console.log('DB connection string:', process.env.HOST);
 
- const environment = process.env.HOST === 'localhost' ? process.env.DB : process.env.DATABASE_URL
+  
 const pool = new Pool({
-    connectionString : environment,
+    connectionString : process.env.DATABASE_URL || process.env.DB,
     ssl : {
         rejectUnauthorized : false
     }
 })
+
+
 
 
 // cors

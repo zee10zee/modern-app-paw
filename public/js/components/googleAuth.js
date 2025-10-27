@@ -46,14 +46,14 @@ async function signInWithGoogle(){
      googleLoginBtn.disabled = true
       googleLoginBtn.innerHTML = loading()
       const res = await axios.post('/api/auth/google', {tokenId : tokenId, authType : 'firebase'})
-     console.log(res, 'response from google verifiy')
+       console.log(res, 'response from google verifiy')
       if(res.status === 200 && res.data.isLoggedIn){
 
         const {existingUser} = res.data
         const {newUser} = res.data
         const loggedInUser = res.data.existed ? existingUser : newUser
-        
-
+      
+        // return console.log()
         window.loadActiveUserStoredInfoOnAuth(
           loggedInUser.id,
           loggedInUser.firstname,
