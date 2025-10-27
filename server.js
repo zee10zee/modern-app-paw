@@ -19,6 +19,9 @@ import fs from "fs"
 import cors from "cors"
 import admin from "firebase-admin"
 
+const baseUrl = process.env.NODE_ENV === 'production' 
+  ? 'https://memorydom-v2.onrender.com'
+  : 'http://localhost:3000'
 
 let notifLoginUser;
 
@@ -56,7 +59,7 @@ admin.initializeApp({
 
 const server = http.createServer(app)
 const io = new Server(server, {
-cors: { origin: ['memorydom-v2.vercel.app', 'http://localhost:3000'] },
+cors: { origin: ['memorydom-v2.vercel.app', 'http://localhost:3000','https://memorydom-v2.onrender.com/'] },
 pingInterval: 10000, // send ping every 10s
 pingTimeout: 5000,   // disconnect if no pong after 5s
 })
@@ -65,9 +68,10 @@ pingTimeout: 5000,   // disconnect if no pong after 5s
 const {Pool} = pkg;
 // postid in  thes string case pool needs an object we should do like : 
 
- console.log('DB connection string:', process.env.DB);
+ console.log('DB connection string:', process.env.DATABASE_URL);
 const pool = new Pool({
-    connectionString :  process.env.DB || process.env.DBString_Pro,
+    connectionString : process.env.NODE_ENV === 'production' ? 
+    process.env.DATABASE_URL : process.env.DB,
     ssl : {
         rejectUnauthorized : false
     }
@@ -76,7 +80,7 @@ const pool = new Pool({
 // cors
 app.use(cors({
     origin : 
-    ['memorydom-v2.vercel.app', 'http://localhost:3000'],
+    ['memorydom-v2.vercel.app', 'http://localhost:3000','https://memorydom-v2.onrender.com/'],
     credentials : true
 }))
 
@@ -559,7 +563,7 @@ try{
      console.log("random token ",token)
 
     // creating reset Link
-    const resetLink = `http://localhost:3000/api/passwordReset/${token}`
+    const resetLink = `${baseUrl}/api/passwordReset/${token}`
     const description = `<p>click here to reset the password : <a href="${resetLink}">Reset password</a>`
 
    const existingToken = await pool.query('SELECT * FROM tokens WHERE token = $1', [token])
