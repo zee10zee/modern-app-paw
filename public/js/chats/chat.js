@@ -1,3 +1,4 @@
+
 const messageContainer = chatPageContainer.querySelector('.chat-container1')
 let receiverId;
 
@@ -15,7 +16,7 @@ socket.on('user-typing', username =>{
 
 socket.on('received-message', (data)=>{
     handleReceiverMessage(data)
-    return console.log(data.target)
+     console.log('target ', data.target)
 })
 
 
@@ -68,40 +69,19 @@ chatPageContainer.addEventListener('click', (e)=>{
    
 })
 
-
-async function setUpAndSendMessage(container){
-    const messageInput = container.querySelector('#chatInput')
-
-    const receiverId = getReceiverId()
-     console.log(receiverId)
-    let message = messageInput.value
-    const now = new Date().toISOString()
-    const displayTime = new Date().toLocaleTimeString('en-US',
-        {hour : '2-digit', minute: '2-digit', hour12 : true})
-
-    const storageConver_id = localStorage.getItem('conver_id')
-
-    const conversationId = storageConver_id
-     console.log('gloabal conversation id Notice ', conversationId)
-    const messageData = {
-        msg : message, 
-        date : now,
-        userId : receiverId,
-        conversation_id : conversationId
-    }
-    
-    if(messageInput.value === '') return;
-
-    socket.emit('newMessage-send', messageData)
-      
-    const messageContainer = container.querySelector('.chat-container1')
-
-    appendMessageToContainer(message, displayTime, 'sendingMessage',messageContainer)   
-    messageInput.value = ''
-    adoptTotalHeight()
-}
 // typing event
 
+function getCurrentConversation(){
+    console.log(Object.entries(sessionStorage))
+    const conversationID = sessionStorage.getItem('conver_id')
+     if (!conversationID) {
+        console.warn('No conversation ID found. Checking all storage:');
+        Object.entries(sessionStorage).forEach(([key, value]) => {
+            console.log(`"${key}":`, value);
+        });
+    }
+    return sessionStorage.getItem('conver_id')
+}
 
 
 const messageInput = chatPageContainer.querySelector('#chatInput')

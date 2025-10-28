@@ -19,13 +19,19 @@ async function createContainerAndAppendChatPage(e){
         const userLink = getReceiverLink(e,'.chatItem')
 
         const receiverId = getReceiverId(userLink)
-        // localStorage.setItem('conver_id', receiverId)
+
+
 
         storeOnLocalStorage('chat-list-user-url',userLink)
          hidePostAndRightContainer('none')
 
         const lgChatPageContainer = createElement('div','lgChatPageContainer')
 
+          const conversationId = await createNewConversation(receiverId)
+          if(!conversationId || conversationId === null){
+             return console.log('did not found conversation id')
+          }
+          
           lgChatPageContainer.innerHTML= loadSpinner('chat page')
          await loadChatPage(lgChatPageContainer,userLink)
           main.appendChild(lgChatPageContainer)

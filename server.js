@@ -172,13 +172,35 @@ const updatedUser = await pool.query(`
         const receiver = activeUsers.get(receiverId)
         console.log(receiver, 'receiver', activeUsers.values())
         const con_id = parseInt(data.conversation_id)
-         console.log(con_id, typeof(con_id))
+         console.log(con_id, typeof(con_id), 
+         ' conversatoin id on sent from client')
+
         const messageDetails = {
             sender_id : loggedInUser.id,
             receiver_id : receiverId,
             msg : data.msg,
             is_read : 'false',
             conversation_id : con_id
+        }
+
+        console.log('db conversation id ', 
+            messageDetails.conversation_id, 
+            ' client  side conversation id ', con_id)
+
+
+        // check if conversation exists 
+        console.log('conversation id ', 
+            messageDetails.conversation_id, 
+            ' logged in user id ', loggedInUser.id)
+
+
+        const existingConversation = await 
+        pool.query(`SELECT id from conversations 
+            WHERE id = $1 AND (sender_id = $2 OR receiver_id = $2)`, 
+            [messageDetails.conversation_id, loggedInUser.id])
+
+        if(existingConversation.rowCount === 0) {
+            throw new Error('Conversation not found or access denied');
         }
 
         const newMessage = await pool.query(`
@@ -1863,12 +1885,12 @@ app.get('/api/users/community', validateLogin, async(req,res)=>{
 
 app.post('/api/conversation/new',validateLogin, async(req,res)=>{
     const userId2 = parseInt(req.body.userId2);
-     console.log(typeof userId2, userId2, req.session.userId)
+    const conversatioId = parseInt(req.body.conversationId);
 
     const exisingConversation = await pool.query(
         `SELECT * FROM conversations 
          WHERE 
-         (sender_id = $1 AND receiver_id = $2)
+          (sender_id = $1 AND receiver_id = $2)
             OR
           (sender_id = $2 AND receiver_id = $1)
          `,[req.session.userId,userId2])

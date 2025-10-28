@@ -61,6 +61,8 @@ container.innerHTML = chatsLayer.outerHTML
 
      container.classList.add('active')
 
+
+
 if(window.innerWidth < 800){
      adoptTotalHeight()   
 }

@@ -495,7 +495,7 @@ button { background: none; border: none; cursor: pointer; }
   flex-direction: row;
   gap: 1rem; /* spacing between columns */
   padding: 1rem;
-  margin-top: 70px; /* below fixed top nav */
+  margin-top: 100px; /* below fixed top nav */
   max-height: 100vh;
   overflow: hidden;
 }
