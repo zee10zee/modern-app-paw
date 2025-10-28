@@ -84,7 +84,7 @@ async function sendPostDataToServer(newFile){
 
     if(response.status === 200 && response.data.success){
         const newPost = response.data.newPostData
-        return console.log(newPost)
+         console.log(newPost)
         newCreatedPost = newPost
         // all posts array update
         Allposts = response.data.allPosts
