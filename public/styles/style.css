@@ -32,6 +32,8 @@ button { background: none; border: none; cursor: pointer; }
   color: #1f2937; /* gray-800 */
   text-decoration: none;
   white-space: nowrap;
+  WIDTH: 120PX;
+    height: 90px;
 }
 
 /* Search bar */
@@ -125,7 +127,6 @@ button { background: none; border: none; cursor: pointer; }
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transition: height 0.5s ease;
     overflow-y: auto;
-    z-index: 100;
 }
 
 .no-notif{
@@ -140,6 +141,7 @@ button { background: none; border: none; cursor: pointer; }
 
 #notifDropdown.lg-reveal{
   height: 100%;
+    z-index: 100;
 }
 /* Top bar with title + close button */
 .notif_topbar {
@@ -740,9 +742,9 @@ button { background: none; border: none; cursor: pointer; }
 /* posts section*/
 /* Posts container (center column wrapper) */
 #postsContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  /* display: flex;
+  flex-direction: column; */
+  /* align-items: center; */
   margin: 0 auto;
   padding: 10px;
   max-width: 600px;   /* nice readable width on desktop */
