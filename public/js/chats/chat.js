@@ -127,8 +127,10 @@ function getReceiverId(){
     console.log(Object.keys(localStorage), 'local storage');
     
     const url = localStorage.getItem('chat-list-user-url')
-    return console.log(url)
+     console.log(url)
     const filteredURL = url.split('/').filter(segment => segment)
+
+    console.log(filteredURL, 'filtered url')
     const receiverId = filteredURL[2]
     return receiverId
 }
