@@ -6,6 +6,7 @@ const photo = localStorage.getItem('loggedIn_profile')
 const username = localStorage.getItem('loggedIn_name')
 const userToken = localStorage.getItem('loggedIn_userToken')
 const loggedInUserId = localStorage.getItem('loggedIn_userId')
+console.log(photo, 'login user profilephoto', userToken, username)
 
  console.log(loggedInUserId, 'user id')
  let postId;

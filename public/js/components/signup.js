@@ -1,7 +1,7 @@
-const signupForm = document.getElementById('signUpForm')
 const signUpBtn = document.querySelector('.signupBtn')
-
+let selectedProfile;
 const profileLogo = document.getElementById('profile-logo')
+const signupForm = document.getElementById('signUpForm')
 
 //clicking the input file explicityly for file preview
 const signUpFileInput = document.querySelector('#profilePicture')
@@ -9,7 +9,13 @@ const signUpFileInput = document.querySelector('#profilePicture')
 signUpFileInput.addEventListener('change', (e)=>{
      const profileLogo = document.querySelector('#profile-logo')
      if(!profileLogo) return console.log('no profile logo')
+
+    //logo
+     selectedProfile = signUpFileInput.files[0]
+
      handleFilePreview(e, profileLogo)
+    //  return console.log(selectedFile)
+
 })
 
 profileLogo.addEventListener('click', (e)=>{
@@ -18,20 +24,74 @@ profileLogo.addEventListener('click', (e)=>{
 
 signupForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
-    const formData = new FormData(signupForm)
-    try{
+   await fileUploadOnImageKit(selectedProfile)
+})
 
+
+async function fileUploadOnImageKit(file){
+
+  // first upload the image on imageKit
+    const imgKitAuthResponse = await axios.get('/imageKit/auth')
+
+    if(imgKitAuthResponse.status === 200 && 
+       imgKitAuthResponse.data.success){
+        console.log(imgKitAuthResponse, ' file name ', file)
+
+       const {authElements} = imgKitAuthResponse.data
+       const pub_key = `public_nArfg7wpXuzoz3r/mtoDlG5MNZs=`
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('fileName', file.name)
+        formData.append('token', authElements.token)
+        formData.append('signature', authElements.signature)
+        formData.append('expire', authElements.expire)
+        formData.append('publicKey', pub_key)
+
+    //   uploading the file directly to imgkit after confirmation from server
+      const uploadRes = await axios.
+      post('https://upload.imagekit.io/api/v1/files/upload', formData)
+
+      if(uploadRes.status === 200){
+          const profileUrl = uploadRes.data.url
+          console.log(uploadRes)
+        //   send data to server to save on db
+          await sendDataOnServer(profileUrl)
+      }
+      
+    }
+}
+
+async function sendDataOnServer(profile){
+const formData = new FormData(signupForm)
+
+console.log(formData.get('fname'), 'form data befor send to server')
+
+  const userInfo = {
+    fname : formData.get('fname'),
+    email : formData.get('email'),
+    password : formData.get('password'),
+    // profile : profile
+  }
+
+  if(!profile){
+    console.log('proceed witout profile')
+  }else {
+    userInfo.profile = profile
+  } 
+    try{
         signupForm.disabled = true
         signUpBtn.innerHTML = loading()
 
-        const response = await axios.post('/api/signup', formData,{
+        const response = await axios.post('/api/signup', userInfo,{
         headers : {
-            'Content-type' : 'multipart/form-data' 
+            'Content-type' : 'application/json' 
         }
     });
     
     if(response.data.isLoggedIn){
         const {newUser} = response.data
+        console.log(newUser)
         // return console.log(newUser)
         window.loadActiveUserStoredInfoOnSignup(
             newUser.id,
@@ -60,8 +120,9 @@ signupForm.addEventListener('submit', async(e)=>{
     }catch(err){
         console.log(err)
     }
+}
 
-})
+
  function isVideo(filename){
       return /\.(mp4|webm|ogg)$/i.test(filename);
   }

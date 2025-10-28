@@ -18,6 +18,7 @@ import sharedsession from "express-socket.io-session"
 import fs from "fs"
 import cors from "cors"
 import admin from "firebase-admin"
+import ImageKit from "imagekit";
 
 const baseUrl = process.env.NODE_ENV === 'production' 
   ? 'https://memorydom-v2.onrender.com'
@@ -76,8 +77,6 @@ const pool = new Pool({
         rejectUnauthorized : false
     }
 })
-
-
 
 
 // cors
@@ -254,10 +253,6 @@ async function markUserAsInactive(id){
   console.log('user disconnected and marked as inactive success')
 }
 
-
-
-
-
 // multer setup
 const storage = diskStorage({
     destination :function(req,file,cb){
@@ -300,22 +295,21 @@ app.get('/api/login', (req,res)=>{
     res.sendFile(basedir + '/login.html')
 })
 
-app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
+app.post('/api/signup',async(req,res)=>{
     let newUser;
-  
+      console.log(req.body)
        let newUserData = {
         fname : req.body.fname.trim().toLowerCase(),
         email : req.body.email.trim().toLowerCase(),
-        password : req.body.password.trim().toLowerCase()
+        password : req.body.password.trim().toLowerCase(),
+        profile : req.body.profile
       }
+
+    //   return console.log(newUserData.profile, 'profile')
 
       const userExist = await pool.query(`SELECT * FROM users WHERE email = $1 `,[newUserData.email]);
 
       if(userExist.rowCount > 0) return res.json({message :"email is already registered please log in"})
-
-      const profile = req.file? 
-      path.join(`/uploads/${req.file.filename.replace(/\\/g, '/')}`) : 
-      '/static-images/anonymous-user.png'
 
       // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
         const userToken = crypto.randomBytes(32).toString('hex')
@@ -328,8 +322,12 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
             // hashing the password into for saving into db
         const hashedPassword = await bcrypt.hash(newUserData.password,10)
 
+
+        // checking for user profile whether to add or not 
         const newUserQuery = `INSERT INTO users(firstname, email, password, profilepicture, usertoken) VALUES
         ($1,$2,$3,$4, $5) RETURNING *`
+
+        const profile = newUserData.profile || '/static-images/anonymous-user.png'
 
          newUser = await pool.query(newUserQuery, [newUserData.fname, newUserData.email,hashedPassword,profile, userToken])
 
@@ -347,6 +345,22 @@ app.post('/api/signup',upload.single('profilePicture'),async(req,res)=>{
         newUser : newUser.rows[0],
         isLoggedIn : true,
         userId : req.session.userId
+    })
+})
+
+//image kit auth route
+
+app.get('/imageKit/auth',async(req,res)=>{
+    const imgkit = new ImageKit({
+        publicKey : process.env.IMGKIT_PUBLIC_KEY,
+        privateKey : process.env.IMGKIT_PRIVATE_KEY,
+        urlEndpoint : `https://ik.imagekit.io/${process.env.IMAGE_KIT_ID}`
+    })
+
+    const imgKitAuthElements = imgkit.getAuthenticationParameters()
+    res.json({
+        success : true,
+        authElements : imgKitAuthElements
     })
 })
 

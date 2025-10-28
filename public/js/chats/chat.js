@@ -19,6 +19,7 @@ socket.on('received-message', (data)=>{
 })
 
 
+
 function handleReceiverMessage(data){
 
     if(data.target === 'receiver'){ 
@@ -123,11 +124,14 @@ const chatContainer = document.querySelector('.chat-container1')
 }
 
 function getReceiverId(){
+    console.log(Object.keys(localStorage), 'local storage');
+    
     const url = localStorage.getItem('chat-list-user-url')
     const filteredURL = url.split('/').filter(segment => segment)
-     const receiverId = filteredURL[2]
-     return receiverId
+    const receiverId = filteredURL[2]
+    return receiverId
 }
+
 
 function displayMessage(message,date, sendingMessage){
     const messageHTML = document.createElement('div')
