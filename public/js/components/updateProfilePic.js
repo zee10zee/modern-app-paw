@@ -82,7 +82,7 @@ async function sendToserver(formData,updateTxt){
         const profileCoverContainer = updateTxt.closest('.profilePic-update-logo')
         const pc = profileCoverContainer.querySelector('.profileCover')
         
-        createSucessModal()
+        createSucessModal(message)
         // change the confirm back to update profile file
         updateTxt.textContent = 'Update profile'
 
@@ -91,7 +91,6 @@ async function sendToserver(formData,updateTxt){
         // updating the profile image of lgin user from session storage
         sessionStorage.setItem('loggedIn_profile',newImage)
 
-        console.log('element ', userNavProfilePic, userNavProfilePic.src, ' and thenew image ', newImage)
 
         // changeing the src on the ui
         userNavProfilePic.src = newImage
@@ -107,10 +106,10 @@ async function sendToserver(formData,updateTxt){
    }
 }
 
-function createSucessModal(){
+function createSucessModal(message){
     const newModal = document.createElement('div')
     newModal.classList.add('success-modal')
-    newModal.textContent = 'profile updated successfully !'
+    newModal.textContent = message
     document.body.appendChild(newModal)
 }
 

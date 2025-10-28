@@ -305,8 +305,6 @@ app.post('/api/signup',async(req,res)=>{
         profile : req.body.profile
       }
 
-    //   return console.log(newUserData.profile, 'profile')
-
       const userExist = await pool.query(`SELECT * FROM users WHERE email = $1 `,[newUserData.email]);
 
       if(userExist.rowCount > 0) return res.json({message :"email is already registered please log in"})
@@ -343,7 +341,7 @@ app.post('/api/signup',async(req,res)=>{
    
     res.json({
         newUser : newUser.rows[0],
-        isLoggedIn : true,
+        success : true,
         userId : req.session.userId
     })
 })
@@ -891,8 +889,10 @@ const allPosts = [...originals.rows, ...shares.rows].sort((a,b)=> new Date(b.cre
 
 
 // add new memory
-app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,res)=>{
-    const lastPostId = (await createNewPost(req.body,req))?.id || null
+app.post('/api/newPost', validateLogin,async(req,res)=>{
+    const userId=  req.session.userId
+    
+    const lastPostId = (await createNewPost(req.body,userId))?.id || null
      console.log(lastPostId)
 
     // getting new post and its whole meta data
@@ -945,19 +945,19 @@ app.post('/api/newPost', validateLogin, upload.single('mediaFile'), async(req,re
       })
 })
 
- async function createNewPost(body,request){
+ async function createNewPost(body,userId){
 
-       const media = request.file.mimetype.startsWith('video/')? 
-       path.join('uploads/videos', request.file.filename) 
-     : path.join('uploads', request.file.filename)
+     console.log(body.ptitle,body.pdesc,body.newMedia,userId, 'post info before isnert')
 
-        const newPostQuery = (`INSERT INTO posts (title, description, mediafile, user_id)
+    const newPostQuery = (`INSERT INTO posts (title, description, mediafile, user_id)
       VALUES($1, $2,$3, $4) RETURNING *`)
-      const newPost = await pool.query(newPostQuery, [body.ptitle,body.pdesc,media,request.session.userId])
+      const newPost = await pool.query(newPostQuery, 
+        [body.ptitle,body.pdesc,body.newMedia,userId])
 
       if(newPost.rowCount === 0){
          return console.log('no post saved to db')
       }
+         console.log(newPost.rows[0], 'from db')
         return newPost.rows[0]
     }
 

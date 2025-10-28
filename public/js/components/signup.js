@@ -29,6 +29,7 @@ signupForm.addEventListener('submit', async(e)=>{
 
 
 async function fileUploadOnImageKit(file){
+const signupForm = document.getElementById('signUpForm')
 
   // first upload the image on imageKit
     const imgKitAuthResponse = await axios.get('/imageKit/auth')
@@ -54,16 +55,16 @@ async function fileUploadOnImageKit(file){
 
       if(uploadRes.status === 200){
           const profileUrl = uploadRes.data.url
-          console.log(uploadRes)
+           console.log(uploadRes)
         //   send data to server to save on db
-          await sendDataOnServer(profileUrl)
+          await sendDataOnServer(profileUrl,signupForm)
       }
       
     }
 }
 
-async function sendDataOnServer(profile){
-const formData = new FormData(signupForm)
+async function sendDataOnServer(profile,form){
+const formData = new FormData(form)
 
 console.log(formData.get('fname'), 'form data befor send to server')
 
@@ -89,7 +90,7 @@ console.log(formData.get('fname'), 'form data befor send to server')
         }
     });
     
-    if(response.data.isLoggedIn){
+    if(response.data.success){
         const {newUser} = response.data
         console.log(newUser)
         // return console.log(newUser)

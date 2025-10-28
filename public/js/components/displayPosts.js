@@ -47,7 +47,7 @@ console.log(photo, 'login user profilephoto', userToken, username)
              const mediaTag = document.createElement(mediaFile)
              mediaTag.id = 'mediaFilePic'
              mediaTag.classList.add('mediaFile')
-             mediaTag.src = '/' + file
+             mediaTag.src = file
              if(mediaFile === 'video'){
                 mediaTag.controls = true
              }

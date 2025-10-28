@@ -3,6 +3,7 @@ const newPostAlert = document.getElementById('newPostAlert')
 const postAlert = sessionStorage.getItem('newPost')
 const newMemoryContainer = document.querySelector('.newMemoryContainer')
 const previewContainer = newMemoryContainer.querySelector('.pic-logo')
+let selectedMedia;
 
 let newCreatedPost = null;
 const addNewMemoryBtn = document.querySelector('.addNewPostBtn')
@@ -38,7 +39,6 @@ newMemoryModal.addEventListener('click', (e)=>{
 const closeNewPostIcon = e.target.classList.contains('closeModalBtn')
 const filePreviewContainer = e.target.closest('.pic-logo')
 const mediaInput = newMemoryContainer.querySelector('.newImage')
-
 // const previewContainer = filePreviewContainer.querySelector('')
    console.log('media input ', filePreviewContainer)
 
@@ -52,6 +52,7 @@ const mediaInput = newMemoryContainer.querySelector('.newImage')
        console.log(mediaInput, 'MEDIA INPUT')
        mediaInput.addEventListener('change',(e)=>{
         console.log('file changed')
+          selectedMedia = mediaInput.files[0]
           handleFilePreview(e,filePreviewContainer)
        })
     }
@@ -66,16 +67,25 @@ function removePreviewMedia(prevContainer){
 
 postForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
+   const fileUrl =  await fileUploadOnImageKit(selectedMedia)
 
-    const formData = new FormData(postForm)
+   sendPostDataToServer(fileUrl)
+})
 
-    const response = await axios.post('/api/newPost', formData, {});
+async function sendPostDataToServer(newFile){
+  const formData = new FormData(postForm)
+  const newPostData = {
+    ptitle : formData.get('ptitle'),
+    pdesc : formData.get('pdesc'),
+    newMedia : newFile
+  }
+
+    const response = await axios.post('/api/newPost', newPostData);
 
     if(response.status === 200 && response.data.success){
-        sessionStorage.setItem('newPost', 'new memory added successfully !')
         const newPost = response.data.newPostData
+        return console.log(newPost)
         newCreatedPost = newPost
-        
         // all posts array update
         Allposts = response.data.allPosts
         
@@ -84,12 +94,13 @@ postForm.addEventListener('submit', async(e)=>{
         // check empty posts
         if(document.querySelector('.no-post')) postsContainer.innerHTML = ''
         updateUIpost(newPost)
-        console.log(newMemoryContainer, 'NEW MEMORY CONTAINER OR MODAL')
+        createSucessModal('memory posted successfully !')
+
         postForm.reset()
         newMemoryContainer.style.display = "none"   
         setupEventListener() 
     }
-})
+}
 
  function updateUIpost(newPost){
   const postDiv = document.createElement('div')
