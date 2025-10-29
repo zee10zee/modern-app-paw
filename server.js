@@ -167,13 +167,12 @@ const updatedUser = await pool.query(`
     // received message listener
     socket.on('newMessage-send', async(data)=>{
         console.log('come from client ', data)
-        // return console.log(data.userId)
+       
         const receiverId = parseInt(data.userId)
         const receiver = activeUsers.get(receiverId)
-        console.log(receiver, 'receiver', activeUsers.values())
+    
         const con_id = parseInt(data.conversation_id)
-         console.log(con_id, typeof(con_id), 
-         ' conversatoin id on sent from client')
+       
 
         const messageDetails = {
             sender_id : loggedInUser.id,
@@ -1902,7 +1901,7 @@ app.post('/api/conversation/new',validateLogin, async(req,res)=>{
 
     if(newConversation.rowCount === 0) {
         return res.json({
-            error : 'failed  to insert into conversation ',
+            message : 'failed  to insert into conversation ',
             success  : false
         })
     }

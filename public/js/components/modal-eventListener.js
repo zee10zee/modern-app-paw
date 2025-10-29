@@ -54,52 +54,22 @@ modal.addEventListener('click', async(e)=>{
       }
     })
 
-    let conver_id;
     async function createNewConversation(userId2){
       try{
         const res = await axios.post(`api/conversation/new`,
           {userId2 : userId2})
 
       if(res.status === 200 && res.data.success){
-        console.log(res.data.message)
+         console.log(res.data.message, 'MESSAGE READ IT !')
 
-         conver_id = res.data.conversation.id
-         return res.data.conversation.id
-        // sessionStorage.setItem('conver_id', conver_id)
+        const conver_id = res.data.conversation.id
+        sessionStorage.setItem('conver_id', conver_id) 
+        const savedConversationId = sessionStorage.getItem('conver_id')
+        return console.log('saved conversation id ', savedConversationId, ' of buddy user ', userId2)
+
       }
       }catch(err){
 
         console.log(err)
       }
     }
-
-    async function setUpAndSendMessage(container){
-    const messageInput = container.querySelector('#chatInput')
-
-    const receiverId = getReceiverId()
-     console.log(receiverId)
-    let message = messageInput.value
-    const now = new Date().toISOString()
-    const displayTime = new Date().toLocaleTimeString('en-US',
-        {hour : '2-digit', minute: '2-digit', hour12 : true})
-
-     console.log(conver_id, 'convesation id before sending message')
-
-     console.log('gloabal conversation id Notice ', conver_id)
-    const messageData = {
-        msg : message, 
-        date : now,
-        userId : receiverId,
-        conversation_id : conver_id
-    }
-    
-    if(messageInput.value === '') return;
-
-    socket.emit('newMessage-send', messageData)
-      
-    const messageContainer = container.querySelector('.chat-container1')
-
-    appendMessageToContainer(message, displayTime, 'sendingMessage',messageContainer)   
-    messageInput.value = ''
-    adoptTotalHeight()
-}

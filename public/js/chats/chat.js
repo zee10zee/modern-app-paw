@@ -32,9 +32,8 @@ function handleReceiverMessage(data){
 }
 
 function handleReceivingMessages(data){
-     console.log('handle recieving message return')
     const lastMessageData = localStorage.setItem('lastMsgData', data)
-    console.log(data.newMsg, data.sender_name, 'just inside handleReceiving message')
+
     const msg = data.newMsg.message
     const msgTime = formatDate(data.newMsg.created_at)
     const directionClass = 'receivingMessage'
@@ -191,4 +190,35 @@ window.addEventListener('resize', () => {
 function scrollToBottom(containerClass) {
     const messagesContainer = document.querySelector(containerClass);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function setUpAndSendMessage(container){
+    const messageInput = container.querySelector('#chatInput')
+
+    const receiverId = getReceiverId()
+     console.log(receiverId)
+    let message = messageInput.value
+    const now = new Date().toISOString()
+    const displayTime = new Date().toLocaleTimeString('en-US',
+        {hour : '2-digit', minute: '2-digit', hour12 : true})
+
+    const converId = sessionStorage.getItem('conver_id')
+     console.log(converId, 'convesation id before sending message')
+
+    const messageData = {
+        msg : message, 
+        date : now,
+        userId : receiverId,
+        conversation_id : converId
+    }
+    
+    if(messageInput.value === '') return;
+
+    socket.emit('newMessage-send', messageData)
+      
+    const messageContainer = container.querySelector('.chat-container1')
+
+    appendMessageToContainer(message, displayTime, 'sendingMessage',messageContainer)   
+    messageInput.value = ''
+    adoptTotalHeight()
 }
