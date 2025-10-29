@@ -9,18 +9,53 @@ bottomNav.addEventListener('click', async(e)=>{
   postBtn.hide()
 
   if(e.target.closest('.chats-btn')){
+    history.pushState({ screen: "chatList" }, "", "/api/chatList");
     await hideAllShowChatList()
+
 
   }else if(e.target.closest('.feeds-btn')){
     console.log('the feed btn clicked')
-    postBtn.show()
+    history.pushState({ screen: "home" }, "", "/api/home");
     await hideAllShowHomePage()
      
   }else if(e.target.closest('.profilePicContain')){
     e.preventDefault()
     let targetParent;
-   
-    const parentEl = e
+    history.pushState({ screen: "userProfile" }, "", "/api/userProfile");
+    displayUserPageHideAll(e,targetParent)  
+  }
+
+  else if(e.target.closest('.groups-btn')){
+    history.pushState({ screen: "community" }, "", "/api/community");
+    hideAllShowCommunity()
+  }
+  else if(e.target.closest('.notif-btn')){
+     notifDropdown.classList.toggle('reveal')
+  } 
+ })
+
+
+ window.addEventListener("popstate", async(event) => {
+  console.log("Navigated to:", event.state);
+  if (event.state?.screen === "home") {
+        await hideAllShowHomePage()
+
+  } else if (event.state?.screen === "chatList") {
+    await hideAllShowChatList()
+  }else if(event.state?.screen === 'userProfile'){
+    displayUserPageHideAll(e,targetParent)
+  }else if(event.state?.screen === 'community'){
+    hideAllShowCommunity()
+  }else if(event.state?.screen === 'chatPage'){
+    const receiverLink = localStorage.getItem('chat-list-user-url')
+    if(!receiverLink) return console.log('receiver link or url not found')
+    await displayChatPageHideAll(receiverLink)
+  }
+});
+
+
+async function displayUserPageHideAll(e,targetParent){
+  const parentEl = e
     const parent_parent_el = e.target.closest('.profileImageLink')
     const link = parent_parent_el.getAttribute('href')
     console.log(link)
@@ -32,17 +67,8 @@ bottomNav.addEventListener('click', async(e)=>{
       console.log('looking at static parnet')
       targetParent = document.querySelector('.action-item, .profilePicContain, .profileImageLink')
     }
-
-    await hideAllShowUserProfilePage(targetParent)
-  }
-  else if(e.target.closest('.groups-btn')){
-    hideAllShowCommunity()
-  }
-  else if(e.target.closest('.notif-btn')){
-     notifDropdown.classList.toggle('reveal')
-  } 
- })
-
+     await hideAllShowUserProfilePage(targetParent)
+}
 
  async function hideAllShowCommunity(){
     hideHomePage()
@@ -74,6 +100,7 @@ async function hideAllShowHomePage(){
     hideChatPage()
     hideCommunity()
     postsContainer.innerHTML = loadSpinner('posts')
+    postBtn.show()
     await showHomePage()
     setView('.posts-container')
 }
@@ -210,7 +237,8 @@ function handleRightContainer(){
 
  async function handleCenterContainer(){
   const centerContainer = createElement('div','centerContainer')
-      
+      centerContainer.dataset.userToken = user_token
+      centerContainer.dataset.userId = id
         
         centerContainer.textContent = ''
 

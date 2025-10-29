@@ -24,8 +24,30 @@ profileLogo.addEventListener('click', (e)=>{
 
 signupForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
-   await fileUploadOnImageKit(selectedProfile)
+
+    // if(selectedProfile){
+      const response = await checkDuplicateByServer(signupForm)
+
+      if(response.data.success){
+        console.log('new user joined ! UPLOAD profile now !')
+
+      const profileUrl = await fileUploadOnImageKit(selectedProfile)
+
+      // updateProfile picture on db
+      await updateProfileImageOnServer(profileUrl)       
+
+       //async   implement the changes on the UI
+       handleSignUpResult(response)
+      }
+
+      //show duplicate or errors
+      handleSignUpResult(response)
 })
+
+
+async function updateProfileImageOnServer(profileImg){
+  const a = await console.log('uploaded profile url should be saved on db. this => ', profileImg)
+}
 
 
 async function fileUploadOnImageKit(file){
@@ -57,13 +79,13 @@ const signupForm = document.getElementById('signUpForm')
           const profileUrl = uploadRes.data.url
            console.log(uploadRes)
         //   send data to server to save on db
-          await sendDataOnServer(profileUrl,signupForm)
+           return profileUrl
       }
       
     }
 }
 
-async function sendDataOnServer(profile,form){
+async function checkDuplicateByServer(form,profile = null){
 const formData = new FormData(form)
 
 console.log(formData.get('fname'), 'form data befor send to server')
@@ -89,8 +111,19 @@ console.log(formData.get('fname'), 'form data befor send to server')
             'Content-type' : 'application/json' 
         }
     });
-    
-    if(response.data.success){
+
+   
+    return response
+
+    }catch(err){
+        console.log(err)
+    }
+}
+
+
+function handleSignUpResult(response){
+  if(response.data.success){
+
         const {newUser} = response.data
         console.log(newUser)
         // return console.log(newUser)
@@ -105,24 +138,21 @@ console.log(formData.get('fname'), 'form data befor send to server')
         signUpBtn.innerHTML = 'Sign up'
 
         window.location.href="/"
-    }else{
+    }
+    else{
         const checkNewUserEl = document.getElementById('newUserCheck')
-            console.log(checkNewUserEl)
 
             checkNewUserEl.style.display = "block"
             checkNewUserEl.textContent = response.data.message
+            signUpBtn.disabled =false
+            signUpBtn.innerHTML = 'Sign up'
 
             setTimeout(() => {
                 checkNewUserEl.style.display = 'none'
             }, 3000);
         
     }
-
-    }catch(err){
-        console.log(err)
-    }
 }
-
 
  function isVideo(filename){
       return /\.(mp4|webm|ogg)$/i.test(filename);

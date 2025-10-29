@@ -30,8 +30,9 @@ function loadprofileHeader(user){
   const username = user.firstname.split(' ')[0]
   const lastname = user.firstname.split(' ').pop()
 
+  // alert(`${user.usertoken}, ${user.id}`)
 
-  return `<header class="profileHead">
+  return `<header class="profileHead" href="/api/userProfile/${user.usertoken}/${user.id}">
   <div class="profilePic-update-logo">
     <div class="profileCover">
        <img src="${user.profilepicture}" alt="${username} profile picture" class="profilePhoto">
@@ -58,7 +59,7 @@ function loadprofileHeader(user){
     <span class="statLabel">Followers</span>
   </div>
   <div class="stat">
-    <span class="statNumber">$50</span>
+    <span class="statNumber">50</span>
     <span class="statLabel">Following</span>
   </div>
 </div>
@@ -66,7 +67,8 @@ function loadprofileHeader(user){
 <div class="profileActions">
   ${!user.is_owner ?
   `<button class="followBtn">${user.isFollowing ? 'Unfollow' : 'Follow'}</button>
-  <button class="chatBtn" url="/api/chatpage/${user.id}/${user.usertoken}">Message</button>
+  <button class="chatBtn" id="${user.id}"
+  url="/api/chatPage/${user.userToken}/${user.id}">Message</button>
   `:``}
 </div>
 </div>

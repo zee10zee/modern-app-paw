@@ -224,3 +224,4 @@ async function setUpAndSendMessage(container){
     messageInput.value = ''
     adoptTotalHeight()
 }
+

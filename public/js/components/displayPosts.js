@@ -24,6 +24,10 @@ console.log(photo, 'login user profilephoto', userToken, username)
 
 
         const profile = document.createElement('img')
+        const ownerNameEl = document.createElement('div')
+        ownerNameEl.textContent = username
+        ownerNameEl.classList.add('navUsername')
+
         profile.classList.add('profilePic')
         const profileLink = document.createElement('a')
         profileLink.classList.add('profileImageLink')

@@ -13,7 +13,8 @@ chatListContainer.addEventListener('click', async(e)=>{
 
 
 async function createContainerAndAppendChatPage(e){
-    const tar_parent = e.target.closest('.chatItem') || e.target.closest('.action-item')
+    const tar_parent = e.target.closest('.chatItem') || 
+    e.target.closest('.action-item')
     if(tar_parent){
         checkDuplicateLgContainer()
         const userLink = getReceiverLink(e,'.chatItem')

@@ -5,7 +5,6 @@ const baseUrl = 'http://localhost:3000/';
 const messageBtn = document.querySelector('.chatBtn');
  const profileImgLink = bottomNav.querySelector('.profileImageLink')
 
-  // const {token,userId} =  getTokenAndUserId(profileImgLink)
 
 let loginUserPosts = [];
 let loginProfile = null;
@@ -18,53 +17,40 @@ document.addEventListener('click', (e)=>{
 const userProfileContainer = document.querySelector('.userProfileContainer')
 userProfileContainer.addEventListener('click', async(e)=>{
   e.preventDefault()
-   const storedLink = localStorage.getItem('clickedOwnerLink')
-  const targetEl = storedLink|| profileImgLink
-  const {token,userId} =  getTokenAndUserId(targetEl)
-  
+const clickedUserProfileEl =  e.target.closest('.centerContainer')
+
+const {userToken,userId} = clickedUserProfileEl.dataset
+
   const mediaList = userProfileContainer.querySelector('.mediaList')
   
   if(e.target.classList.contains('postedPics')){
- clearMedia();
- console.log(targetEl)
-
-  await renderPhotos(mediaList,token,userId)
+  clearMedia();
+  await renderPhotos(mediaList,userToken,userId)
   }
 
    else if(e.target.classList.contains('profilePics')){
     clearMedia();
-   await renderProfiles(mediaList,token,userId)
+   await renderProfiles(mediaList,userToken,userId)
   }
 
    else if(e.target.classList.contains('videos')){
  clearMedia();
-   await renderVideos(mediaList, token,userId)
+   await renderVideos(mediaList, userToken,userId)
   }
 
   else if(e.target.classList.contains('chatBtn')){
-    const data = await fetchUser(token,userId)
-    const owner = data.owner
-
-  console.log('profile header clicked')
-  
-    // e.preventDefault()
-     console.log('message btn clicked', owner)
-     window.location.href = `/api/chatpage/${owner.id}/${owner.usertoken}`
+    alert('this one')
+    //  hideAllShowHomePage()
+    //  createContainerAndAppendChatPage(e)
+  }else {
+     console.log('you pressed unrealted button')
   }
-  // else if(e.target.closest('.update-profile-logo')){
-  //       console.log('you clicked the update profile')
-
-  //       const parent = e.target.closest('.update-profile-logo')
-  //       const input = parent.querySelector('.updateProfileInput')
-
-  //       console.log(parent, 'parent ',input, 'input', input["type"], 'type of input')
-  //   }
+  
 })
 
 
-function getTokenAndUserId(el){
-  console.log(el)
-const link = el || el.getAttribute('href') //we sent the link from the cliced post owner
+function getTokenAndUserId(link){
+ console.log(link)
 
 const splittedUrl = link.split('/')
  console.log(splittedUrl)
@@ -73,7 +59,6 @@ const segments = splittedUrl.filter(segment => segment)
 
 const token = segments[1]
 const userId = segments[2]
-console.log(token,userId)
 return {token,userId}
 }
 
@@ -105,7 +90,6 @@ async function renderPhotos(mediaList,token,userId){
    mediaList.innerHTML = loadSpinner('fotos ..')
 
        const {uploadedPhotos} = await loadUploadedImages(token,userId)
-       console.log(uploadedPhotos)
     if (!uploadedPhotos || uploadedPhotos.length === 0) return mediaList.innerHTML = '<p>No photos yet</p>'
 
         mediaList.innerHTML = ''

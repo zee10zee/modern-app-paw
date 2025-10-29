@@ -328,7 +328,7 @@ app.post('/api/signup',async(req,res)=>{
 
       const userExist = await pool.query(`SELECT * FROM users WHERE email = $1 `,[newUserData.email]);
 
-      if(userExist.rowCount > 0) return res.json({message :"email is already registered please log in"})
+      if(userExist.rowCount > 0) return res.status(201).json({message :"email is already registered please log in"})
 
       // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
         const userToken = crypto.randomBytes(32).toString('hex')
@@ -555,6 +555,7 @@ app.post('/api/logout', validateLogin, async(req,res)=>{
         res.json({  success : true, username : username})
     })
 })
+
 // node mailer config
 const transporter = nodemailer.createTransport({
     service : 'gmail',
@@ -568,8 +569,12 @@ const transporter = nodemailer.createTransport({
 })
 
  function sendEmail(to,subject,html){
+    console.log(process.env.APPPASSWORD,process.env.APPEMAIL, 'NODE MAILER CREDENTIALS')
     const mainOptions = {
-   from : '"MemoryDom" <abedkhan.noori10@gmail.com>',
+   from : {
+    name : "MemoryDom",
+    address : process.env.APPEMAIL
+   },
    to : to,
    subject : subject,
    html : html
@@ -600,7 +605,8 @@ try{
 
     // creating reset Link
     const resetLink = `${baseUrl}/api/passwordReset/${token}`
-    const description = `<p>click here to reset the password : <a href="${resetLink}">Reset password</a>`
+    const description = `<p>click here to reset the password : 
+    <a href="${resetLink}">Reset password</a>`
 
    const existingToken = await pool.query('SELECT * FROM tokens WHERE token = $1', [token])
 
@@ -704,7 +710,7 @@ app.get('/api/userProfile/:token/:userId',validateLogin,async(req,res)=>{
         
         return res.json({error : 'USER NOT FOUND'})
     }
- console.log(userWithPosts.rows[0])
+
 
     res.json({
         user : userWithPosts.rows[0],
@@ -1921,6 +1927,7 @@ app.post('/api/conversation/new',validateLogin, async(req,res)=>{
     }
 })
 
+
 // CHATS 
 function validateLogin(req,res,next){
     if(!req.session.userId){
@@ -2083,6 +2090,14 @@ function validateLogin(req,res,next){
 
 //    pool.query(`ALTER TABLE users ALTER COLUMN created_at TYPE timestamptz USING created_at::timestamptz`).then(()=>console.log('is_seen column added')).catch((err)=>console.log(err))
 
+// fallback
+// Serve all other routes with index.html
+// app.use('/api', apiRoutes);
+
+// Static files
+app.use(validateLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'htmlFiles', 'home.html'));
+});
 
 const listeningPort=  3000
 server.listen(listeningPort, ()=>{

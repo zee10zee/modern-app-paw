@@ -8,14 +8,19 @@ function hanleChatListClick(listContainer){
     listContainer.addEventListener('click', async(e)=>{
     e.preventDefault()
     if(e.target.closest('.chatItem')){
-        const userLink = getReceiverLink(e,'.chatItem')
+        window.history.pushState({screen : 'chatPage'}, "", "/api/chatPage")
+        displayChatPageHideAll(e)
+    }
+})
+}
+
+async function displayChatPageHideAll(e){
+    const userLink = getReceiverLink(e,'.chatItem')
         storeOnLocalStorage('chat-list-user-url',userLink)
         console.log('loading chats ..')
         chatPageContainer.innerHTML = loadSpinner('all chats ...')
          await hideAllShowChatPage(userLink)
          setView('.chatPageContainer')
-    }
-})
 }
 
 async function hideAllShowChatPage(userLink){
