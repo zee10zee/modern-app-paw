@@ -63,7 +63,7 @@ function toggleHomeMenu(){
 
     if(homeIcon) homeIcon.remove()
 
-    // TOMMAROW THIS SHOULD WORK INSHALLAH
+   
      const homeBtn = createElement('div','returnHome')
      const topRightIcons = topNav.querySelector('.rightNavIcons')
      
@@ -82,7 +82,7 @@ if(e.target.closest('.returnHome')){
 
 function displayHome(){
  main.querySelector('.lgChatPageContainer')?.remove()
- hidePostAndRightContainer('flex')
+ hidePostAndRightContainer('block')
  const rightContainer = document.querySelector('.rightContainer')
  rightContainer.style.flexDirection = "column"
     // if(chatContainer && window.getComputedStyle(chatContainer).display !== 'none'){
