@@ -24,7 +24,7 @@ modal.addEventListener('click', async(e)=>{
        console.log(link)
         const {receiverId} = getReceiverIdAndToken(link)
          console.log(receiverId)
-         
+         const userLink = getReceiverLink(e,'.user-profile-link')
          await createNewConversation(receiverId)
 
         if(window.innerWidth > 800){
@@ -33,7 +33,7 @@ modal.addEventListener('click', async(e)=>{
           await createContainerAndAppendChatPage(e)
           toggleHomeMenu()
         }else{
-          const userLink = getReceiverLink(e,'.user-profile-link')
+          
           storeOnLocalStorage('chat-list-user-url',userLink)
           hideAllPages()
           const smChatPageContainer = document.querySelector('.chatPageContainer')
