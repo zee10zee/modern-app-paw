@@ -28,6 +28,7 @@ modal.addEventListener('click', async(e)=>{
          await createNewConversation(receiverId)
 
         if(window.innerWidth > 800){
+          storeOnLocalStorage('chat-list-user-url',userLink)
            console.log('show large size chat page')
           await createContainerAndAppendChatPage(e)
           toggleHomeMenu()

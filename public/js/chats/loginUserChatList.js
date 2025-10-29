@@ -141,6 +141,7 @@ socket.on('received-message', async(data)=>{
       updateChatListUI(lastChatItem,newMsg)
       }else{
         console.log('here goes for small size ')
+        // handleReceivingMessages(data)
       }
        
     }    
@@ -215,7 +216,8 @@ function appendAndSaveChatItem(newMsg,data,newMsgKey){
 
 
 function checkConversationItemEl(newMsg){
-  const chatMateId = newMsg.sender_id === loggedInUserId ? newMsg.receiver_id : newMsg.sender_id
+  const chatMateId = newMsg.sender_id === loggedInUserId ? 
+  newMsg.receiver_id : newMsg.sender_id
   console.log(newMsg, 'ON CHECK CONVERSTAOIN ITEM eL', chatMateId)
 
   return chatMateId

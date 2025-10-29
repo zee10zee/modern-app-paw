@@ -39,6 +39,8 @@ function handleReceivingMessages(data){
     const directionClass = 'receivingMessage'
     
     if(window.innerWidth < 800){
+    const messageContainer = document.querySelector('.chat-container1')
+         console.log('message container ', messageContainer)
       appendMessageToContainer(msg,msgTime,directionClass,messageContainer)
       adoptTotalHeight()
     }else{
