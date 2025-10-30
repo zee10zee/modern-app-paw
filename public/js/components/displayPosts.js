@@ -153,21 +153,33 @@ const comments_area = `
   <!-- Like -->
   <div class="likeSection">
     <form class="likeForm" action="/api/post/${post.id}/like" method="post">
-      <button class="likeBtn" data-post-id="${post.id}">❤️</button>
+      <button class="likeBtn" data-post-id="${post.id}">
+      ${post.isliked ? `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 117.42"><path d="M66.71 3.55L81.1 37.26l36.58 3.28v-.01c1.55.13 2.91.89 3.85 2.01a5.663 5.663 0 011.32 4.13v.01a5.673 5.673 0 01-1.69 3.57c-.12.13-.25.25-.39.36L93.25 74.64l8.19 35.83c.35 1.53.05 3.06-.73 4.29a5.652 5.652 0 01-3.54 2.52l-.14.03c-.71.14-1.43.15-2.12.02v.01c-.75-.13-1.47-.42-2.11-.84l-.05-.03-31.3-18.71-31.55 18.86a5.664 5.664 0 01-7.79-1.96c-.38-.64-.62-1.33-.73-2.02-.1-.63-.09-1.27.02-1.89.02-.13.04-.27.08-.4l8.16-35.7c-9.24-8.07-18.74-16.1-27.83-24.3l-.08-.08a5.64 5.64 0 01-1.72-3.7c-.1-1.45.36-2.93 1.4-4.12l.12-.13.08-.08a5.668 5.668 0 013.77-1.72h.06l36.34-3.26 14.44-33.8c.61-1.44 1.76-2.5 3.11-3.05 1.35-.54 2.9-.57 4.34.04.69.29 1.3.71 1.8 1.22.53.53.94 1.15 1.22 1.82l.02.06zm10.19 37.2L61.85 5.51a.42.42 0 00-.09-.14.42.42 0 00-.14-.09.427.427 0 00-.35 0c-.1.04-.19.12-.24.24L45.98 40.75c-.37.86-1.18 1.49-2.18 1.58l-37.9 3.4c-.08.01-.16.02-.24.02-.06 0-.13.02-.18.05-.03.01-.05.03-.07.05l-.1.12c-.05.08-.07.17-.06.26.01.09.04.18.09.25.06.05.13.11.19.17l28.63 25c.77.61 1.17 1.62.94 2.65l-8.51 37.22-.03.14c-.01.06-.02.12-.01.17a.454.454 0 00.33.36c.12.03.24.02.34-.04l32.85-19.64c.8-.5 1.85-.54 2.72-.02L95.43 112c.08.04.16.09.24.14.05.03.1.05.16.06v.01c.04.01.09.01.14 0l.04-.01c.12-.03.22-.1.28-.2.06-.09.08-.21.05-.33L87.8 74.28a2.6 2.6 0 01.83-2.55l28.86-25.2c.04-.03.07-.08.1-.13.02-.04.03-.1.04-.17a.497.497 0 00-.09-.33.48.48 0 00-.3-.15v-.01c-.01 0-.03 0-.03-.01l-37.97-3.41c-1-.01-1.93-.6-2.34-1.57z" fill="#ffcf00"/></svg>
+         ` : 
+         `<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 117.1"><defs><style>.cls-1{fill:#ffd401;}</style></defs><title>star-symbol</title><path class="cls-1" d="M64.42,2,80.13,38.7,120,42.26a3.2,3.2,0,0,1,1.82,5.62h0L91.64,74.18l8.9,39A3.19,3.19,0,0,1,98.12,117a3.27,3.27,0,0,1-2.46-.46L61.41,96.1,27.07,116.64a3.18,3.18,0,0,1-4.38-1.09,3.14,3.14,0,0,1-.37-2.38h0l8.91-39L1.09,47.88a3.24,3.24,0,0,1-.32-4.52,3.32,3.32,0,0,1,2.29-1l39.72-3.56L58.49,2a3.24,3.24,0,0,1,5.93,0Z"/></svg>`
+        }
+      </button>
     </form>
     <p id="likesCount" class="likesCount">${post.likes_count}</p>
   </div>
 
   <!-- Comments -->
   <div class="commentSection">
-    <button id="commentButton" class="CommentBtn" data-post-id="${post.id}">💬</button>
+    <button id="commentButton" class="CommentBtn" data-post-id="${post.id}">
+      <?xml version="1.0" encoding="utf-8"?><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="111.686px" height="122.879px" viewBox="0 0 111.686 122.879" enable-background="new 0 0 111.686 122.879" xml:space="preserve"><g><path d="M83.896,5.08H27.789c-12.491,0-22.709,10.219-22.709,22.71v40.079c0,12.489,10.22,22.71,22.709,22.71h17.643 c-2.524,9.986-5.581,18.959-14.92,27.241c17.857-4.567,31.642-13.8,41.759-27.241h3.051c12.488,0,31.285-10.219,31.285-22.71V27.79 C106.605,15.299,96.387,5.08,83.896,5.08L83.896,5.08z M81.129,41.069c-4.551,0-8.24,3.691-8.24,8.242s3.689,8.242,8.24,8.242 c4.553,0,8.242-3.691,8.242-8.242S85.682,41.069,81.129,41.069L81.129,41.069z M30.556,41.069c-4.552,0-8.242,3.691-8.242,8.242 s3.69,8.242,8.242,8.242c4.551,0,8.242-3.691,8.242-8.242S35.107,41.069,30.556,41.069L30.556,41.069z M55.843,41.069 c-4.551,0-8.242,3.691-8.242,8.242s3.691,8.242,8.242,8.242c4.552,0,8.241-3.691,8.241-8.242S60.395,41.069,55.843,41.069 L55.843,41.069z M27.789,0h56.108h0.006v0.02c7.658,0.002,14.604,3.119,19.623,8.139l-0.01,0.01 c5.027,5.033,8.148,11.977,8.15,19.618h0.02v0.003h-0.02v40.079h0.02v0.004h-0.02c-0.004,8.17-5.68,15.289-13.24,20.261 c-7.041,4.629-15.932,7.504-23.104,7.505v0.021H75.32v-0.021h-0.576c-5.064,6.309-10.941,11.694-17.674,16.115 c-7.443,4.888-15.864,8.571-25.31,10.987l-0.004-0.016c-1.778,0.45-3.737-0.085-5.036-1.552c-1.852-2.093-1.656-5.292,0.437-7.144 c4.118-3.651,6.849-7.451,8.826-11.434c1.101-2.219,1.986-4.534,2.755-6.938h-10.95h-0.007v-0.021 c-7.656-0.002-14.602-3.119-19.622-8.139C3.138,82.478,0.021,75.53,0.02,67.871H0v-0.003h0.02V27.79H0v-0.007h0.02 C0.021,20.282,3.023,13.46,7.878,8.464C7.967,8.36,8.059,8.258,8.157,8.16c5.021-5.021,11.968-8.14,19.628-8.141V0H27.789L27.789,0 z"/></g></svg>
+    </button>
     <p class="commentCount">${post.comments_count}</p>
   </div>
 
   <!-- Share -->
   <div class="shareSection">
     <form action="/api/share/id">
-      <button class="shareBtn" data-post-id="${post.id}">↗️</button>
+      <button class="shareBtn" data-post-id="${post.id}">
+       
+         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3791 3729" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd"><path d="M713 1152c197 0 375 80 504 209 29 29 56 61 80 95l1125-468c-36-85-55-178-55-275 0-197 80-375 209-504S2883 0 3080 0s375 80 504 209 209 307 209 504-80 375-209 504-307 209-504 209-375-80-504-209c-22-22-43-46-62-71l-1132 471c29 77 45 161 45 248 0 54-6 106-17 157l1131 530c11-13 23-26 36-39 129-129 307-209 504-209s375 80 504 209 209 307 209 504-80 375-209 504-307 209-504 209-375-80-504-209-209-307-209-504c0-112 26-219 73-313l-1092-512c-34 66-78 126-130 177-129 129-307 209-504 209s-375-80-504-209S2 2062 2 1865s80-375 209-504 307-209 504-209zm2742-815c-96-96-229-156-376-156s-280 60-376 156-156 229-156 376 60 280 156 376 229 156 376 156 280-60 376-156 156-229 156-376-60-280-156-376zm0 2303c-96-96-229-156-376-156s-280 60-376 156-156 229-156 376 60 280 156 376 229 156 376 156 280-60 376-156 156-229 156-376-60-280-156-376zM1089 1488c-96-96-229-156-376-156s-280 60-376 156-156 229-156 376 60 280 156 376 229 156 376 156 280-60 376-156 156-229 156-376-60-280-156-376z" fill-rule="nonzero"/></svg>
+        
+      </button>
     </form>
     <p class="sharesCount">${post.total_shares}</p>
   </div>
@@ -267,7 +279,9 @@ const setupEventListener = (container)=>{
     }
     else if(ownerPhoto){
       const cID = findClickedPostOrComment(e.target)
-      loadModalSpinner()
+       openModal(e.target)
+       showLoading(modal, 'loading ..')
+
       const contentData = await checkPostAuthorAndCommentAuthor(e,cID)    
       const tpost = handleModalAndLinks(e,contentData.content)
       modal.innerHTML = popUserProfileAndChat(tpost)
@@ -328,24 +342,6 @@ function createModal(){
       }
   }
 
-
-  // async function fetchClickedPostContent(event){
-  //   let finalpostId = null;
-     
-  //      // Handle post click
-  //   const sharedPost = event.target.closest('.shared_post')
-
-  //       if(sharedPost) {
-  //         finalpostId = sharedPost.dataset.postId
-  //       }else{
-  //         finalpostId = postId
-  //       }
-      
-  //     const {content} = await checkPostAuthorAndCommentAuthor(event,finalpostId)
-  //     return content
-  // }
-
-
   class postModal {
     constructor(){
 
@@ -397,12 +393,15 @@ async function getPostSuperFast(postId) {
   // 1. Check memory cache first (instant)
   const cached = postsCache.getPost(postId);
   if (cached) {
+    modal.style.display = "flex"
+    hideLoading(modal)
     console.log(`✅ From memory cache (${cached.timestamp}ms old)`);
     return cached.data;
   }
   
   // 2. If not in cache, fetch and cache it
   const post = await fetchOnePost(postId);
+
   postsCache.setPost(postId, post);
   
   return post;
@@ -496,7 +495,7 @@ function toggleFullscreen(event){
 
 function loadModalSpinner(){
   console.log('loading is running !')
-  modal.innerHTML = ''   
+    modal.innerHTML = ''   
    modal.style.display = "flex"
    modal.innerHTML = loadSpinner("content")
 }
@@ -802,72 +801,6 @@ const addNwePostBtn = document.querySelector('.addNewPostBtn')
   addNwePostBtn.classList.add('hide')
 }
 
-// const allContainer = document
-
-// window.addEventListener('resize', async(e)=>{
-//  const viewPortSize = window.innerWidth 
-//   let size;
-//  console.log(viewPortSize)
-//   if(viewPortSize > 800){
-//     const allContainer = document.querySelector('.chats-posts-users')  
-//   allContainer.innerHTML = ''
-  
-// // const chatListContainer = document.querySelector('.lgChatListContainer')
-//   //  const leftContainer = document.querySelector('.leftContainer')
-//   //  chatListContainer.appendChild(chatListContainer)
-       
-//         const a = await fetchAndRenderChatList()
-//         console.log(a)
-
-//   // right container
-//   const rightContainer = createElement('div', 'rightContainer')
-//   rightContainer.innerHTML = `<h2>Community</h2>
-//   <ul class="community-list">
-//     <!-- Online users first -->
-//     <li class="user online">
-//       <div class="profile">
-//         <img src="/static-images/anonymous-user.png" alt="Ali">
-//       </div>
-//       <div class="user-info">
-//         <p class="fname">Ali</p>
-//         <i class="online-status">Online</i>
-//       </div>
-//     </li>
-
-//     <!-- Offline users -->
-//     <li class="user offline">
-//       <div class="profile">
-//         <img src="/uploads/1751110235162-1free-html5-and-css3-login-forms.jpg.avif" alt="Sara">
-//       </div>
-//       <div class="user-info">
-//         <p class="fname">Sara</p>
-//         <i class="online-status">2 hours ago</i>
-//       </div>
-//     </li>
-//   </ul>`
-
-//   const centerContainer = createElement('div', 'posts-container')
-//   centerContainer.setAttribute('id', 'postsContainer')
-//   const posts = await getAllposts()
-//   renderPosts(posts, centerContainer)
-
-//   allContainer.innerHTML = 
-//   `${leftContainer.outerHTML}
-//     ${centerContainer.outerHTML}
-//     ${rightContainer.outerHTML}
-//    `
-//    setupEventListener(allContainer)   
-
-//   }else{
-//     size = 'mobile size'
-//   }
-//    setTimeout(() => {
-//     console.log(size)
-//   }, 250);
-// })
-
-
-
 function loadHomePosts(posts){
   const allContainer = document.querySelector('.chats-posts-users')
   const container = postsContainer
@@ -891,6 +824,10 @@ const getAllposts = async()=>{
   const res = await axios.get('/api/posts')
   // return console.log(res.data.posts)
     if(res.status === 200){
+
+      modal.style.display = "none"
+      modal.style.display = "flex"
+      hideLoading(modal)
     return Allposts = res.data.posts
 }}
 

@@ -1285,6 +1285,23 @@ app.post('/api/post/:id/like', validateLogin, async(req,res)=>{
       }    
     }
 
+    // update the status of post if liked 
+
+    const likedPost = await pool.query(`UPDATE posts 
+        SET is_liked  = true 
+        WHERE id = $1 AND user_id = $2 RETURNING * `, [id, loggedInUserId])
+
+    if(likedPost.rowCount === 0){
+        return res.json({
+            error : 'failure adding liked status',
+            success : false
+        })
+    }
+
+    console.log('liked status applied successfully !')
+
+
+    // adding the like
     const newLike = await pool.query(`INSERT INTO likes (userid,postid)
         VALUES($1,$2) RETURNING * `,[loggedInUserId, id])
 
@@ -1971,7 +1988,7 @@ function validateLogin(req,res,next){
     next()
 }
 
-// pool.query('ALTER TABLE users ADD COLUMN active_at TIMESTAMPTZ DEFAULT NOW()').then(data => console.log(console.log('is active created')))
+// pool.query('ALTER TABLE posts ADD COLUMN is_liked BOOLEAN DEFAULT false').then(data => console.log(console.log('is_like created')))
 
 // pool.query(`CREATE TABLE conversations (
 //     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

@@ -17,7 +17,7 @@ postContainer.addEventListener('click', async(e)=>{
    e.preventDefault()
    console.log('clicked')
 //    return console.log(e.target.classList.contains('likeBtn'))
-   const likeBtn = e.target.classList.contains('likeBtn');
+   const likeBtn = e.target.closest('.likeBtn');
    if(!likeBtn) return;
        const btnContainer = e.target.closest('.posts') || e.target.closest('.editPostContainer')
        const postId = parseInt(btnContainer.dataset.postId);

@@ -4,6 +4,7 @@ const postAlert = sessionStorage.getItem('newPost')
 const newMemoryContainer = document.querySelector('.newMemoryContainer')
 const previewContainer = newMemoryContainer.querySelector('.pic-logo')
 let selectedMedia;
+let savePostBtn;
 
 let newCreatedPost = null;
 const addNewMemoryBtn = document.querySelector('.addNewPostBtn')
@@ -26,6 +27,11 @@ if(!addNewMemoryBtn) console.log('no new btn found')
 addNewMemoryBtn.addEventListener('click', (e)=>{
      console.log('new post clicked',newMemoryContainer)
     newMemoryContainer.style.display = "flex"
+
+    savePostBtn = newMemoryContainer.querySelector('.savePostBtn')
+    if(!savePostBtn) return console.log('wrong new post save btn')
+
+    
 })
 
 
@@ -67,9 +73,11 @@ function removePreviewMedia(prevContainer){
 
 postForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
+     showLoading(savePostBtn,'creating new post..')
+     
    const fileUrl =  await fileUploadOnImageKit(selectedMedia)
 
-   sendPostDataToServer(fileUrl)
+   await sendPostDataToServer(fileUrl)
 })
 
 async function sendPostDataToServer(newFile){
@@ -83,6 +91,10 @@ async function sendPostDataToServer(newFile){
     const response = await axios.post('/api/newPost', newPostData);
 
     if(response.status === 200 && response.data.success){
+
+       hideLoading(savePostBtn)
+         
+
         const newPost = response.data.newPostData
          console.log(newPost)
         newCreatedPost = newPost
@@ -101,6 +113,17 @@ async function sendPostDataToServer(newFile){
         setupEventListener() 
     }
 }
+
+
+ function hideLoading(element){
+  element.disabled = false
+  element.textContent = 'Save'
+ }
+
+  function showLoading(element,command){
+  element.disabled = true
+  element.innerHTML = loading(command)
+ }
 
  function updateUIpost(newPost){
   const postDiv = document.createElement('div')

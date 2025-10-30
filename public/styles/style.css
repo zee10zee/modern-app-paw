@@ -1059,6 +1059,9 @@ button { background: none; border: none; cursor: pointer; }
   margin-top: 12px;
   color: #4B5563; /* gray-600 */
   font-size: 14px;
+  padding: 3px 10px;
+    border: 1px solid #efefef;
+    border-radius: 10px;
 }
 
 /* Like, comment, share sections */
@@ -1108,7 +1111,9 @@ button { background: none; border: none; cursor: pointer; }
   flex: 1;
   border: 1px solid #D1D5DB; /* gray-300 */
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 10px 4px;
+  border-radius: 30px;
+  padding-left: 10px;
   font-size: 14px;
 }
 
@@ -1577,10 +1582,11 @@ svg{
 #postsContainer .posts.shared .shareBtn:hover {
   transform: scale(1.15);
 }
+
 #postsContainer .posts.shared .likesCount,
 #postsContainer .posts.shared .commentCount,
 #postsContainer .posts.shared .sharesCount {
-  font-size: 12px;
+  font-size: 15px;
   color: #6b7280;
 }
 
@@ -1589,7 +1595,9 @@ svg{
   width: 100%;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 10px 4px;
+  border-radius: 30px;
+  padding-left: 10px;
   font-size: 14px;
   margin-top: 8px;
 }

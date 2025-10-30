@@ -9,6 +9,7 @@ socket.on('share_root_notify', data =>{
   if(shareContainer1.style.display === 'block') shareContainer1.style.display = "none"
 })
 
+let appShareBtn;
  document.body.addEventListener('click', async(e)=>{
         let baseUrl = 'http://localhost:3000'
    const shareContainer = document.getElementById('share-container')
@@ -35,10 +36,15 @@ socket.on('share_root_notify', data =>{
         const copyElement = e.target.href;
         const postId = parseInt(copyElement.split('/').pop())
         const copyLink = `${baseUrl}/api/showPost/${postId}`
-         const copiedText = await navigator.clipboard.writeText(copyLink).then(copiedText => alert('text copied ', copiedText)).catch(err => alert('failure copying the text with : ', err));
+         const copiedText = await navigator.clipboard.writeText(copyLink)
+         console.log(copiedText, 'copied text')
+
+        //  .then(copiedText => alert('text copied ', copiedText)).catch(err => alert('failure copying the text with : ', err));
         //  share on app button
     }else if(e.target.classList.contains('shareOnApp')){
         e.preventDefault()
+        appShareBtn = e.target.classList.contains('shareOnApp')
+        showLoading(appShareBtn, 'sharing ..')
          const shareDiv = e.target.closest('.shareForm')
          const platform = e.target.textContent;
 
@@ -49,7 +55,7 @@ socket.on('share_root_notify', data =>{
           const parent_share_id = e.target.dataset.postId;
           const rootId = shareContainer.dataset.rootId;
 
-          shareOnTheApp(parent_share_id,messageInput,platform, rootId)
+          await shareOnTheApp(parent_share_id,messageInput,platform, rootId)
     }
 })
 
@@ -65,7 +71,7 @@ async function shareOnTheApp(parent_share_id,messageInput,platform,rootPostId){
        })
         // return console.log(res.data)
        if(res.data.success && res.status === 200){
-        
+         hideLoading(appShareBtn)
          Allposts = res.data.allPosts
         const shareContainer1 = document.getElementById('share-container')
         shareContainer1.style.display = "none"
