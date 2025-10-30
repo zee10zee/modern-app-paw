@@ -1,5 +1,5 @@
 
-alert('from loading')
+console.log('from loading')
 function loading(command){
   return `
   <div class="btn-loader-container">

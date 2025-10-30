@@ -23,6 +23,7 @@ button { background: none; border: none; cursor: pointer; }
   top: 0; left: 0; right: 0;
   z-index: 50;
   border-bottom: 1px solid #e5e7eb; /* subtle line */
+  height: 70px;
 }
 
 /* Logo */

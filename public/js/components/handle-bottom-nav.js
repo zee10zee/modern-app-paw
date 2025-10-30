@@ -74,6 +74,7 @@ async function displayUserPageHideAll(e,targetParent){
     hideHomePage()
     hideUserProfilePage()
     hideChatPage()
+    hideChatList()
     smGroupsContainer.classList.add('active')
     // smGroupsContainer.innerHTML = loadSpinner('groups')
     await fetchCommunity(smGroupsContainer)

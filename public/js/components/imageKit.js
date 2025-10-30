@@ -1,5 +1,7 @@
 
-async function fileUploadOnImageKit(file){
+// null params are for future delete or update file on imagekit
+
+async function fileUploadOnImageKit(file, request = null){
 const signupForm = document.getElementById('signUpForm')
 
   // first upload the image on imageKit
@@ -20,9 +22,14 @@ const signupForm = document.getElementById('signUpForm')
         formData.append('expire', authElements.expire)
         formData.append('publicKey', pub_key)
 
+        let uploadRes;
     //   uploading the file directly to imgkit after confirmation from server
-      const uploadRes = await axios.
-      post('https://upload.imagekit.io/api/v1/files/upload', formData)
+      // const req = request === 'update' ?
+      uploadRes = await axios.post('https://upload.imagekit.io/api/v1/files/upload', formData)
+      // :
+      // uploadRes = await axios.post('https://upload.imagekit.io/api/v1/files/upload', formData);
+
+
 
       if(uploadRes.status === 200){
           const fileUrl = uploadRes.data.url

@@ -4,7 +4,6 @@ document.addEventListener('click', async(e)=>{
     const profileLayer = e.target.closest('.profilePic-update-logo')
     const updateTextParent = e.target.closest('.update-profile-logo')
     const updateText = updateTextParent.querySelector('.update-profile-text')
-    console.log(updateText)
 
     if(updateTextParent && updateText.textContent.includes('Update profile')){
         console.log('clicked and the picker should open')
@@ -25,25 +24,38 @@ document.addEventListener('click', async(e)=>{
        
        inputEl.click()
     }else if(updateTextParent && updateText.textContent.includes('Confirm')){
-        console.log('now should be sent to server')
+        
         const input = document.querySelector('.updateProfileInput')
 
         if(!input) return console.log('no input el')
-        const updatedImage = input.files[0]
-         console.log(updatedImage)
+        const selectedImage = input.files[0]
 
-       
-        const formData = new FormData()
-        formData.append('updated-profile',updatedImage)
+          updateText.disabled = true
+        updateText.innerHTML = loading('updating..')
 
-        const prfCover = profileLayer.querySelector('.profileCover')
-        // prfCover.innerHTML = ''
-        // prfCover.innerHTML = loadSpinner('new image')
 
+        // confirm signature and token by server 
+        const url = await fileUploadOnImageKit(selectedImage)
+        console.log(url, ' file url of updating image')
+        
+        updateAllUIProfilePages(profileLayer)
         // send to server
-        await sendToserver(formData, updateText)
+
+        
+        await sendToserver(url,updateText)
+        // sessionStorage.setItem('loggedIn_profile',newImage)
+        updateNavbarUserProfile('.top-nav',url)
     }
 })
+
+
+function updateAllUIProfilePages(profileLayer){
+  const prfCover = profileLayer.querySelector('.profileCover')
+  const comunityProfile = profileLayer.querySelector('.profileCover')
+//   1: navbar login user profile
+//   2: post owner user profile
+ 
+}
 
  function handleChangeEvent(input,profileCover){
 
@@ -70,30 +82,34 @@ document.addEventListener('click', async(e)=>{
     })
 }
 
-async function sendToserver(formData,updateTxt){
+async function sendToserver(fileUrl,updateTxt){
 
    try{
-     const result = await axios.patch(`/api/user/${loggedInUserId}/profileUpdate`, formData)
+     const result = 
+     await axios.patch(`/api/user/${loggedInUserId}/profileUpdate`, {fileUrl})
 
      if(result.status === 200 && result.data.success){
-    result.data.updatedPic
+
+          updateTxt.disabled = false
+          updateTxt.innerHTML = 'Save'
+
+        // result.data.updatedPic
         const newImage = result.data.updatedPic.profilepicture
         const message = result.data.message
         const profileCoverContainer = updateTxt.closest('.profilePic-update-logo')
         const pc = profileCoverContainer.querySelector('.profileCover')
         
         createSucessModal(message)
+
+        localStorage.setItem('loggedIn_profile', newImage)
         // change the confirm back to update profile file
         updateTxt.textContent = 'Update profile'
-
-        const userNavProfilePic = document.querySelector('.top-nav')?.querySelector('.profilePic')
 
         // updating the profile image of lgin user from session storage
         sessionStorage.setItem('loggedIn_profile',newImage)
 
 
-        // changeing the src on the ui
-        userNavProfilePic.src = newImage
+      
      }
 
    }catch(err){
@@ -104,6 +120,12 @@ async function sendToserver(formData,updateTxt){
     if(!input) return console.log('input not found')
      input.remove()
    }
+}
+
+function updateNavbarUserProfile(container,newImage){
+    const userNavProfilePic = document.querySelector(container)?.querySelector('.profilePic')
+          // changeing the src on the ui
+        userNavProfilePic.src = newImage
 }
 
 function createSucessModal(message){

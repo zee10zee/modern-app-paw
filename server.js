@@ -316,6 +316,27 @@ app.get('/api/login', (req,res)=>{
     res.sendFile(basedir + '/login.html')
 })
 
+app.get('/api/newUser/authenticate',async(req,res)=>{
+const newUserEmail = req.query.email
+
+// return console.log(newUserEmail, req.params.query, 'the nuew user')
+const result = await authenticateNewUser(newUserEmail)
+
+if(result === false){
+console.log('its false which means its duplicate ')
+return res.status(201).json({
+            message :"email is already registered please log in",
+            success : false
+        })
+}
+
+return res.json({
+    message :" go on !",
+    success : true
+})
+
+})
+
 app.post('/api/signup',async(req,res)=>{
     let newUser;
       console.log(req.body)
@@ -326,9 +347,9 @@ app.post('/api/signup',async(req,res)=>{
         profile : req.body.profile
       }
 
-      const userExist = await pool.query(`SELECT * FROM users WHERE email = $1 `,[newUserData.email]);
+      const result = await authenticateNewUser(newUserData.email)
 
-      if(userExist.rowCount > 0) return res.status(201).json({message :"email is already registered please log in"})
+      if(result !== true) return;
 
       // RANDOM AND STRONG TOKEN / CAN BE USED INSTEAD OF id FOR SECURITY
         const userToken = crypto.randomBytes(32).toString('hex')
@@ -367,8 +388,24 @@ app.post('/api/signup',async(req,res)=>{
     })
 })
 
-//image kit auth route
+async function authenticateNewUser(email){
 
+    console.log(email, 'on authentication function')
+    const userExist = await pool.query(`
+        SELECT * FROM users WHERE email = $1 `,[email]);
+
+      if(userExist.rowCount > 0){
+        console.log('user duplicate')
+        return false
+      }else{
+        console.log('please welcome')
+
+        return true
+      }
+}
+
+
+//image kit auth route
 app.get('/imageKit/auth',async(req,res)=>{
     const imgkit = new ImageKit({
         publicKey : process.env.IMGKIT_PUBLIC_KEY,
@@ -386,13 +423,11 @@ app.get('/imageKit/auth',async(req,res)=>{
 // user profile update
 
 app.patch('/api/user/:id/profileUpdate', 
-    upload.single('updated-profile'), 
     validateLogin, async(req,res)=>{
     const id = parseInt(req.params.id)
 
-    if(!req.file)  return console.log('no file selected !')
+    const imgPath = req.body.fileUrl
 
-        const imgPath = `/uploads/${req.file.filename}`
       const updatedImage = 
       await pool.query(`UPDATE users 
       SET profilepicture = $1 WHERE id = $2 RETURNING *`,[imgPath,req.session.userId])
@@ -2099,7 +2134,7 @@ app.use(validateLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'htmlFiles', 'home.html'));
 });
 
-const listeningPort=  3000
+const listeningPort =  3000
 server.listen(listeningPort, ()=>{
     console.log('runnin in ' + listeningPort)
 })

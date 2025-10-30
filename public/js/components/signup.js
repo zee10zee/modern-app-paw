@@ -24,29 +24,35 @@ profileLogo.addEventListener('click', (e)=>{
 
 signupForm.addEventListener('submit', async(e)=>{
     e.preventDefault()
+    //authenticate new user
+    const result = await checkDuplicate()
+    console.log(result)
+    if(result.data.success !== true) return displayDuplicate(result)
 
-    // if(selectedProfile){
-      const response = await checkDuplicateByServer(signupForm)
-
-      if(response.data.success){
-        console.log('new user joined ! UPLOAD profile now !')
-
-      const profileUrl = await fileUploadOnImageKit(selectedProfile)
-
-      // updateProfile picture on db
-      await updateProfileImageOnServer(profileUrl)       
-
-       //async   implement the changes on the UI
-       handleSignUpResult(response)
-      }
-
-      //show duplicate or errors
-      handleSignUpResult(response)
+    // go either with profile or without
+    if(selectedProfile){
+    const profileUrl = await fileUploadOnImageKit(selectedProfile)
+    await saveUserDataOnDB(signupForm,profileUrl)
+    }
+    
+    else{
+      await saveUserDataOnDB(signupForm)
+    }
 })
 
 
-async function updateProfileImageOnServer(profileImg){
-  const a = await console.log('uploaded profile url should be saved on db. this => ', profileImg)
+async function checkDuplicate(){
+const formData = new FormData(signupForm)
+const newUserEmail = formData.get('email')
+ console.log(newUserEmail)
+   try{
+     const result = await axios.get(`/api/newUser/authenticate`, {params: {email : newUserEmail}})
+
+     return result
+
+   }catch(err){
+    console.log(err)
+   }
 }
 
 
@@ -85,7 +91,7 @@ const signupForm = document.getElementById('signUpForm')
     }
 }
 
-async function checkDuplicateByServer(form,profile = null){
+async function saveUserDataOnDB(form,profile = null){
 const formData = new FormData(form)
 
 console.log(formData.get('fname'), 'form data befor send to server')
@@ -103,7 +109,7 @@ console.log(formData.get('fname'), 'form data befor send to server')
     userInfo.profile = profile
   } 
     try{
-        signupForm.disabled = true
+        signUpBtn.disabled = true
         signUpBtn.innerHTML = loading()
 
         const response = await axios.post('/api/signup', userInfo,{
@@ -112,8 +118,7 @@ console.log(formData.get('fname'), 'form data befor send to server')
         }
     });
 
-   
-    return response
+    handleSignUpResult(response)
 
     }catch(err){
         console.log(err)
@@ -123,7 +128,15 @@ console.log(formData.get('fname'), 'form data befor send to server')
 
 function handleSignUpResult(response){
   if(response.data.success){
+    return userVerified(response)
+  }
 
+  displayDuplicate()
+}
+
+
+function userVerified(response){
+  
         const {newUser} = response.data
         console.log(newUser)
         // return console.log(newUser)
@@ -138,9 +151,12 @@ function handleSignUpResult(response){
         signUpBtn.innerHTML = 'Sign up'
 
         window.location.href="/"
-    }
-    else{
-        const checkNewUserEl = document.getElementById('newUserCheck')
+}
+
+function displayDuplicate(response){
+
+   console.log(response)
+  const checkNewUserEl = document.getElementById('newUserCheck')
 
             checkNewUserEl.style.display = "block"
             checkNewUserEl.textContent = response.data.message
@@ -150,13 +166,7 @@ function handleSignUpResult(response){
             setTimeout(() => {
                 checkNewUserEl.style.display = 'none'
             }, 3000);
-        
-    }
 }
-
- function isVideo(filename){
-      return /\.(mp4|webm|ogg)$/i.test(filename);
-  }
   
 window.loadActiveUserStoredInfoOnSignup = (id,name,profilePicture,token)=>{
     localStorage.setItem('loggedIn_userId', id)
@@ -178,3 +188,7 @@ function loading(){
   </div>
 `;
 }
+
+ function isVideo(filename){
+      return /\.(mp4|webm|ogg)$/i.test(filename);
+  }
