@@ -15,7 +15,7 @@ bottomNav.addEventListener('click', async(e)=>{
 
   }else if(e.target.closest('.feeds-btn')){
     console.log('the feed btn clicked')
-    history.pushState({ screen: "home" }, "", "/api/home");
+    history.pushState({ screen: "/" }, "", "/");
     await hideAllShowHomePage()
      
   }else if(e.target.closest('.profilePicContain')){
@@ -37,7 +37,7 @@ bottomNav.addEventListener('click', async(e)=>{
 
  window.addEventListener("popstate", async(event) => {
   console.log("Navigated to:", event.state);
-  if (event.state?.screen === "home") {
+  if (event.state?.screen === "/") {
         await hideAllShowHomePage()
 
   } else if (event.state?.screen === "chatList") {
